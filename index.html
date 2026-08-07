@@ -52,6 +52,20 @@
     pointer-events:none;
   }
   .hero-inner{ max-width:1180px; margin:0 auto; position:relative; z-index:1; }
+  .version-badge{
+    position:absolute; top:0; right:0; z-index:2;
+    background:transparent; border:1px solid rgba(246,241,233,.22); color:rgba(246,241,233,.5);
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.08em;
+    padding:4px 10px; border-radius:20px; cursor:pointer; transition:all .15s ease;
+  }
+  .version-badge:hover{ color:var(--gold); border-color:var(--gold); }
+  .cl-entry{ padding:12px 0; border-bottom:1px solid var(--line); }
+  .cl-entry:last-child{ border-bottom:none; }
+  .cl-entry-head{ display:flex; align-items:baseline; gap:8px; margin-bottom:5px; }
+  .cl-entry-version{ font-family:'Fraunces', serif; font-weight:600; font-size:14.5px; }
+  .cl-entry-date{ font-family:'IBM Plex Mono', monospace; font-size:10px; color:rgba(43,42,40,.45); }
+  .cl-entry ul{ margin:0; padding-left:18px; font-size:12.5px; line-height:1.6; color:rgba(43,42,40,.75); }
+  .cl-footnote{ font-family:'IBM Plex Mono', monospace; font-size:10px; color:rgba(43,42,40,.4); margin:14px 0 0; text-align:center; }
   .eyebrow{
     font-family:'IBM Plex Mono', monospace;
     font-size:11px; letter-spacing:.16em; text-transform:uppercase;
@@ -464,7 +478,12 @@
 
   /* ---------- PHOTO LOCATIONS ---------- */
   .photo-location-card{ background:var(--card); border:1px solid var(--line); border-left:3px solid var(--line); border-radius:3px; padding:16px; margin-bottom:12px; }
-  .photo-location-card .pl-head{ display:grid; grid-template-columns:1fr 120px 120px 34px; gap:10px; align-items:start; margin-bottom:10px; }
+  .photo-location-card .pl-head{ display:grid; grid-template-columns:1fr 120px 120px 20px 34px; gap:10px; align-items:start; margin-bottom:10px; }
+  .pl-order{ display:flex; flex-direction:column; gap:2px; }
+  .pl-order button{ background:none; border:1px solid var(--line); color:rgba(43,42,40,0.5); font-size:9px; width:20px; height:19px; cursor:pointer; border-radius:2px; padding:0; line-height:1; }
+  .pl-order button:hover{ border-color:var(--holyrood); color:var(--holyrood); }
+  .pl-order button:disabled{ opacity:0.3; cursor:default; }
+  .pl-order button:disabled:hover{ border-color:var(--line); color:rgba(43,42,40,0.5); }
   .photo-location-card input.pl-name{ font-family:'Fraunces', serif; font-weight:600; font-size:15px; border:none; background:transparent; width:100%; padding:0; }
   .photo-location-card select.pl-status{ font-family:'IBM Plex Mono', monospace; font-size:11px; border:1px solid var(--line); border-radius:2px; padding:5px 6px; background:transparent; }
   /* ---------- PHOTO LOCATION STATUS COLOURS ---------- */
@@ -477,9 +496,15 @@
   select.pl-status.s-confirmed{ color:var(--holyrood); border-color:var(--holyrood); background:rgba(46,99,103,.1); font-weight:600; }
   select.pl-status.s-rejected{ color:rgba(43,42,40,.4); border-color:rgba(43,42,40,.15); font-style:italic; }
   .photo-location-card input.pl-dist{ font-family:'IBM Plex Mono', monospace; font-size:11px; border:1px solid var(--line); border-radius:2px; padding:5px 6px; background:transparent; }
-  .photo-location-card .pl-tags{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+  .photo-location-card .pl-tags{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+  .pl-tag-wrap{ position:relative; display:inline-flex; }
   .pl-tag{ font-family:'IBM Plex Mono', monospace; font-size:10px; padding:3px 8px; border-radius:9px; border:1px solid var(--line); background:none; cursor:pointer; }
   .pl-tag.on{ background:var(--ink); color:var(--parchment); border-color:var(--ink); }
+  .pl-tag-del{ font-family:'IBM Plex Mono', monospace; font-size:9px; width:14px; height:14px; line-height:12px; border-radius:50%; background:rgba(43,42,40,.5); color:#F6F1E9; border:none; cursor:pointer; padding:0; position:absolute; top:-5px; right:-5px; opacity:0; transition:opacity .12s ease; }
+  .pl-tag-wrap:hover .pl-tag-del{ opacity:1; }
+  .pl-tag-del:hover{ background:var(--rose); }
+  .pl-tag-add-input{ font-family:'IBM Plex Mono', monospace; font-size:10px; padding:3px 8px; border-radius:9px; border:1px dashed var(--line); background:none; width:150px; color:rgba(43,42,40,.6); }
+  .pl-tag-add-input:focus{ border-color:var(--heather); outline:none; }
   .photo-location-card .pl-row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .photo-location-card textarea{ width:100%; font-family:'Source Serif 4', serif; font-size:13px; border:1px solid var(--line); border-radius:2px; padding:8px; background:transparent; resize:vertical; min-height:56px; }
   .photo-location-card .pl-link{ display:flex; gap:6px; align-items:center; margin-top:10px; }
@@ -489,7 +514,7 @@
   .pl-map-input-row{ display:flex; gap:8px; }
   .pl-map-input{ flex:1; font-family:'IBM Plex Mono', monospace; font-size:11px; border:1px solid var(--line); border-radius:2px; padding:6px 8px; background:transparent; }
   .pl-map-frame-wrap{ position:relative; margin-top:2px; border:1px solid var(--line); border-radius:4px; overflow:hidden; background:var(--parchment-dim); }
-  .pl-map-frame-wrap iframe{ width:100%; height:220px; border:0; display:block; }
+  .pl-map-frame-wrap iframe{ width:100%; height:440px; border:0; display:block; }
   .pl-map-remove{ position:absolute; top:6px; right:6px; }
   .pl-section-map{ margin-top:24px; padding-top:20px; border-top:1px solid var(--line); }
   .pl-section-map-title{ font-family:'Fraunces', serif; font-weight:600; font-size:15px; margin:0 0 4px; }
@@ -705,6 +730,7 @@
 
 <header class="hero">
   <div class="hero-inner">
+    <button class="version-badge" onclick="openChangelog()" title="Version history">v16</button>
     <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -944,6 +970,18 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="changelog-overlay" onclick="if(event.target===this) closeChangelog()">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h3>Version history</h3>
+      <button class="modal-close" onclick="closeChangelog()">×</button>
+    </div>
+    <p class="modal-sub">What's changed on this board, most recent first.</p>
+    <div id="changelog-list"></div>
+    <p class="cl-footnote">Earlier versions (v1–v12) predate this changelog.</p>
+  </div>
+</div>
+
 <script>
 /* ============================= OFFLINE / STORAGE MODE ============================= */
 // Inside Claude.ai, window.storage is injected by the host and syncs to your
@@ -1146,6 +1184,40 @@ function seedPhotoLocations(){ return []; }
 
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
+/* ============================= VERSION HISTORY ============================= */
+const APP_VERSION = 'v16';
+const CHANGELOG = [
+  { version:'v16', date:'2026-08-07', notes:[
+    'Version badge + this changelog added to the header',
+    'Area map made taller so it isn\'t cramped',
+    'Photo locations can now be reordered up/down',
+    'Location tags: add your own and delete any tag (updates apply everywhere)'
+  ]},
+  { version:'v15', date:'2026-08-07', notes:[
+    'Embedded map (paste a link — no API key needed): one map for the whole area, at the bottom of Photo locations',
+    'Location tags rebuilt for Edinburgh wedding photography'
+  ]},
+  { version:'v14', date:'2026-08-07', notes:[
+    'Fixed an unescaped image URL that could break the inspiration gallery'
+  ]},
+  { version:'v13', date:'2026-08-07', notes:[
+    'Colour-coded statuses across Suppliers and Photo locations, matching Budget',
+    'Suppliers auto-create/sync a linked Budget line when marked Booked / Deposit paid / Paid',
+    '"Deposit paid" added as its own status (Suppliers + Budget)',
+    'Inspiration image gallery on Photo locations — upload or paste a URL, with a lightbox viewer'
+  ]}
+];
+function renderChangelog(){
+  const c = document.getElementById('changelog-list');
+  c.innerHTML = CHANGELOG.map(entry => `
+    <div class="cl-entry">
+      <div class="cl-entry-head"><span class="cl-entry-version">${escapeHtml(entry.version)}</span><span class="cl-entry-date">${escapeHtml(entry.date)}</span></div>
+      <ul>${entry.notes.map(n => `<li>${escapeHtml(n)}</li>`).join('')}</ul>
+    </div>`).join('');
+}
+function openChangelog(){ renderChangelog(); document.getElementById('changelog-overlay').classList.add('open'); }
+function closeChangelog(){ document.getElementById('changelog-overlay').classList.remove('open'); }
+
 let STATE = {
   checklist: seedChecklist(),
   phases: seedPhases(),
@@ -1165,7 +1237,8 @@ let STATE = {
   share: seedShare(),
   navOrder: seedNavOrder(),
   photoLocations: seedPhotoLocations(),
-  photoLocationsMap: ''
+  photoLocationsMap: '',
+  plTagOptions: seedPlTagOptions()
 };
 
 /* ============================= STORAGE ============================= */
@@ -1247,7 +1320,7 @@ function applyModeCopy(){
 }
 
 async function loadAll(){
-  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoLocationsMap'];
+  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoLocationsMap','plTagOptions'];
   for(const k of keys){
     try{
       const res = await window.storage.get(k, false);
@@ -1292,7 +1365,8 @@ async function resetAll(){
     share: seedShare(),
     navOrder: seedNavOrder(),
     photoLocations: seedPhotoLocations(),
-    photoLocationsMap: ''
+    photoLocationsMap: '',
+    plTagOptions: seedPlTagOptions()
   };
   for(const k of Object.keys(STATE)) await persist(k, STATE[k]);
   renderAll();
@@ -2870,7 +2944,7 @@ function copyGuestSummary(){
 }
 
 /* ============================= PHOTO LOCATIONS ============================= */
-const PL_TAGS = ['Outdoor','Covered / indoor','Iconic Edinburgh','Golden hour','Wind shelter','Uneven ground','Rain backup','Low tourist crowds','Permit needed'];
+function seedPlTagOptions(){ return ['Outdoor','Covered / indoor','Iconic Edinburgh','Golden hour','Wind shelter','Uneven ground','Rain backup','Low tourist crowds','Permit needed']; }
 
 function renderPhotoLocations(){
   const c = document.getElementById('photo-locations-container');
@@ -2878,12 +2952,13 @@ function renderPhotoLocations(){
   if(STATE.photoLocations.length === 0){
     c.innerHTML = '<p style="font-size:13px;color:rgba(43,42,40,.5);margin-bottom:12px;">No locations added yet. Try Arthur\'s Seat, Victoria Street, Dean Village, Calton Hill, The Royal Mile, Stockbridge, or Greyfriars Kirkyard as starting points.</p>';
   }
-  STATE.photoLocations.forEach(loc => {
+  STATE.photoLocations.forEach((loc, idx) => {
     const card = document.createElement('div');
     const plst = loc.status || 'idea';
     card.className = `photo-location-card status-${plst}`;
     card.dataset.id = loc.id;
     const tags = loc.tags || [];
+    const tagOptions = STATE.plTagOptions || [];
     card.innerHTML = `
       <div class="pl-head">
         <input class="pl-name" value="${escapeHtml(loc.name||'')}" placeholder="Location name" data-f="name">
@@ -2894,10 +2969,17 @@ function renderPhotoLocations(){
           <option value="confirmed" ${loc.status==='confirmed'?'selected':''}>Confirmed with photographer</option>
           <option value="rejected" ${loc.status==='rejected'?'selected':''}>Not using</option>
         </select>
+        <div class="pl-order">
+          <button data-action="pl-move-up" ${idx===0?'disabled':''} title="Move up">▲</button>
+          <button data-action="pl-move-down" ${idx===STATE.photoLocations.length-1?'disabled':''} title="Move down">▼</button>
+        </div>
         <button class="row-del" data-action="del-photo-loc">×</button>
       </div>
       <div class="pl-tags">
-        ${PL_TAGS.map(tag => `<button class="pl-tag ${tags.includes(tag)?'on':''}" data-tag="${escapeHtml(tag)}" data-action="toggle-pl-tag">${escapeHtml(tag)}</button>`).join('')}
+        ${tagOptions.map(tag => `<span class="pl-tag-wrap"><button class="pl-tag ${tags.includes(tag)?'on':''}" data-tag="${escapeHtml(tag)}" data-action="toggle-pl-tag">${escapeHtml(tag)}</button><button class="pl-tag-del" data-tag="${escapeHtml(tag)}" data-action="del-pl-tag-option" title="Delete this tag everywhere">×</button></span>`).join('')}
+        <span class="pl-tag-add-wrap">
+          <input type="text" class="pl-tag-add-input" placeholder="+ Add tag, press Enter">
+        </span>
       </div>
       <div class="pl-row2">
         <div><label style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:rgba(43,42,40,.5);display:block;margin-bottom:4px;">Notes / description</label><textarea data-f="notes" placeholder="What makes this spot special, what to look out for in December…">${escapeHtml(loc.notes||'')}</textarea></div>
@@ -3050,6 +3132,20 @@ document.getElementById('photo-locations-container').addEventListener('change', 
   renderPhotoLocations();
 });
 document.getElementById('photo-locations-container').addEventListener('keydown', (e) => {
+  if(e.target.classList.contains('pl-tag-add-input') && e.key === 'Enter'){
+    e.preventDefault();
+    const raw = e.target.value.trim();
+    if(!raw) return;
+    STATE.plTagOptions = STATE.plTagOptions || [];
+    if(STATE.plTagOptions.some(t => t.toLowerCase() === raw.toLowerCase())){
+      showToast(`"${raw}" already exists`, [], 4000);
+      return;
+    }
+    STATE.plTagOptions.push(raw);
+    scheduleSave('plTagOptions');
+    renderPhotoLocations();
+    return;
+  }
   if(!e.target.classList.contains('pl-image-url-input') || e.key !== 'Enter') return;
   e.preventDefault();
   const card = e.target.closest('.photo-location-card'); if(!card) return;
@@ -3067,6 +3163,21 @@ document.getElementById('photo-locations-container').addEventListener('click', (
     const card = e.target.closest('.photo-location-card');
     STATE.photoLocations = STATE.photoLocations.filter(x => x.id !== card.dataset.id);
     scheduleSave('photoLocations'); renderPhotoLocations(); return;
+  }
+  if(e.target.dataset.action === 'pl-move-up' || e.target.dataset.action === 'pl-move-down'){
+    const card = e.target.closest('.photo-location-card'); if(!card) return;
+    const idx = STATE.photoLocations.findIndex(x => x.id === card.dataset.id); if(idx < 0) return;
+    const swapWith = e.target.dataset.action === 'pl-move-up' ? idx - 1 : idx + 1;
+    if(swapWith < 0 || swapWith >= STATE.photoLocations.length) return;
+    [STATE.photoLocations[idx], STATE.photoLocations[swapWith]] = [STATE.photoLocations[swapWith], STATE.photoLocations[idx]];
+    scheduleSave('photoLocations'); renderPhotoLocations(); return;
+  }
+  if(e.target.dataset.action === 'del-pl-tag-option'){
+    const tag = e.target.dataset.tag;
+    STATE.plTagOptions = (STATE.plTagOptions||[]).filter(t => t !== tag);
+    STATE.photoLocations.forEach(loc => { if(loc.tags) loc.tags = loc.tags.filter(t => t !== tag); });
+    scheduleSave('plTagOptions'); scheduleSave('photoLocations');
+    renderPhotoLocations(); return;
   }
   if(e.target.dataset.action === 'del-pl-image'){
     const card = e.target.closest('.photo-location-card'); if(!card) return;
