@@ -484,6 +484,16 @@
   .photo-location-card textarea{ width:100%; font-family:'Source Serif 4', serif; font-size:13px; border:1px solid var(--line); border-radius:2px; padding:8px; background:transparent; resize:vertical; min-height:56px; }
   .photo-location-card .pl-link{ display:flex; gap:6px; align-items:center; margin-top:10px; }
   .photo-location-card .pl-link input{ flex:1; font-family:'IBM Plex Mono', monospace; font-size:11px; border:1px solid var(--line); border-radius:2px; padding:6px 8px; background:transparent; }
+  .pl-map{ margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+  .pl-map-hint{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:rgba(43,42,40,.45); margin:6px 0 0; }
+  .pl-map-input-row{ display:flex; gap:8px; }
+  .pl-map-input{ flex:1; font-family:'IBM Plex Mono', monospace; font-size:11px; border:1px solid var(--line); border-radius:2px; padding:6px 8px; background:transparent; }
+  .pl-map-frame-wrap{ position:relative; margin-top:2px; border:1px solid var(--line); border-radius:4px; overflow:hidden; background:var(--parchment-dim); }
+  .pl-map-frame-wrap iframe{ width:100%; height:220px; border:0; display:block; }
+  .pl-map-remove{ position:absolute; top:6px; right:6px; }
+  .pl-section-map{ margin-top:24px; padding-top:20px; border-top:1px solid var(--line); }
+  .pl-section-map-title{ font-family:'Fraunces', serif; font-weight:600; font-size:15px; margin:0 0 4px; }
+  .pl-section-map-sub{ font-family:'Source Serif 4', serif; font-size:12px; color:rgba(43,42,40,.55); margin:0 0 10px; }
   .pl-gallery{ margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
   .pl-gallery-label{ font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:rgba(43,42,40,.5); display:block; margin-bottom:8px; }
   .pl-gallery-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:10px; margin-bottom:10px; }
@@ -899,6 +909,7 @@
     <p class="section-sub">Research spots around Edinburgh for ceremony and portrait photography. December light is golden but brief — note which locations have shelter or indoor fallback options.</p>
     <div id="photo-locations-container"></div>
     <button class="ghost" onclick="addPhotoLocation()" style="margin-top:4px;">+ Add location</button>
+    <div id="photo-locations-map-container" class="pl-section-map"></div>
   </section>
 
   <div id="pl-lightbox">
@@ -1153,7 +1164,8 @@ let STATE = {
   guests: seedGuests(),
   share: seedShare(),
   navOrder: seedNavOrder(),
-  photoLocations: seedPhotoLocations()
+  photoLocations: seedPhotoLocations(),
+  photoLocationsMap: ''
 };
 
 /* ============================= STORAGE ============================= */
@@ -1235,7 +1247,7 @@ function applyModeCopy(){
 }
 
 async function loadAll(){
-  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations'];
+  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoLocationsMap'];
   for(const k of keys){
     try{
       const res = await window.storage.get(k, false);
@@ -1279,7 +1291,8 @@ async function resetAll(){
     guests: seedGuests(),
     share: seedShare(),
     navOrder: seedNavOrder(),
-    photoLocations: seedPhotoLocations()
+    photoLocations: seedPhotoLocations(),
+    photoLocationsMap: ''
   };
   for(const k of Object.keys(STATE)) await persist(k, STATE[k]);
   renderAll();
@@ -2857,7 +2870,7 @@ function copyGuestSummary(){
 }
 
 /* ============================= PHOTO LOCATIONS ============================= */
-const PL_TAGS = ['Indoor fallback','Sheltered','Iconic','Low crowds','Lighting','Permit needed','December friendly'];
+const PL_TAGS = ['Outdoor','Covered / indoor','Iconic Edinburgh','Golden hour','Wind shelter','Uneven ground','Rain backup','Low tourist crowds','Permit needed'];
 
 function renderPhotoLocations(){
   const c = document.getElementById('photo-locations-container');
@@ -2917,6 +2930,51 @@ function addPhotoLocation(){
   scheduleSave('photoLocations'); renderPhotoLocations();
 }
 
+/* ---- Section-level embedded map: one map covering all locations, sits below the cards ---- */
+function renderPhotoLocationsMap(){
+  const c = document.getElementById('photo-locations-map-container');
+  if(!c) return;
+  c.innerHTML = `
+    <h3 class="pl-section-map-title">Area map</h3>
+    <p class="pl-section-map-sub">One embedded map for the area — paste a Google Maps "Embed a map" link or code, no API key needed.</p>
+    ${STATE.photoLocationsMap ? `
+    <div class="pl-map-frame-wrap">
+      <iframe src="${escapeHtml(STATE.photoLocationsMap)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+      <button class="pl-img-del pl-map-remove" data-action="del-pl-section-map" title="Remove map">×</button>
+    </div>` : `
+    <div class="pl-map-input-row">
+      <input type="text" class="pl-map-input" id="pl-section-map-input" placeholder="Paste Google Maps 'Embed a map' link or code, press Enter">
+    </div>
+    <p class="pl-map-hint">Google Maps → Share → Embed a map → Copy HTML (or just paste the link)</p>`}
+  `;
+}
+document.getElementById('photo-locations-map-container').addEventListener('keydown', (e) => {
+  if(!e.target.classList.contains('pl-map-input') || e.key !== 'Enter') return;
+  e.preventDefault();
+  const src = extractMapEmbedSrc(e.target.value);
+  if(!src){
+    showToast(`That doesn't look like a valid https map embed link`, [], 5000);
+    return;
+  }
+  STATE.photoLocationsMap = src;
+  scheduleSave('photoLocationsMap');
+  renderPhotoLocationsMap();
+});
+document.getElementById('photo-locations-map-container').addEventListener('click', (e) => {
+  if(e.target.dataset.action !== 'del-pl-section-map') return;
+  STATE.photoLocationsMap = '';
+  scheduleSave('photoLocationsMap');
+  renderPhotoLocationsMap();
+});
+
+/* ---- Embedded map helper: accepts a raw link or a full <iframe> embed snippet ---- */
+function extractMapEmbedSrc(raw){
+  const trimmed = (raw||'').trim();
+  if(!trimmed) return '';
+  const iframeMatch = trimmed.match(/<iframe[^>]*\ssrc=["']([^"']+)["']/i);
+  const candidate = iframeMatch ? iframeMatch[1] : trimmed;
+  return /^https:\/\//i.test(candidate) ? candidate : '';
+}
 /* ---- Inspiration image helpers: resize/compress uploads client-side before storing ---- */
 function openPlLightbox(src){
   document.getElementById('pl-lightbox-img').src = src;
@@ -3045,6 +3103,7 @@ function renderAll(){
   renderGuestsPage();
   renderDecisions();
   renderPhotoLocations();
+  renderPhotoLocationsMap();
 }
 
 (async function init(){
