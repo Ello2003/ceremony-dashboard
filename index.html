@@ -294,6 +294,8 @@
   .balance-cell{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; text-align:right; padding-right:6px; }
   .balance-cell.clear{ color:var(--holyrood); }
   .balance-cell.due{ color:var(--rose); font-weight:600; }
+  .balance-cell.full{ color:var(--holyrood); font-weight:600; }
+  #budget-table input.num[data-f="deposit"].synced{ background:rgba(46,99,103,.08); color:var(--holyrood); cursor:not-allowed; }
 
   /* ---------- SUPPLIERS ---------- */
   .supplier-cat{ margin-bottom:26px; }
@@ -703,7 +705,12 @@
   #budget-table th:nth-child(5){ width:110px; }
   #budget-table th:nth-child(6){ width:90px; }
   #budget-table th:nth-child(7){ width:160px; }
-  #budget-table th:nth-child(8){ width:60px; }
+  #budget-table th:nth-child(8){ width:98px; }
+  .row-order{ display:flex; flex-direction:column; gap:1px; }
+  .row-order button{ width:17px; height:15px; font-size:8px; line-height:1; padding:0; border:1px solid var(--line); background:none; color:rgba(43,42,40,0.5); cursor:pointer; border-radius:2px; }
+  .row-order button:hover{ border-color:var(--holyrood); color:var(--holyrood); }
+  .row-order button:disabled{ opacity:0.3; cursor:default; }
+  .row-order button:disabled:hover{ border-color:var(--line); color:rgba(43,42,40,0.5); }
   #budget-table td input[data-f="item"]{ width:100%; min-width:0; }
   .budget-table-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
 
@@ -730,7 +737,7 @@
 
 <header class="hero">
   <div class="hero-inner">
-    <button class="version-badge" onclick="openChangelog()" title="Version history">v16</button>
+    <button class="version-badge" onclick="openChangelog()" title="Version history">v17</button>
     <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -816,14 +823,14 @@
   <!-- BUDGET -->
   <section class="panel" id="panel-budget">
     <h2 class="section-title">Budget</h2>
-    <p class="section-sub">Estimate vs. agreed cost, deposits paid, and what's still outstanding. Edit any cell directly — balance due is calculated for you.</p>
+    <p class="section-sub">Estimate vs. agreed cost, and what's been paid so far. Edit any cell directly — set status to "Paid in full" and the paid amount locks to match the total automatically, so balance due is never ambiguous.</p>
     <div class="toolbar">
       <button class="ghost" onclick="addBudgetRow()">+ Add line item</button>
     </div>
     <div class="budget-table-scroll">
     <table id="budget-table">
       <thead>
-        <tr><th>Category</th><th>Item</th><th>Est. (£)</th><th>Total agreed (£)</th><th>Deposit paid (£)</th><th>Balance due</th><th>Status</th><th></th></tr>
+        <tr><th>Category</th><th>Item</th><th>Est. (£)</th><th>Total agreed (£)</th><th>Paid to date (£)</th><th>Balance due</th><th>Status</th><th></th></tr>
       </thead>
       <tbody id="budget-body"></tbody>
     </table>
@@ -1185,8 +1192,13 @@ function seedPhotoLocations(){ return []; }
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v16';
+const APP_VERSION = 'v17';
 const CHANGELOG = [
+  { version:'v17', date:'2026-08-07', notes:[
+    'Budget line items can now be reordered with ▲▼ buttons',
+    'Redesigned paid-in-full tracking: "Deposit paid" renamed to "Paid to date", and it now auto-fills and locks to match the total whenever a line is marked Paid in full — balance due can no longer contradict the status',
+    'Balance column now reads "Paid in full ✓" instead of an easy-to-miss "£0 clear" for fully paid lines'
+  ]},
   { version:'v16', date:'2026-08-07', notes:[
     'Version badge + this changelog added to the header',
     'Area map made taller so it isn\'t cramped',
@@ -1428,7 +1440,7 @@ function exportSpreadsheet(){
 
   const budgetRows = STATE.budget.map(r => ({
     Category: r.category, Item: r.item, 'Est (£)': r.est, 'Total agreed (£)': r.actual,
-    'Deposit paid (£)': r.deposit, 'Balance due (£)': Math.max(0, rowBalance(r)), Status: r.status
+    'Paid to date (£)': r.deposit, 'Balance due (£)': Math.max(0, rowBalance(r)), Status: r.status
   }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(budgetRows), 'Budget');
 
@@ -1798,6 +1810,9 @@ function linkSupplierToBudget(o, cat, budgetStatus){
   } else {
     row.status = budgetStatus;
   }
+  if(budgetStatus === 'paid'){
+    row.deposit = parseFloat(row.actual) || parseFloat(row.est) || 0;
+  }
   scheduleSave('budget'); scheduleSave('suppliers');
   renderBudget(); renderOverview(); renderHero();
   return {row, created};
@@ -2058,18 +2073,23 @@ function rowBalance(r){
 function renderBudget(){
   const body = document.getElementById('budget-body');
   body.innerHTML = '';
-  STATE.budget.forEach(r => {
+  STATE.budget.forEach((r, idx) => {
     const bal = rowBalance(r);
+    const isPaid = r.status === 'paid';
     const mainRow = document.createElement('tr');
     mainRow.dataset.id = r.id;
     mainRow.className = `budget-status-${r.status||'idea'}`;
+    let balHtml, balClass;
+    if(isPaid){ balHtml = 'Paid in full ✓'; balClass = 'full'; }
+    else if(bal <= 0){ balHtml = '£0 clear'; balClass = 'clear'; }
+    else{ balHtml = '£'+bal.toLocaleString('en-GB',{maximumFractionDigits:0})+' due'; balClass = 'due'; }
     mainRow.innerHTML = `
       <td><input value="${escapeHtml(r.category||'')}" data-f="category"></td>
       <td><input value="${escapeHtml(r.item||'')}" data-f="item" style="min-width:0;"></td>
       <td><input class="num" type="number" value="${r.est||''}" data-f="est"></td>
       <td><input class="num" type="number" value="${r.actual||''}" data-f="actual"></td>
-      <td><input class="num" type="number" value="${r.deposit||''}" data-f="deposit"></td>
-      <td class="balance-cell ${bal<=0 ? 'clear':'due'}" data-role="balance">${bal<=0 ? '£0 clear' : '£'+bal.toLocaleString('en-GB',{maximumFractionDigits:0})+' due'}</td>
+      <td><input class="num ${isPaid?'synced':''}" type="number" value="${r.deposit||''}" data-f="deposit" ${isPaid?'readonly title="Locked — matches total agreed while status is Paid in full"':''}></td>
+      <td class="balance-cell ${balClass}" data-role="balance">${balHtml}</td>
       <td><select class="budget-status-select s-${r.status||'idea'}" data-f="status">
             <option value="idea" ${r.status==='idea'?'selected':''}>Idea</option>
             <option value="contacted" ${r.status==='contacted'?'selected':''}>Contacted</option>
@@ -2077,7 +2097,11 @@ function renderBudget(){
             <option value="deposit_paid" ${r.status==='deposit_paid'?'selected':''}>✓ Deposit paid</option>
             <option value="paid" ${r.status==='paid'?'selected':''}>✓✓ Paid in full</option>
           </select></td>
-      <td style="display:flex;gap:4px;align-items:center;">
+      <td style="display:flex;gap:5px;align-items:center;">
+        <div class="row-order">
+          <button data-action="budget-move-up" ${idx===0?'disabled':''} title="Move up">▲</button>
+          <button data-action="budget-move-down" ${idx===STATE.budget.length-1?'disabled':''} title="Move down">▼</button>
+        </div>
         <button class="budget-expand-btn" data-action="toggle-budget-notes" title="${r.notes ? 'Has notes' : 'Add notes'}">${r.notes ? '📝' : '+'}</button>
         <button class="row-del" data-action="delete-budget">×</button>
       </td>`;
@@ -2119,6 +2143,16 @@ document.getElementById('budget-body').addEventListener('click', (e) => {
     const tr = e.target.closest('tr');
     STATE.budget = STATE.budget.filter(x => x.id !== tr.dataset.id);
     scheduleSave('budget'); renderBudget(); renderOverview(); renderHero();
+    return;
+  }
+  if(e.target.dataset.action === 'budget-move-up' || e.target.dataset.action === 'budget-move-down'){
+    const tr = e.target.closest('tr'); if(!tr) return;
+    const idx = STATE.budget.findIndex(x => x.id === tr.dataset.id); if(idx < 0) return;
+    const swapWith = e.target.dataset.action === 'budget-move-up' ? idx - 1 : idx + 1;
+    if(swapWith < 0 || swapWith >= STATE.budget.length) return;
+    [STATE.budget[idx], STATE.budget[swapWith]] = [STATE.budget[swapWith], STATE.budget[idx]];
+    scheduleSave('budget'); renderBudget();
+    return;
   }
 });
 document.getElementById('budget-body').addEventListener('input', (e) => {
@@ -2130,15 +2164,34 @@ document.getElementById('budget-body').addEventListener('input', (e) => {
   const rowId = notesRow ? notesRow.dataset.notesFor : mainRow.dataset.id;
   const r = STATE.budget.find(x => x.id === rowId); if(!r) return;
   const f = e.target.dataset.f;
+  if(f === 'deposit' && r.status === 'paid') return; // locked while paid in full
   r[f] = e.target.value;
   scheduleSave('budget');
   renderHero();
-  if(f === 'est' || f === 'actual' || f === 'deposit'){
+
+  // While a line is "Paid in full", keep the paid amount locked to the total —
+  // this is what stops the balance figure from ever contradicting the status.
+  if(r.status === 'paid' && (f === 'est' || f === 'actual')){
+    r.deposit = parseFloat(r.actual) || parseFloat(r.est) || 0;
+    scheduleSave('budget');
+  }
+  if(f === 'status' && r.status === 'paid'){
+    r.deposit = parseFloat(r.actual) || parseFloat(r.est) || 0;
+    scheduleSave('budget');
+  }
+
+  if(f === 'est' || f === 'actual' || f === 'deposit' || (f === 'status' && r.status === 'paid')){
     const mainTr = document.querySelector(`tr[data-id="${rowId}"]`);
     if(mainTr){
+      const depositInput = mainTr.querySelector('input[data-f="deposit"]');
+      if(depositInput) depositInput.value = r.deposit || '';
       const bal = rowBalance(r);
       const cell = mainTr.querySelector('[data-role="balance"]');
-      if(cell){ cell.textContent = bal<=0 ? '£0 clear' : '£'+bal.toLocaleString('en-GB',{maximumFractionDigits:0})+' due'; cell.className = 'balance-cell ' + (bal<=0 ? 'clear':'due'); }
+      if(cell){
+        const isPaid = r.status === 'paid';
+        cell.textContent = isPaid ? 'Paid in full ✓' : (bal<=0 ? '£0 clear' : '£'+bal.toLocaleString('en-GB',{maximumFractionDigits:0})+' due');
+        cell.className = 'balance-cell ' + (isPaid ? 'full' : (bal<=0 ? 'clear':'due'));
+      }
     }
   }
   if(f === 'status'){
@@ -2147,6 +2200,12 @@ document.getElementById('budget-body').addEventListener('input', (e) => {
       mainTr.className = `budget-status-${r.status||'idea'}`;
       const sel = mainTr.querySelector('select.budget-status-select');
       if(sel) sel.className = `budget-status-select s-${r.status||'idea'}`;
+      const depositInput = mainTr.querySelector('input[data-f="deposit"]');
+      if(depositInput){
+        depositInput.readOnly = (r.status === 'paid');
+        depositInput.classList.toggle('synced', r.status === 'paid');
+        depositInput.title = r.status === 'paid' ? 'Locked — matches total agreed while status is Paid in full' : '';
+      }
     }
   }
   renderBudgetTotals();
