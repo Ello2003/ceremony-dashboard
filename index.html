@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ceremony Dashboard</title>
+<title>Graeme & Rebecca · Edinburgh · 5 December</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,450;0,9..144,600;1,9..144,450&family=Source+Serif+4:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -52,11 +52,11 @@
     pointer-events:none;
   }
   .hero-inner{ max-width:1180px; margin:0 auto; position:relative; z-index:1; }
+  .hero-top-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap; }
   .version-badge{
-    position:absolute; top:0; right:0; z-index:2;
     background:transparent; border:1px solid rgba(246,241,233,.22); color:rgba(246,241,233,.5);
     font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.08em;
-    padding:4px 10px; border-radius:20px; cursor:pointer; transition:all .15s ease;
+    padding:4px 10px; border-radius:20px; cursor:pointer; transition:all .15s ease; flex:none; white-space:nowrap;
   }
   .version-badge:hover{ color:var(--gold); border-color:var(--gold); }
   .cl-entry{ padding:12px 0; border-bottom:1px solid var(--line); }
@@ -737,8 +737,10 @@
 
 <header class="hero">
   <div class="hero-inner">
-    <button class="version-badge" onclick="openChangelog()" title="Version history">v17</button>
-    <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
+    <div class="hero-top-row">
+      <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v17</button>
+    </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
     <div class="hero-meta">
