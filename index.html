@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Graeme & Rebecca · Edinburgh · 5 December</title>
+<title>Ceremony Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,450;0,9..144,600;1,9..144,450&family=Source+Serif+4:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -519,6 +519,24 @@
   .pl-map-frame-wrap iframe{ width:100%; height:440px; border:0; display:block; }
   .pl-map-remove{ position:absolute; top:6px; right:6px; }
   .pl-section-map{ margin-top:24px; padding-top:20px; border-top:1px solid var(--line); }
+  .photos-subtabs{ display:flex; gap:6px; margin-bottom:16px; }
+  .photos-subtab{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.04em; padding:7px 16px; border-radius:20px; border:1px solid var(--line); background:transparent; color:rgba(43,42,40,.55); cursor:pointer; transition:all .15s ease; }
+  .photos-subtab:hover{ border-color:var(--heather); color:var(--heather); }
+  .photos-subtab.active{ background:var(--ink); color:var(--parchment); border-color:var(--ink); }
+  .idea-group{ margin-bottom:22px; }
+  .idea-group-title{ font-family:'Fraunces', serif; font-weight:600; font-size:14.5px; margin:0 0 8px; display:flex; align-items:baseline; gap:8px; }
+  .idea-group-count{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:rgba(43,42,40,.4); font-weight:400; }
+  .idea-row{ display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); }
+  .idea-row:last-child{ border-bottom:none; }
+  .idea-row input[type="checkbox"]{ width:16px; height:16px; accent-color:var(--holyrood); flex:none; cursor:pointer; }
+  .idea-row span.idea-text{ flex:1; font-size:13px; }
+  .idea-row.done span.idea-text{ text-decoration:line-through; color:rgba(43,42,40,.4); }
+  .idea-row .idea-del{ font-family:'IBM Plex Mono',monospace; font-size:12px; width:20px; height:20px; border-radius:50%; background:none; border:none; color:rgba(43,42,40,.3); cursor:pointer; opacity:0; transition:opacity .12s ease; }
+  .idea-row:hover .idea-del{ opacity:1; }
+  .idea-row .idea-del:hover{ color:var(--rose); }
+  .idea-add-row{ display:flex; gap:8px; margin-top:6px; }
+  .idea-add-input{ flex:1; font-family:'Source Serif 4', serif; font-size:13px; border:1px dashed var(--line); border-radius:3px; padding:6px 10px; background:transparent; }
+  .idea-add-input:focus{ border-color:var(--heather); outline:none; }
   .pl-section-map-title{ font-family:'Fraunces', serif; font-weight:600; font-size:15px; margin:0 0 4px; }
   .pl-section-map-sub{ font-family:'Source Serif 4', serif; font-size:12px; color:rgba(43,42,40,.55); margin:0 0 10px; }
   .pl-gallery{ margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
@@ -567,6 +585,9 @@
   .mode-badge{ font-family:'IBM Plex Mono', monospace; font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; padding:2px 7px; border-radius:9px; border:1px solid var(--line); }
   .mode-badge.cloud{ color:var(--holyrood); border-color:var(--holyrood); }
   .mode-badge.local{ color:var(--gold); border-color:var(--gold); background:rgba(201,161,92,0.08); }
+  .sync-flag{ font-family:'IBM Plex Mono', monospace; font-size:10px; color:rgba(43,42,40,0.45); }
+  .sync-flag.syncing{ color:var(--gold); }
+  .sync-flag.error{ color:var(--rose); }
 
   footer{
     max-width:1180px; margin:0 auto; padding:20px 32px 50px;
@@ -739,7 +760,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v17</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v18</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -759,6 +780,7 @@
     <span id="storage-mode-badge" class="mode-badge">—</span>
     <span id="sync-status" data-status="saved">All changes saved to your account</span>
     <button class="info-toggle" onclick="toggleModeInfo()" title="What does this mean?">?</button>
+    <span id="github-sync-flag" class="sync-flag" hidden></span>
   </span>
   <button id="sync-now-btn" onclick="syncNow()">Sync now</button>
 </div>
@@ -940,11 +962,23 @@
 
   <!-- PHOTO LOCATIONS -->
   <section class="panel" id="panel-photos">
-    <h2 class="section-title">Photo locations</h2>
-    <p class="section-sub">Research spots around Edinburgh for ceremony and portrait photography. December light is golden but brief — note which locations have shelter or indoor fallback options.</p>
-    <div id="photo-locations-container"></div>
-    <button class="ghost" onclick="addPhotoLocation()" style="margin-top:4px;">+ Add location</button>
-    <div id="photo-locations-map-container" class="pl-section-map"></div>
+    <h2 class="section-title">Photos</h2>
+    <div class="photos-subtabs" id="photos-subtabs">
+      <button class="photos-subtab" data-subtab="locations" onclick="setPhotosSubTab('locations')">Locations</button>
+      <button class="photos-subtab" data-subtab="ideas" onclick="setPhotosSubTab('ideas')">Shot list</button>
+    </div>
+
+    <div id="photos-view-locations">
+      <p class="section-sub">Research spots around Edinburgh for ceremony and portrait photography. December light is golden but brief — note which locations have shelter or indoor fallback options.</p>
+      <div id="photo-locations-container"></div>
+      <button class="ghost" onclick="addPhotoLocation()" style="margin-top:4px;">+ Add location</button>
+      <div id="photo-locations-map-container" class="pl-section-map"></div>
+    </div>
+
+    <div id="photos-view-ideas" style="display:none;">
+      <p class="section-sub">A starter shot list of classic compositions and Edinburgh-specific shots — tick off what you want, add your own, delete anything that's not for you.</p>
+      <div id="photo-ideas-container"></div>
+    </div>
   </section>
 
   <div id="pl-lightbox">
@@ -957,8 +991,9 @@
 <div id="toast-container"></div>
 
 <footer>
-  <span class="footer-label">Private planning board · auto-backup every 20 min · v10</span>
+  <span class="footer-label" id="footer-version-label">Private planning board · auto-backup every 20 min</span>
   <span class="footer-actions">
+    <button class="footer-btn" onclick="openGithubSyncModal()">☁ GitHub Sync</button>
     <button class="footer-btn" onclick="openAutoBackupModal()">🕐 Auto-backups <span id="autobackup-count"></span></button>
     <button class="footer-btn" onclick="exportSpreadsheet()">📊 Export .xlsx</button>
     <button class="footer-btn footer-btn-primary" onclick="exportBackup()">⬇ Download backup</button>
@@ -967,6 +1002,17 @@
     <button class="footer-btn footer-btn-danger" onclick="resetAll()">Reset all</button>
   </span>
 </footer>
+
+<div class="modal-overlay" id="github-sync-overlay" onclick="if(event.target===this) closeGithubSyncModal()">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h3>GitHub Sync</h3>
+      <button class="modal-close" onclick="closeGithubSyncModal()">×</button>
+    </div>
+    <p class="modal-sub">Keeps this board's data in a JSON file in a GitHub repo of your choice, so the same data shows up wherever you open this dashboard from. Debounced a few seconds after each change, not per keystroke.</p>
+    <div id="github-sync-form"></div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="autobackup-overlay" onclick="if(event.target===this) closeAutoBackupModal()">
   <div class="modal-panel">
@@ -1184,18 +1230,35 @@ const ALL_TABS = [
   {id:'script',     label:'Script & Vows'},
   {id:'enquiries',  label:'Enquiries'},
   {id:'timeline',   label:'Trip Timeline'},
-  {id:'photos',     label:'Photo Locations'},
+  {id:'photos',     label:'Photos'},
   {id:'guests',     label:'Guests & Sharing'},
   {id:'decisions',  label:'Notes & Actions'},
 ];
 function seedNavOrder(){ return ALL_TABS.map(t => t.id); }
 function seedPhotoLocations(){ return []; }
+function seedPhotoIdeas(){
+  const mk = (category, text) => ({id:uid(), category, text, done:false});
+  return [
+    ...['Flat lay: rings, invitation, flowers','Getting dressed / final touches','First look with wedding party','Details of the outfit close-up'].map(t=>mk('Getting ready', t)),
+    ...['Walking down the aisle','Exchange of rings, close-up','The first kiss','Signing the register','Confetti / celebratory exit'].map(t=>mk('Ceremony', t)),
+    ...['Silhouette against the sky','Forehead-touch close-up','Walking away, hand in hand','Twirl / dance movement shot','Veil caught in the wind','Quiet unposed candid moment'].map(t=>mk('Couple portraits', t)),
+    ...['Full group photo','Immediate family only','Bridal party formal line-up','Candid laughing group shot'].map(t=>mk('Family & group', t)),
+    ...['Rings, macro shot','Shoes','Bouquet flat lay','Table setting / place names'].map(t=>mk('Details', t)),
+    ...['Royal Mile backdrop','Arthur\'s Seat skyline','Georgian doorway / architecture','December golden hour / fairy lights','Castle in the background'].map(t=>mk('Edinburgh & location', t)),
+  ];
+}
 
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v17';
+const APP_VERSION = 'v18';
 const CHANGELOG = [
+  { version:'v18', date:'2026-08-07', notes:[
+    'Fixed version badge overlapping the header text',
+    '"Photo locations" is now "Photos", with two tabs: Locations (as before) and a new Shot list — a starter checklist of classic + Edinburgh-specific compositions, fully editable',
+    'GitHub auto-sync, same as Travel Ledger: set it up once in the new footer button, then every change pushes automatically — no more pasting tokens into chat',
+    'Browser tab title set to "Ceremony Dashboard"'
+  ]},
   { version:'v17', date:'2026-08-07', notes:[
     'Budget line items can now be reordered with ▲▼ buttons',
     'Redesigned paid-in-full tracking: "Deposit paid" renamed to "Paid to date", and it now auto-fills and locks to match the total whenever a line is marked Paid in full — balance due can no longer contradict the status',
@@ -1252,7 +1315,9 @@ let STATE = {
   navOrder: seedNavOrder(),
   photoLocations: seedPhotoLocations(),
   photoLocationsMap: '',
-  plTagOptions: seedPlTagOptions()
+  plTagOptions: seedPlTagOptions(),
+  photoIdeas: seedPhotoIdeas(),
+  githubSettings: {enabled:false, token:'', owner:'', repo:'', path:'ceremony-data.json', branch:'main', sha:null, lastSyncAt:null}
 };
 
 /* ============================= STORAGE ============================= */
@@ -1285,6 +1350,7 @@ async function persist(key, value){
     retryCounts[key] = 0;
     if(retryTimers[key]){ clearTimeout(retryTimers[key]); delete retryTimers[key]; }
     setSyncStatus(dirtyKeys.size ? 'saving' : 'saved');
+    if(key !== 'githubSettings') scheduleGithubSync();
   }catch(e){
     console.error('Storage error —', key, e);
     setSyncStatus('error', key);
@@ -1299,6 +1365,188 @@ async function persist(key, value){
 function scheduleSave(key){
   clearTimeout(saveTimers[key]);
   saveTimers[key] = setTimeout(() => persist(key, STATE[key]), 450);
+}
+
+/* ============================= GITHUB SYNC ============================= */
+function utf8ToBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
+function base64ToUtf8(b64){ return decodeURIComponent(escape(atob((b64||'').replace(/\n/g,'')))); }
+function githubConfigured(){
+  const s = STATE.githubSettings;
+  return !!(s && s.enabled && s.token && s.owner && s.repo && s.path);
+}
+function githubApiUrl(){
+  const s = STATE.githubSettings;
+  const pathParts = s.path.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  return `https://api.github.com/repos/${encodeURIComponent(s.owner)}/${encodeURIComponent(s.repo)}/contents/${pathParts}`;
+}
+function githubSyncableData(){
+  // Everything except the sync settings themselves — that's where the token lives.
+  const { githubSettings, ...rest } = STATE;
+  return rest;
+}
+function setGithubSyncStatus(kind, text){
+  const el = document.getElementById('github-sync-flag');
+  if(!el) return;
+  if(!text){ el.hidden = true; return; }
+  el.hidden = false;
+  el.textContent = text;
+  el.className = 'sync-flag' + (kind ? ' ' + kind : '');
+}
+function formatSyncTime(ts){
+  if(!ts) return 'never';
+  return new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+async function githubFetchRemote(){
+  const s = STATE.githubSettings;
+  const res = await fetch(`${githubApiUrl()}?ref=${encodeURIComponent(s.branch||'main')}`, {
+    headers: { 'Authorization': `token ${s.token}`, 'Accept': 'application/vnd.github+json' }
+  });
+  if(res.status === 404) return { exists:false, json:null, sha:null };
+  if(res.status === 401 || res.status === 403) throw new Error('github-auth-failed');
+  if(!res.ok) throw new Error('github-fetch-failed:' + res.status);
+  const data = await res.json();
+  let json = null;
+  try{ json = JSON.parse(base64ToUtf8(data.content)); }catch(e){ throw new Error('github-bad-content'); }
+  return { exists:true, json, sha: data.sha };
+}
+async function githubPushRemote(retrying){
+  const s = STATE.githubSettings;
+  const payload = JSON.stringify(githubSyncableData());
+  const body = {
+    message: `Ceremony dashboard sync — ${new Date().toISOString()}`,
+    content: utf8ToBase64(payload),
+    branch: s.branch || 'main'
+  };
+  if(s.sha) body.sha = s.sha;
+  const res = await fetch(githubApiUrl(), {
+    method: 'PUT',
+    headers: { 'Authorization': `token ${s.token}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if(res.status === 409 && !retrying){
+    // Stale sha (edited elsewhere) — refresh once and retry.
+    const remote = await githubFetchRemote();
+    s.sha = remote.sha;
+    return githubPushRemote(true);
+  }
+  if(res.status === 401 || res.status === 403) throw new Error('github-auth-failed');
+  if(!res.ok){
+    const errBody = await res.json().catch(()=>({}));
+    throw new Error('github-push-failed:' + res.status + (errBody.message ? ':' + errBody.message : ''));
+  }
+  const data = await res.json();
+  s.sha = data.content.sha;
+  s.lastSyncAt = Date.now();
+}
+let githubSyncTimer = null;
+function scheduleGithubSync(){
+  if(!githubConfigured()) return;
+  setGithubSyncStatus('syncing', '☁ sync pending…');
+  clearTimeout(githubSyncTimer);
+  githubSyncTimer = setTimeout(async () => {
+    setGithubSyncStatus('syncing', '☁ syncing…');
+    try{
+      await githubPushRemote(false);
+      await persist('githubSettings', STATE.githubSettings);
+      setGithubSyncStatus('', `☁ synced ${formatSyncTime(STATE.githubSettings.lastSyncAt)}`);
+    }catch(err){
+      const msg = err.message === 'github-auth-failed' ? '☁ sync failed: check token' : '☁ sync failed';
+      setGithubSyncStatus('error', msg);
+    }
+  }, 4000);
+}
+async function githubPullOnLoad(){
+  if(!githubConfigured()) return;
+  setGithubSyncStatus('syncing', '☁ pulling…');
+  try{
+    const remote = await githubFetchRemote();
+    if(remote.exists && remote.json){
+      const incomingKeys = Object.keys(remote.json).filter(k => k !== 'githubSettings');
+      incomingKeys.forEach(k => { STATE[k] = remote.json[k]; });
+      STATE.githubSettings.sha = remote.sha;
+      STATE.githubSettings.lastSyncAt = Date.now();
+      for(const k of incomingKeys) await persist(k, STATE[k]);
+      await persist('githubSettings', STATE.githubSettings);
+      setGithubSyncStatus('', `☁ synced ${formatSyncTime(STATE.githubSettings.lastSyncAt)}`);
+    } else {
+      setGithubSyncStatus('', '☁ no remote data yet — will create on first save');
+    }
+  }catch(err){
+    const msg = err.message === 'github-auth-failed' ? '☁ pull failed: check token' : '☁ pull failed — using local data';
+    setGithubSyncStatus('error', msg);
+  }
+}
+function openGithubSyncModal(){
+  document.getElementById('github-sync-overlay').classList.add('open');
+  renderGithubSyncForm();
+}
+function closeGithubSyncModal(){
+  document.getElementById('github-sync-overlay').classList.remove('open');
+}
+function renderGithubSyncForm(){
+  const s = STATE.githubSettings;
+  const statusLine = !s.enabled ? 'Sync is off.'
+    : !s.token ? 'Enabled, but no token saved yet.'
+    : `Last synced: ${formatSyncTime(s.lastSyncAt)}`;
+  const c = document.getElementById('github-sync-form');
+  c.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin:12px 0 4px;">
+      <input type="checkbox" id="gh-enabled" style="width:auto;" ${s.enabled?'checked':''}>
+      <label style="margin:0;font-size:13px;" for="gh-enabled">Enable automatic sync to GitHub</label>
+    </div>
+    <label class="field-label">Personal Access Token</label>
+    <input class="field-input" id="gh-token" type="password" value="${escapeHtml(s.token||'')}" placeholder="ghp_… or github_pat_…" autocomplete="off">
+    <div style="display:flex;gap:10px;">
+      <div style="flex:1;"><label class="field-label">Repo Owner</label><input class="field-input" id="gh-owner" type="text" value="${escapeHtml(s.owner||'')}" placeholder="e.g. Ello2003"></div>
+      <div style="flex:1;"><label class="field-label">Repo Name</label><input class="field-input" id="gh-repo" type="text" value="${escapeHtml(s.repo||'')}" placeholder="e.g. ceremony-dashboard"></div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <div style="flex:1;"><label class="field-label">File Path</label><input class="field-input" id="gh-path" type="text" value="${escapeHtml(s.path||'ceremony-data.json')}"></div>
+      <div style="flex:1;"><label class="field-label">Branch</label><input class="field-input" id="gh-branch" type="text" value="${escapeHtml(s.branch||'main')}"></div>
+    </div>
+    <p id="gh-status" style="font-size:12px;color:rgba(43,42,40,0.55);font-family:'IBM Plex Mono',monospace;margin:10px 0;">${escapeHtml(statusLine)}</p>
+    <p style="font-size:12px;color:rgba(43,42,40,0.55);line-height:1.5;">
+      Data syncs to a JSON file in this repo, kept separate from index.html itself. Use a <strong>fine-grained</strong> token scoped to only this repo with <strong>Contents: Read and write</strong> permission — not a broad classic token. The token is saved only in this browser's storage: it's never written into the synced file, committed to the repo, or included in downloaded backups.
+    </p>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">
+      <button class="footer-btn" id="gh-cancel">Cancel</button>
+      <button class="footer-btn" id="gh-sync-now">Sync now</button>
+      <button class="footer-btn footer-btn-primary" id="gh-save">Save</button>
+    </div>
+  `;
+  document.getElementById('gh-cancel').addEventListener('click', closeGithubSyncModal);
+  document.getElementById('gh-sync-now').addEventListener('click', async () => {
+    const statusEl = document.getElementById('gh-status');
+    statusEl.textContent = 'Syncing…';
+    try{
+      if(!githubConfigured()){ statusEl.textContent = 'Fill in and save the fields above first.'; return; }
+      await githubPushRemote(false);
+      await persist('githubSettings', STATE.githubSettings);
+      statusEl.textContent = `Synced just now (${formatSyncTime(STATE.githubSettings.lastSyncAt)})`;
+      setGithubSyncStatus('', `☁ synced ${formatSyncTime(STATE.githubSettings.lastSyncAt)}`);
+    }catch(err){
+      statusEl.textContent = err.message === 'github-auth-failed' ? 'Sync failed: check your token and permissions.' : 'Sync failed — check repo/path/branch are correct.';
+    }
+  });
+  document.getElementById('gh-save').addEventListener('click', async () => {
+    s.enabled = document.getElementById('gh-enabled').checked;
+    s.token = document.getElementById('gh-token').value.trim();
+    s.owner = document.getElementById('gh-owner').value.trim();
+    s.repo = document.getElementById('gh-repo').value.trim();
+    s.path = document.getElementById('gh-path').value.trim() || 'ceremony-data.json';
+    s.branch = document.getElementById('gh-branch').value.trim() || 'main';
+    await persist('githubSettings', s);
+    closeGithubSyncModal();
+    if(githubConfigured()){
+      showToast('Saved — syncing now…', [], 4000);
+      scheduleGithubSync();
+    } else if(s.enabled){
+      showToast('Saved — fill in token, owner and repo to start syncing', [], 5000);
+    } else {
+      showToast('Saved', [], 3000);
+      setGithubSyncStatus('', '');
+    }
+  });
 }
 
 async function syncNow(){
@@ -1334,7 +1582,7 @@ function applyModeCopy(){
 }
 
 async function loadAll(){
-  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoLocationsMap','plTagOptions'];
+  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoLocationsMap','plTagOptions','photoIdeas','githubSettings'];
   for(const k of keys){
     try{
       const res = await window.storage.get(k, false);
@@ -1380,7 +1628,9 @@ async function resetAll(){
     navOrder: seedNavOrder(),
     photoLocations: seedPhotoLocations(),
     photoLocationsMap: '',
-    plTagOptions: seedPlTagOptions()
+    plTagOptions: seedPlTagOptions(),
+    photoIdeas: seedPhotoIdeas(),
+    githubSettings: {enabled:false, token:'', owner:'', repo:'', path:'ceremony-data.json', branch:'main', sha:null, lastSyncAt:null}
   };
   for(const k of Object.keys(STATE)) await persist(k, STATE[k]);
   renderAll();
@@ -1548,7 +1798,7 @@ document.getElementById('autobackup-list').addEventListener('click', async (e) =
   try{
     const res = await window.storage.get('autobackup:' + id, false);
     const snap = JSON.parse(res.value);
-    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations'];
+    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoIdeas'];
     required.forEach(k => { if(snap.data[k] !== undefined) STATE[k] = snap.data[k]; });
     for(const k of required) await persist(k, STATE[k]);
     renderAll();
@@ -1576,7 +1826,7 @@ async function exportBackup(){
   const payload = {
     exportedAt: new Date().toISOString(),
     source: 'Edinburgh ceremony dashboard',
-    data: STATE,
+    data: { ...STATE, githubSettings: STATE.githubSettings ? { ...STATE.githubSettings, token: '' } : undefined },
     attachmentFiles
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
@@ -1590,7 +1840,7 @@ document.getElementById('restore-input').addEventListener('change', async (e) =>
     const text = await file.text();
     const parsed = JSON.parse(text);
     const incoming = parsed.data || parsed; // allow raw-state files too
-    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations'];
+    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoIdeas'];
     const hasShape = required.some(k => k in incoming);
     if(!hasShape){ alert('This file doesn\'t look like a ceremony dashboard backup.'); e.target.value=''; return; }
     if(!confirm('Restoring will replace everything currently on this board with the contents of the backup. Continue?')){ e.target.value=''; return; }
@@ -3110,6 +3360,90 @@ document.getElementById('photo-locations-map-container').addEventListener('click
   renderPhotoLocationsMap();
 });
 
+/* ============================= PHOTOS SUB-TABS ============================= */
+let photosSubTab = 'locations';
+function setPhotosSubTab(tab){
+  photosSubTab = tab;
+  document.getElementById('photos-view-locations').style.display = tab === 'locations' ? '' : 'none';
+  document.getElementById('photos-view-ideas').style.display = tab === 'ideas' ? '' : 'none';
+  document.querySelectorAll('.photos-subtab').forEach(btn => btn.classList.toggle('active', btn.dataset.subtab === tab));
+  if(tab === 'ideas') renderPhotoIdeas();
+}
+
+/* ============================= SHOT LIST (photo ideas) ============================= */
+function renderPhotoIdeas(){
+  const c = document.getElementById('photo-ideas-container');
+  if(!c) return;
+  const groups = {};
+  (STATE.photoIdeas||[]).forEach(idea => { (groups[idea.category] = groups[idea.category]||[]).push(idea); });
+  const order = [...new Set([
+    'Getting ready','Ceremony','Couple portraits','Family & group','Details','Edinburgh & location',
+    ...Object.keys(groups)
+  ])].filter(cat => groups[cat] && groups[cat].length);
+  c.innerHTML = order.map(cat => `
+    <div class="idea-group" data-cat="${escapeHtml(cat)}">
+      <div class="idea-group-title">${escapeHtml(cat)} <span class="idea-group-count">${groups[cat].filter(i=>i.done).length}/${groups[cat].length}</span></div>
+      ${groups[cat].map(idea => `
+        <div class="idea-row ${idea.done?'done':''}" data-id="${idea.id}">
+          <input type="checkbox" ${idea.done?'checked':''} data-action="toggle-idea">
+          <span class="idea-text">${escapeHtml(idea.text)}</span>
+          <button class="idea-del" data-action="del-idea" title="Remove">×</button>
+        </div>`).join('')}
+      <div class="idea-add-row">
+        <input type="text" class="idea-add-input" placeholder="+ Add your own idea for ${escapeHtml(cat)}, press Enter">
+      </div>
+    </div>`).join('') + `
+    <div class="idea-group" data-cat="__new">
+      <div class="idea-group-title">Add a new category</div>
+      <div class="idea-add-row">
+        <input type="text" class="idea-add-input" id="idea-new-cat-input" placeholder="New category name, press Enter">
+      </div>
+    </div>`;
+}
+document.getElementById('photo-ideas-container').addEventListener('click', (e) => {
+  const row = e.target.closest('.idea-row'); if(!row) return;
+  const idea = STATE.photoIdeas.find(i => i.id === row.dataset.id); if(!idea) return;
+  if(e.target.dataset.action === 'toggle-idea'){
+    idea.done = e.target.checked;
+    row.classList.toggle('done', idea.done);
+    scheduleSave('photoIdeas');
+    const countEl = row.closest('.idea-group').querySelector('.idea-group-count');
+    if(countEl){
+      const groupIdeas = STATE.photoIdeas.filter(i => i.category === idea.category);
+      countEl.textContent = `${groupIdeas.filter(i=>i.done).length}/${groupIdeas.length}`;
+    }
+    return;
+  }
+  if(e.target.dataset.action === 'del-idea'){
+    STATE.photoIdeas = STATE.photoIdeas.filter(i => i.id !== idea.id);
+    scheduleSave('photoIdeas');
+    renderPhotoIdeas();
+    return;
+  }
+});
+document.getElementById('photo-ideas-container').addEventListener('keydown', (e) => {
+  if(e.key !== 'Enter') return;
+  if(e.target.id === 'idea-new-cat-input'){
+    e.preventDefault();
+    const cat = e.target.value.trim();
+    if(!cat) return;
+    STATE.photoIdeas.push({id:uid(), category:cat, text:'New idea — edit or delete', done:false});
+    scheduleSave('photoIdeas');
+    renderPhotoIdeas();
+    return;
+  }
+  if(e.target.classList.contains('idea-add-input')){
+    e.preventDefault();
+    const text = e.target.value.trim();
+    if(!text) return;
+    const cat = e.target.closest('.idea-group').dataset.cat;
+    STATE.photoIdeas.push({id:uid(), category:cat, text, done:false});
+    scheduleSave('photoIdeas');
+    renderPhotoIdeas();
+  }
+});
+
+
 /* ---- Embedded map helper: accepts a raw link or a full <iframe> embed snippet ---- */
 function extractMapEmbedSrc(raw){
   const trimmed = (raw||'').trim();
@@ -3276,12 +3610,18 @@ function renderAll(){
   renderDecisions();
   renderPhotoLocations();
   renderPhotoLocationsMap();
+  setPhotosSubTab(photosSubTab);
+  const footerLabel = document.getElementById('footer-version-label');
+  if(footerLabel) footerLabel.textContent = `Private planning board · auto-backup every 20 min · ${APP_VERSION}`;
 }
 
 (async function init(){
   applyModeCopy();
   try{
     await loadAll();
+  }catch(e){ console.error(e); }
+  try{
+    await githubPullOnLoad();
   }catch(e){ console.error(e); }
   renderAll();
 
