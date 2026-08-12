@@ -509,6 +509,15 @@
   .pl-tag-add-input:focus{ border-color:var(--heather); outline:none; }
   .photo-location-card .pl-row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .photo-location-card textarea{ width:100%; font-family:'Source Serif 4', serif; font-size:13px; border:1px solid var(--line); border-radius:2px; padding:8px; background:transparent; resize:vertical; min-height:56px; }
+  .pl-shots-list{ border:1px solid var(--line); border-radius:2px; min-height:38px; max-height:130px; overflow-y:auto; }
+  .pl-shot-row{ display:flex; align-items:center; gap:4px; border-bottom:1px solid var(--line); }
+  .pl-shot-row:last-child{ border-bottom:none; }
+  .pl-shot-input{ flex:1; font-family:'Source Serif 4', serif; font-size:12.5px; border:none; background:transparent; padding:6px 8px; }
+  .pl-shot-input:focus{ outline:none; background:rgba(135,120,158,.06); }
+  .pl-shot-del{ font-family:'IBM Plex Mono',monospace; font-size:12px; width:22px; height:22px; flex:none; border:none; background:none; color:rgba(43,42,40,.3); cursor:pointer; margin-right:4px; border-radius:50%; }
+  .pl-shot-del:hover{ color:var(--rose); background:rgba(176,107,69,.1); }
+  .pl-shot-add-input{ width:100%; font-family:'Source Serif 4', serif; font-size:12.5px; border:1px dashed var(--line); border-radius:2px; padding:6px 8px; background:transparent; margin-top:4px; }
+  .pl-shot-add-input:focus{ border-color:var(--heather); outline:none; }
   .photo-location-card .pl-link{ display:flex; gap:6px; align-items:center; margin-top:10px; }
   .photo-location-card .pl-link input{ flex:1; font-family:'IBM Plex Mono', monospace; font-size:11px; border:1px solid var(--line); border-radius:2px; padding:6px 8px; background:transparent; }
   .pl-map{ margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
@@ -568,23 +577,6 @@
   .sync-bar #sync-status[data-status="error"]{ color:var(--rose); }
   .sync-bar button{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; background:none; border:1px solid var(--line); border-radius:2px; padding:4px 9px; cursor:pointer; color:rgba(43,42,40,0.6); }
   .sync-bar button:hover{ border-color:var(--holyrood); color:var(--holyrood); }
-  .info-toggle{
-    width:16px; height:16px; border-radius:50%; border:1px solid var(--line) !important; background:none;
-    font-family:'IBM Plex Mono', monospace; font-size:9.5px; line-height:1; padding:0 !important; cursor:pointer;
-    color:rgba(43,42,40,0.45); display:inline-flex; align-items:center; justify-content:center;
-  }
-  .info-toggle:hover{ border-color:var(--holyrood) !important; color:var(--holyrood); }
-  .mode-info{
-    display:none; max-width:1180px; margin:0 auto; padding:12px 32px 14px; font-size:12.5px; line-height:1.55;
-    color:rgba(43,42,40,0.75); border-bottom:1px solid var(--line); background:var(--parchment-dim);
-  }
-  .mode-info.open{ display:block; }
-  .mode-info strong{ font-family:'Fraunces', serif; font-size:13px; }
-  .mode-info p{ margin:0 0 6px; }
-  .mode-info p:last-child{ margin-bottom:0; }
-  .mode-badge{ font-family:'IBM Plex Mono', monospace; font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; padding:2px 7px; border-radius:9px; border:1px solid var(--line); }
-  .mode-badge.cloud{ color:var(--holyrood); border-color:var(--holyrood); }
-  .mode-badge.local{ color:var(--gold); border-color:var(--gold); background:rgba(201,161,92,0.08); }
   .sync-flag{ font-family:'IBM Plex Mono', monospace; font-size:10px; color:rgba(43,42,40,0.45); }
   .sync-flag.syncing{ color:var(--gold); }
   .sync-flag.error{ color:var(--rose); }
@@ -760,7 +752,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v18</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v19</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -777,16 +769,10 @@
 
 <div class="sync-bar">
   <span style="display:flex; align-items:center; gap:10px;">
-    <span id="storage-mode-badge" class="mode-badge">—</span>
-    <span id="sync-status" data-status="saved">All changes saved to your account</span>
-    <button class="info-toggle" onclick="toggleModeInfo()" title="What does this mean?">?</button>
+    <span id="sync-status" data-status="saved">All changes saved</span>
     <span id="github-sync-flag" class="sync-flag" hidden></span>
   </span>
   <button id="sync-now-btn" onclick="syncNow()">Sync now</button>
-</div>
-<div class="mode-info" id="mode-info">
-  <p><strong id="mode-info-title">—</strong></p>
-  <p id="mode-info-body">—</p>
 </div>
 
 <main>
@@ -999,7 +985,6 @@
     <button class="footer-btn footer-btn-primary" onclick="exportBackup()">⬇ Download backup</button>
     <button class="footer-btn" onclick="document.getElementById('restore-input').click()">⬆ Restore backup</button>
     <input type="file" id="restore-input" accept="application/json" style="display:none;">
-    <button class="footer-btn footer-btn-danger" onclick="resetAll()">Reset all</button>
   </span>
 </footer>
 
@@ -1251,8 +1236,14 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v18';
+const APP_VERSION = 'v19';
 const CHANGELOG = [
+  { version:'v19', date:'2026-08-07', notes:[
+    'Photo locations: "Weather / contingency" replaced with a per-location shot list — add, rename, delete specific shots you want at each spot',
+    'Removed the offline/cloud storage status message and info panel — redundant now that GitHub Sync exists',
+    'Removed "Reset all" from the footer',
+    'Kept auto-backups — they protect against in-session mistakes even when GitHub Sync is on, since GitHub only gets whatever was last pushed'
+  ]},
   { version:'v18', date:'2026-08-07', notes:[
     'Fixed version badge overlapping the header text',
     '"Photo locations" is now "Photos", with two tabs: Locations (as before) and a new Shot list — a starter checklist of classic + Edinburgh-specific compositions, fully editable',
@@ -1334,10 +1325,9 @@ function setSyncStatus(status, detail){
   const el = document.getElementById('sync-status');
   if(!el) return;
   el.dataset.status = status;
-  const savedLabel = STORAGE_MODE === 'local' ? 'All changes saved locally on this device' : 'All changes saved to your account';
   if(status === 'saving') el.textContent = 'Saving…';
   else if(status === 'error') el.textContent = `Sync issue on "${detail}" — retrying automatically`;
-  else el.textContent = savedLabel;
+  else el.textContent = 'All changes saved';
 }
 
 async function persist(key, value){
@@ -1558,27 +1548,9 @@ async function syncNow(){
   }
 }
 
-function toggleModeInfo(){
-  document.getElementById('mode-info').classList.toggle('open');
-}
 function applyModeCopy(){
-  const badge = document.getElementById('storage-mode-badge');
   const syncBtn = document.getElementById('sync-now-btn');
-  const title = document.getElementById('mode-info-title');
-  const body = document.getElementById('mode-info-body');
-  if(STORAGE_MODE === 'local'){
-    badge.textContent = 'Offline · this device';
-    badge.className = 'mode-badge local';
-    syncBtn.textContent = 'Save now';
-    title.textContent = "You're in offline mode.";
-    body.textContent = "This copy of the file is running without a live connection to Claude.ai — either because you opened it directly (double-clicked, not through Claude) or because there's no internet right now. Everything you type is being saved to this specific browser on this specific device only, using its local storage. It will NOT appear on your Claude account or on any other device — the only way to move this data elsewhere is Download backup, or Export as spreadsheet, and bring that file across yourself. \"Save now\" just forces any pending changes to save immediately instead of waiting a moment — there's nothing external to sync to in this mode.";
-  } else {
-    badge.textContent = 'Synced · your account';
-    badge.className = 'mode-badge cloud';
-    syncBtn.textContent = 'Sync now';
-    title.textContent = "You're in synced mode.";
-    body.textContent = "This copy is running inside Claude.ai, so everything you type is saved to your Claude account — the same account, any device, any browser, as long as you're logged in here. \"Sync now\" forces any changes waiting to save to go immediately, and retries anything that failed, rather than waiting for the normal short delay. It does not connect to Google Sheets, Airtable, or anything outside your Claude account — for that, use the export options in the footer.";
-  }
+  if(syncBtn) syncBtn.textContent = 'Sync now';
 }
 
 async function loadAll(){
@@ -1604,36 +1576,6 @@ async function loadAll(){
   }
   // If phases weren't stored yet, ensure we have the defaults
   if(!STATE.phases || STATE.phases.length === 0) STATE.phases = seedPhases();
-}
-
-async function resetAll(){
-  if(!confirm('This clears every task, budget line, supplier and note on this board. Continue?')) return;
-  STATE = {
-    checklist: seedChecklist(),
-  phases: seedPhases(),
-    budget: [],
-    suppliers: seedSuppliers(),
-    categories: seedCategories(),
-    timeline: [
-      {id:uid(), date:'4 Dec', time:'', activity:'', notes:''},
-      {id:uid(), date:'5 Dec', time:'', activity:'', notes:''},
-    ],
-    decisions: [],
-    script: seedScript(),
-    vows: seedVows(),
-    readings: [],
-    emails: seedEmails(),
-    guests: seedGuests(),
-    share: seedShare(),
-    navOrder: seedNavOrder(),
-    photoLocations: seedPhotoLocations(),
-    photoLocationsMap: '',
-    plTagOptions: seedPlTagOptions(),
-    photoIdeas: seedPhotoIdeas(),
-    githubSettings: {enabled:false, token:'', owner:'', repo:'', path:'ceremony-data.json', branch:'main', sha:null, lastSyncAt:null}
-  };
-  for(const k of Object.keys(STATE)) await persist(k, STATE[k]);
-  renderAll();
 }
 
 /* ============================= BACKUP / RESTORE ============================= */
@@ -3294,7 +3236,17 @@ function renderPhotoLocations(){
       </div>
       <div class="pl-row2">
         <div><label style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:rgba(43,42,40,.5);display:block;margin-bottom:4px;">Notes / description</label><textarea data-f="notes" placeholder="What makes this spot special, what to look out for in December…">${escapeHtml(loc.notes||'')}</textarea></div>
-        <div><label style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:rgba(43,42,40,.5);display:block;margin-bottom:4px;">Weather / contingency</label><textarea data-f="weather" placeholder="What if it's raining? Indoor alternative?">${escapeHtml(loc.weather||'')}</textarea></div>
+        <div>
+          <label style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:rgba(43,42,40,.5);display:block;margin-bottom:4px;">Shots for this location</label>
+          <div class="pl-shots-list">
+            ${(loc.shots||[]).map(shot => `
+              <div class="pl-shot-row" data-shot-id="${shot.id}">
+                <input type="text" class="pl-shot-input" value="${escapeHtml(shot.text)}" placeholder="Describe the shot">
+                <button class="pl-shot-del" data-action="del-pl-shot" title="Remove">×</button>
+              </div>`).join('')}
+          </div>
+          <input type="text" class="pl-shot-add-input" placeholder="+ Add a shot for this location, press Enter">
+        </div>
       </div>
       <div class="pl-link">
         <a class="link-open" href="${loc.link ? (/^https?:\/\//i.test(loc.link)?loc.link:'https://'+loc.link) : '#'}" target="_blank" rel="noopener noreferrer" ${!loc.link?'aria-disabled="true"':''}>↗</a>
@@ -3319,7 +3271,7 @@ function renderPhotoLocations(){
 }
 
 function addPhotoLocation(){
-  STATE.photoLocations.push({id:uid(), name:'', distance:'', status:'idea', tags:[], notes:'', weather:'', link:'', images:[]});
+  STATE.photoLocations.push({id:uid(), name:'', distance:'', status:'idea', tags:[], notes:'', link:'', images:[], shots:[]});
   scheduleSave('photoLocations'); renderPhotoLocations();
 }
 
@@ -3493,6 +3445,14 @@ function readAndCompressImage(file, maxDim=1400, quality=0.75){
 
 document.getElementById('photo-locations-container').addEventListener('input', (e) => {
   const card = e.target.closest('.photo-location-card'); if(!card) return;
+  if(e.target.classList.contains('pl-shot-input')){
+    const loc = STATE.photoLocations.find(x => x.id === card.dataset.id); if(!loc) return;
+    const row = e.target.closest('.pl-shot-row'); if(!row) return;
+    const shot = (loc.shots||[]).find(s => s.id === row.dataset.shotId); if(!shot) return;
+    shot.text = e.target.value;
+    scheduleSave('photoLocations');
+    return;
+  }
   if(!e.target.dataset.f) return;
   const loc = STATE.photoLocations.find(x => x.id === card.dataset.id); if(!loc) return;
   loc[e.target.dataset.f] = e.target.value;
@@ -3527,6 +3487,18 @@ document.getElementById('photo-locations-container').addEventListener('change', 
   renderPhotoLocations();
 });
 document.getElementById('photo-locations-container').addEventListener('keydown', (e) => {
+  if(e.target.classList.contains('pl-shot-add-input') && e.key === 'Enter'){
+    e.preventDefault();
+    const card = e.target.closest('.photo-location-card'); if(!card) return;
+    const loc = STATE.photoLocations.find(x => x.id === card.dataset.id); if(!loc) return;
+    const text = e.target.value.trim();
+    if(!text) return;
+    loc.shots = loc.shots || [];
+    loc.shots.push({id: uid(), text});
+    scheduleSave('photoLocations');
+    renderPhotoLocations();
+    return;
+  }
   if(e.target.classList.contains('pl-tag-add-input') && e.key === 'Enter'){
     e.preventDefault();
     const raw = e.target.value.trim();
@@ -3573,6 +3545,13 @@ document.getElementById('photo-locations-container').addEventListener('click', (
     STATE.photoLocations.forEach(loc => { if(loc.tags) loc.tags = loc.tags.filter(t => t !== tag); });
     scheduleSave('plTagOptions'); scheduleSave('photoLocations');
     renderPhotoLocations(); return;
+  }
+  if(e.target.dataset.action === 'del-pl-shot'){
+    const card = e.target.closest('.photo-location-card'); if(!card) return;
+    const loc = STATE.photoLocations.find(x => x.id === card.dataset.id); if(!loc) return;
+    const row = e.target.closest('.pl-shot-row'); if(!row) return;
+    loc.shots = (loc.shots||[]).filter(s => s.id !== row.dataset.shotId);
+    scheduleSave('photoLocations'); renderPhotoLocations(); return;
   }
   if(e.target.dataset.action === 'del-pl-image'){
     const card = e.target.closest('.photo-location-card'); if(!card) return;
