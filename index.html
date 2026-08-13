@@ -535,14 +535,27 @@
   .idea-group{ margin-bottom:22px; }
   .idea-group-title{ font-family:'Fraunces', serif; font-weight:600; font-size:14.5px; margin:0 0 8px; display:flex; align-items:baseline; gap:8px; }
   .idea-group-count{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:rgba(43,42,40,.4); font-weight:400; }
-  .idea-row{ display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); }
-  .idea-row:last-child{ border-bottom:none; }
+  .idea-row{ display:flex; align-items:center; gap:8px; padding:7px 0; }
   .idea-row input[type="checkbox"]{ width:16px; height:16px; accent-color:var(--holyrood); flex:none; cursor:pointer; }
-  .idea-row span.idea-text{ flex:1; font-size:13px; }
-  .idea-row.done span.idea-text{ text-decoration:line-through; color:rgba(43,42,40,.4); }
-  .idea-row .idea-del{ font-family:'IBM Plex Mono',monospace; font-size:12px; width:20px; height:20px; border-radius:50%; background:none; border:none; color:rgba(43,42,40,.3); cursor:pointer; opacity:0; transition:opacity .12s ease; }
-  .idea-row:hover .idea-del{ opacity:1; }
+  .idea-text-input{ flex:1; font-family:'Source Serif 4', serif; font-size:13px; border:none; background:transparent; padding:3px 5px; border-radius:2px; }
+  .idea-text-input:focus{ outline:none; background:rgba(135,120,158,.07); }
+  .idea-row.done .idea-text-input{ text-decoration:line-through; color:rgba(43,42,40,.4); }
+  .idea-photo-toggle{ font-family:'IBM Plex Mono',monospace; font-size:10px; border:1px solid var(--line); border-radius:10px; padding:2px 8px; background:none; color:rgba(43,42,40,.45); cursor:pointer; flex:none; }
+  .idea-photo-toggle:hover{ border-color:var(--heather); color:var(--heather); }
+  .idea-photo-toggle.has-photos{ border-color:var(--holyrood); color:var(--holyrood); }
+  .idea-row .idea-del{ font-family:'IBM Plex Mono',monospace; font-size:12px; width:20px; height:20px; border-radius:50%; background:none; border:none; color:rgba(43,42,40,.3); cursor:pointer; opacity:0; transition:opacity .12s ease; flex:none; }
+  .idea-row-wrap:hover .idea-del{ opacity:1; }
   .idea-row .idea-del:hover{ color:var(--rose); }
+  .idea-row-wrap{ border-bottom:1px solid var(--line); }
+  .idea-row-wrap:last-child{ border-bottom:none; }
+  .idea-photos-panel{ padding:0 0 12px 24px; }
+  .idea-photos-grid{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .idea-img-thumb{ position:relative; width:64px; height:64px; border-radius:3px; overflow:hidden; border:1px solid var(--line); cursor:zoom-in; background:var(--parchment-dim); }
+  .idea-img-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .idea-img-thumb .pl-img-del{ width:16px; height:16px; line-height:14px; font-size:10px; top:2px; right:2px; }
+  .idea-photos-add{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .idea-photos-add .pl-upload-btn{ font-size:10px; padding:4px 8px; }
+  .idea-photos-add .pl-image-url-input{ font-size:10px; padding:4px 8px; flex:1; min-width:120px; }
   .idea-add-row{ display:flex; gap:8px; margin-top:6px; }
   .idea-add-input{ flex:1; font-family:'Source Serif 4', serif; font-size:13px; border:1px dashed var(--line); border-radius:3px; padding:6px 10px; background:transparent; }
   .idea-add-input:focus{ border-color:var(--heather); outline:none; }
@@ -752,7 +765,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v19</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v20</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -854,10 +867,22 @@
   </section>
 
   <!-- SUPPLIERS -->
-  <section class="panel" id="panel-suppliers">
-    <h2 class="section-title">Suppliers</h2>
-    <p class="section-sub">One board per category — venue, celebrant, photographer, and so on. Add options as we research them, and mark status as things progress.</p>
-    <div id="suppliers-container"></div>
+  <section class="panel" id="panel-research">
+    <h2 class="section-title">Research</h2>
+    <div class="photos-subtabs" id="research-subtabs">
+      <button class="photos-subtab" data-subtab="suppliers" onclick="setResearchSubTab('suppliers')">Suppliers</button>
+      <button class="photos-subtab" data-subtab="enquiries" onclick="setResearchSubTab('enquiries')">Enquiries</button>
+    </div>
+
+    <div id="research-view-suppliers">
+      <p class="section-sub">One board per category — venue, celebrant, photographer, and so on. Add options as we research them, and mark status as things progress.</p>
+      <div id="suppliers-container"></div>
+    </div>
+
+    <div id="research-view-enquiries" style="display:none;">
+      <p class="section-sub">A ready-to-send email template for each category, pre-filled with your event details. Edit freely, then copy or open directly in your mail app.</p>
+      <div id="enquiries-container"></div>
+    </div>
   </section>
 
   <!-- SCRIPT & VOWS -->
@@ -880,13 +905,6 @@
     <h3 class="sub-head">Readings</h3>
     <div id="readings-container"></div>
     <button class="ghost" onclick="addReading()" style="margin-top:6px;">+ Add reading</button>
-  </section>
-
-  <!-- ENQUIRIES -->
-  <section class="panel" id="panel-enquiries">
-    <h2 class="section-title">Supplier enquiries</h2>
-    <p class="section-sub">A ready-to-send email template for each category, pre-filled with your event details. Edit freely, then copy or open directly in your mail app.</p>
-    <div id="enquiries-container"></div>
   </section>
 
   <!-- TIMELINE -->
@@ -1211,9 +1229,8 @@ const ALL_TABS = [
   {id:'overview',   label:'Overview'},
   {id:'checklist',  label:'Checklist'},
   {id:'budget',     label:'Budget'},
-  {id:'suppliers',  label:'Suppliers'},
+  {id:'research',   label:'Research'},
   {id:'script',     label:'Script & Vows'},
-  {id:'enquiries',  label:'Enquiries'},
   {id:'timeline',   label:'Trip Timeline'},
   {id:'photos',     label:'Photos'},
   {id:'guests',     label:'Guests & Sharing'},
@@ -1222,7 +1239,7 @@ const ALL_TABS = [
 function seedNavOrder(){ return ALL_TABS.map(t => t.id); }
 function seedPhotoLocations(){ return []; }
 function seedPhotoIdeas(){
-  const mk = (category, text) => ({id:uid(), category, text, done:false});
+  const mk = (category, text) => ({id:uid(), category, text, done:false, images:[]});
   return [
     ...['Flat lay: rings, invitation, flowers','Getting dressed / final touches','First look with wedding party','Details of the outfit close-up'].map(t=>mk('Getting ready', t)),
     ...['Walking down the aisle','Exchange of rings, close-up','The first kiss','Signing the register','Confetti / celebratory exit'].map(t=>mk('Ceremony', t)),
@@ -1236,8 +1253,12 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v19';
+const APP_VERSION = 'v20';
 const CHANGELOG = [
+  { version:'v20', date:'2026-08-07', notes:[
+    'Shot list redesigned: idea text is now directly editable (click and type), and each idea can have its own example/reference photos — upload or paste a URL, with the same lightbox viewer as Photo locations',
+    'Suppliers and Enquiries merged into a single "Research" tab with Suppliers/Enquiries sub-tabs, for a cleaner nav'
+  ]},
   { version:'v19', date:'2026-08-07', notes:[
     'Photo locations: "Weather / contingency" replaced with a per-location shot list — add, rename, delete specific shots you want at each spot',
     'Removed the offline/cloud storage status message and info panel — redundant now that GitHub Sync exists',
@@ -1809,8 +1830,11 @@ let activePanel = 'overview';
 
 function renderNav(){
   const nav = document.getElementById('tabs');
-  // Ensure navOrder has all tabs (backwards compat: add any new tabs missing from stored order)
+  // Backwards compat: drop any tab ids that no longer exist (e.g. old separate
+  // Suppliers/Enquiries tabs, now merged into Research), then add any new ones.
+  STATE.navOrder = STATE.navOrder.filter(id => ALL_TABS.some(t => t.id === id));
   ALL_TABS.forEach(t => { if(!STATE.navOrder.includes(t.id)) STATE.navOrder.push(t.id); });
+  if(!ALL_TABS.some(t => t.id === activePanel)) activePanel = 'overview';
   nav.innerHTML = STATE.navOrder.map((id, idx) => {
     const tab = ALL_TABS.find(t => t.id === id);
     if(!tab) return '';
@@ -3318,8 +3342,17 @@ function setPhotosSubTab(tab){
   photosSubTab = tab;
   document.getElementById('photos-view-locations').style.display = tab === 'locations' ? '' : 'none';
   document.getElementById('photos-view-ideas').style.display = tab === 'ideas' ? '' : 'none';
-  document.querySelectorAll('.photos-subtab').forEach(btn => btn.classList.toggle('active', btn.dataset.subtab === tab));
+  document.querySelectorAll('#photos-subtabs .photos-subtab').forEach(btn => btn.classList.toggle('active', btn.dataset.subtab === tab));
   if(tab === 'ideas') renderPhotoIdeas();
+}
+
+/* ============================= RESEARCH SUB-TABS (Suppliers + Enquiries) ============================= */
+let researchSubTab = 'suppliers';
+function setResearchSubTab(tab){
+  researchSubTab = tab;
+  document.getElementById('research-view-suppliers').style.display = tab === 'suppliers' ? '' : 'none';
+  document.getElementById('research-view-enquiries').style.display = tab === 'enquiries' ? '' : 'none';
+  document.querySelectorAll('#research-subtabs .photos-subtab').forEach(btn => btn.classList.toggle('active', btn.dataset.subtab === tab));
 }
 
 /* ============================= SHOT LIST (photo ideas) ============================= */
@@ -3335,12 +3368,31 @@ function renderPhotoIdeas(){
   c.innerHTML = order.map(cat => `
     <div class="idea-group" data-cat="${escapeHtml(cat)}">
       <div class="idea-group-title">${escapeHtml(cat)} <span class="idea-group-count">${groups[cat].filter(i=>i.done).length}/${groups[cat].length}</span></div>
-      ${groups[cat].map(idea => `
-        <div class="idea-row ${idea.done?'done':''}" data-id="${idea.id}">
-          <input type="checkbox" ${idea.done?'checked':''} data-action="toggle-idea">
-          <span class="idea-text">${escapeHtml(idea.text)}</span>
-          <button class="idea-del" data-action="del-idea" title="Remove">×</button>
-        </div>`).join('')}
+      ${groups[cat].map(idea => {
+        const imgs = idea.images || [];
+        return `
+        <div class="idea-row-wrap" data-id="${idea.id}">
+          <div class="idea-row ${idea.done?'done':''}">
+            <input type="checkbox" ${idea.done?'checked':''} data-action="toggle-idea">
+            <input type="text" class="idea-text-input" value="${escapeHtml(idea.text)}" placeholder="Describe the shot">
+            <button class="idea-photo-toggle ${imgs.length?'has-photos':''}" data-action="toggle-idea-photos" title="Example photos">📷${imgs.length?' '+imgs.length:''}</button>
+            <button class="idea-del" data-action="del-idea" title="Remove">×</button>
+          </div>
+          <div class="idea-photos-panel" style="display:${idea._expanded?'block':'none'};">
+            <div class="idea-photos-grid">
+              ${imgs.map(img => `
+                <div class="idea-img-thumb" data-action="open-pl-lightbox" data-src="${escapeHtml(img.src)}">
+                  <img src="${escapeHtml(img.src)}" alt="Example for ${escapeHtml(idea.text)}" loading="lazy">
+                  <button class="pl-img-del" data-action="del-idea-image" data-img-id="${img.id}" title="Remove">×</button>
+                </div>`).join('')}
+            </div>
+            <div class="idea-photos-add">
+              <label class="pl-upload-btn">+ Upload example<input type="file" accept="image/*" multiple class="idea-image-file" hidden></label>
+              <input type="text" class="idea-image-url-input pl-image-url-input" placeholder="or paste an image URL, press Enter">
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
       <div class="idea-add-row">
         <input type="text" class="idea-add-input" placeholder="+ Add your own idea for ${escapeHtml(cat)}, press Enter">
       </div>
@@ -3352,14 +3404,24 @@ function renderPhotoIdeas(){
       </div>
     </div>`;
 }
+document.getElementById('photo-ideas-container').addEventListener('input', (e) => {
+  if(e.target.classList.contains('idea-text-input')){
+    const wrap = e.target.closest('.idea-row-wrap'); if(!wrap) return;
+    const idea = STATE.photoIdeas.find(i => i.id === wrap.dataset.id); if(!idea) return;
+    idea.text = e.target.value;
+    scheduleSave('photoIdeas');
+  }
+});
 document.getElementById('photo-ideas-container').addEventListener('click', (e) => {
-  const row = e.target.closest('.idea-row'); if(!row) return;
-  const idea = STATE.photoIdeas.find(i => i.id === row.dataset.id); if(!idea) return;
+  const thumb = e.target.closest('[data-action="open-pl-lightbox"]');
+  if(thumb){ openPlLightbox(thumb.dataset.src); return; }
+  const wrap = e.target.closest('.idea-row-wrap'); if(!wrap) return;
+  const idea = STATE.photoIdeas.find(i => i.id === wrap.dataset.id); if(!idea) return;
   if(e.target.dataset.action === 'toggle-idea'){
     idea.done = e.target.checked;
-    row.classList.toggle('done', idea.done);
+    wrap.querySelector('.idea-row').classList.toggle('done', idea.done);
     scheduleSave('photoIdeas');
-    const countEl = row.closest('.idea-group').querySelector('.idea-group-count');
+    const countEl = wrap.closest('.idea-group').querySelector('.idea-group-count');
     if(countEl){
       const groupIdeas = STATE.photoIdeas.filter(i => i.category === idea.category);
       countEl.textContent = `${groupIdeas.filter(i=>i.done).length}/${groupIdeas.length}`;
@@ -3372,14 +3434,59 @@ document.getElementById('photo-ideas-container').addEventListener('click', (e) =
     renderPhotoIdeas();
     return;
   }
+  if(e.target.dataset.action === 'toggle-idea-photos'){
+    idea._expanded = !idea._expanded;
+    const panel = wrap.querySelector('.idea-photos-panel');
+    if(panel) panel.style.display = idea._expanded ? 'block' : 'none';
+    return;
+  }
+  if(e.target.dataset.action === 'del-idea-image'){
+    idea.images = (idea.images||[]).filter(im => im.id !== e.target.dataset.imgId);
+    scheduleSave('photoIdeas');
+    renderPhotoIdeas();
+    return;
+  }
+});
+document.getElementById('photo-ideas-container').addEventListener('change', async (e) => {
+  if(!e.target.classList.contains('idea-image-file')) return;
+  const wrap = e.target.closest('.idea-row-wrap'); if(!wrap) return;
+  const idea = STATE.photoIdeas.find(i => i.id === wrap.dataset.id); if(!idea) return;
+  const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/'));
+  if(!files.length) return;
+  idea.images = idea.images || [];
+  for(const file of files){
+    try{
+      const dataUrl = await readAndCompressImage(file);
+      idea.images.push({id: uid(), src: dataUrl});
+    }catch(err){
+      console.error('Image upload failed:', err);
+      showToast(`Couldn't add "${file.name}" — try a different file`, [], 5000);
+    }
+  }
+  e.target.value = '';
+  scheduleSave('photoIdeas');
+  renderPhotoIdeas();
 });
 document.getElementById('photo-ideas-container').addEventListener('keydown', (e) => {
   if(e.key !== 'Enter') return;
+  if(e.target.classList.contains('idea-image-url-input')){
+    e.preventDefault();
+    const wrap = e.target.closest('.idea-row-wrap'); if(!wrap) return;
+    const idea = STATE.photoIdeas.find(i => i.id === wrap.dataset.id); if(!idea) return;
+    const raw = e.target.value.trim();
+    if(!raw) return;
+    const url = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+    idea.images = idea.images || [];
+    idea.images.push({id: uid(), src: url});
+    scheduleSave('photoIdeas');
+    renderPhotoIdeas();
+    return;
+  }
   if(e.target.id === 'idea-new-cat-input'){
     e.preventDefault();
     const cat = e.target.value.trim();
     if(!cat) return;
-    STATE.photoIdeas.push({id:uid(), category:cat, text:'New idea — edit or delete', done:false});
+    STATE.photoIdeas.push({id:uid(), category:cat, text:'New idea — edit or delete', done:false, images:[]});
     scheduleSave('photoIdeas');
     renderPhotoIdeas();
     return;
@@ -3389,7 +3496,7 @@ document.getElementById('photo-ideas-container').addEventListener('keydown', (e)
     const text = e.target.value.trim();
     if(!text) return;
     const cat = e.target.closest('.idea-group').dataset.cat;
-    STATE.photoIdeas.push({id:uid(), category:cat, text, done:false});
+    STATE.photoIdeas.push({id:uid(), category:cat, text, done:false, images:[]});
     scheduleSave('photoIdeas');
     renderPhotoIdeas();
   }
@@ -3590,6 +3697,7 @@ function renderAll(){
   renderPhotoLocations();
   renderPhotoLocationsMap();
   setPhotosSubTab(photosSubTab);
+  setResearchSubTab(researchSubTab);
   const footerLabel = document.getElementById('footer-version-label');
   if(footerLabel) footerLabel.textContent = `Private planning board · auto-backup every 20 min · ${APP_VERSION}`;
 }
