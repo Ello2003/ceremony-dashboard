@@ -154,7 +154,7 @@
     /* phase head — tighter */
     .phase-head{ padding:11px 12px; }
     /* timeline — stack */
-    .tl-row{ grid-template-columns:60px 1fr 28px; gap:8px; }
+    .tl-row{ grid-template-columns:88px 1fr 28px; gap:8px; }
     .day-card{ padding:14px; }
     /* toolbar — wrap neatly */
     .toolbar{ flex-direction:column; align-items:flex-start; }
@@ -382,17 +382,17 @@
     overflow:hidden;
   }
   .tl-row{
-    display:grid; grid-template-columns:80px 1fr 34px; gap:0; align-items:stretch;
+    display:grid; grid-template-columns:96px 1fr 34px; gap:0; align-items:stretch;
     border-bottom:1px solid var(--line);
   }
   .tl-row:last-child{ border-bottom:none; }
   .tl-time-cell{
-    display:flex; align-items:flex-start; justify-content:flex-end; padding:14px 14px 14px 12px;
+    display:flex; align-items:flex-start; justify-content:flex-end; padding:14px 12px;
     background:var(--parchment-dim); border-right:1px solid var(--line);
   }
   .tl-time-cell input.tl-time{
-    font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:500;
-    border:none; background:transparent; text-align:right; width:100%; padding:0; color:var(--heather);
+    font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:500;
+    border:none; background:transparent; width:100%; padding:2px 0; color:var(--heather); cursor:pointer; min-width:0;
   }
   .tl-time-cell input.tl-time:focus{ outline:none; color:var(--ink); }
   .tl-main{ padding:12px 14px; display:flex; flex-direction:column; gap:4px; }
@@ -765,7 +765,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v20</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v21</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1253,8 +1253,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v20';
+const APP_VERSION = 'v21';
 const CHANGELOG = [
+  { version:'v21', date:'2026-08-13', notes:[
+    'Fixed the trip timeline time field being unusable on mobile — the column was only 60px wide, too cramped for the native time picker to work properly. Widened it and cleaned up the input styling.'
+  ]},
   { version:'v20', date:'2026-08-07', notes:[
     'Shot list redesigned: idea text is now directly editable (click and type), and each idea can have its own example/reference photos — upload or paste a URL, with the same lightbox viewer as Photo locations',
     'Suppliers and Enquiries merged into a single "Research" tab with Suppliers/Enquiries sub-tabs, for a cleaner nav'
