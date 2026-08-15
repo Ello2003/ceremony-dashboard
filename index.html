@@ -163,8 +163,7 @@
     /* guests table scroll */
     #guest-table{ display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; }
     /* footer */
-    footer{ flex-direction:column; gap:10px; padding:18px 16px 40px; }
-    footer span{ flex-wrap:wrap; }
+    footer{ flex-direction:row; padding:18px 16px 40px; }
     /* modal */
     .modal-panel{ padding:18px 16px; }
     /* attach zone drop target */
@@ -595,22 +594,27 @@
   .sync-flag.error{ color:var(--rose); }
 
   footer{
-    max-width:1180px; margin:0 auto; padding:20px 32px 50px;
+    max-width:1180px; margin:0 auto; padding:24px 32px 50px;
     font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:rgba(43,42,40,0.4);
-    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+    display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:4px 18px;
   }
-  .footer-label{ color:rgba(43,42,40,0.35); }
-  .footer-actions{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   .footer-btn{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.03em;
+    background:none; border:none; padding:0; cursor:pointer; color:rgba(43,42,40,0.5);
+    text-decoration:none;
+  }
+  .footer-btn:hover{ color:var(--holyrood); text-decoration:underline; }
+  .footer-btn-primary{ color:var(--ink); font-weight:600; }
+  .footer-btn-primary:hover{ color:var(--holyrood); }
+  .modal-btn{
     font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.03em;
     background:var(--card); border:1px solid var(--line); border-radius:3px;
     padding:7px 12px; cursor:pointer; color:rgba(43,42,40,0.7);
     transition:background .1s, border-color .1s, color .1s;
   }
-  .footer-btn:hover{ background:var(--parchment-dim); border-color:rgba(43,42,40,0.3); color:var(--ink); }
-  .footer-btn-primary{ background:var(--ink); color:var(--parchment); border-color:var(--ink); }
-  .footer-btn-primary:hover{ background:var(--holyrood); border-color:var(--holyrood); color:var(--parchment); }
-  .footer-btn-danger:hover{ border-color:var(--rose); color:var(--rose); }
+  .modal-btn:hover{ background:var(--parchment-dim); border-color:rgba(43,42,40,0.3); color:var(--ink); }
+  .modal-btn-primary{ background:var(--ink); color:var(--parchment); border-color:var(--ink); }
+  .modal-btn-primary:hover{ background:var(--holyrood); border-color:var(--holyrood); color:var(--parchment); }
 
   /* ---------- MODAL ---------- */
   .modal-overlay{
@@ -765,7 +769,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v21</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v22</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -995,15 +999,12 @@
 <div id="toast-container"></div>
 
 <footer>
-  <span class="footer-label" id="footer-version-label">Private planning board · auto-backup every 20 min</span>
-  <span class="footer-actions">
-    <button class="footer-btn" onclick="openGithubSyncModal()">☁ GitHub Sync</button>
-    <button class="footer-btn" onclick="openAutoBackupModal()">🕐 Auto-backups <span id="autobackup-count"></span></button>
-    <button class="footer-btn" onclick="exportSpreadsheet()">📊 Export .xlsx</button>
-    <button class="footer-btn footer-btn-primary" onclick="exportBackup()">⬇ Download backup</button>
-    <button class="footer-btn" onclick="document.getElementById('restore-input').click()">⬆ Restore backup</button>
-    <input type="file" id="restore-input" accept="application/json" style="display:none;">
-  </span>
+  <button class="footer-btn" onclick="openGithubSyncModal()">GitHub Sync</button>
+  <button class="footer-btn" onclick="openAutoBackupModal()">Auto-backups <span id="autobackup-count"></span></button>
+  <button class="footer-btn" onclick="exportSpreadsheet()" style="display:none;">Export .xlsx</button>
+  <button class="footer-btn footer-btn-primary" onclick="exportBackup()">Download backup</button>
+  <button class="footer-btn" onclick="document.getElementById('restore-input').click()">Restore backup</button>
+  <input type="file" id="restore-input" accept="application/json" style="display:none;">
 </footer>
 
 <div class="modal-overlay" id="github-sync-overlay" onclick="if(event.target===this) closeGithubSyncModal()">
@@ -1253,8 +1254,13 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v21';
+const APP_VERSION = 'v22';
 const CHANGELOG = [
+  { version:'v22', date:'2026-08-13', notes:[
+    'Budget notes can now have attachments — same upload/drag-drop system as Suppliers (PDFs, images, emails, up to 4MB each)',
+    'Footer simplified to plain text links, dropped the "Private planning board · v..." label',
+    'Hid the Export .xlsx button for now (still there under the hood if you want it back)'
+  ]},
   { version:'v21', date:'2026-08-13', notes:[
     'Fixed the trip timeline time field being unusable on mobile — the column was only 60px wide, too cramped for the native time picker to work properly. Widened it and cleaned up the input styling.'
   ]},
@@ -1523,9 +1529,9 @@ function renderGithubSyncForm(){
       Data syncs to a JSON file in this repo, kept separate from index.html itself. Use a <strong>fine-grained</strong> token scoped to only this repo with <strong>Contents: Read and write</strong> permission — not a broad classic token. The token is saved only in this browser's storage: it's never written into the synced file, committed to the repo, or included in downloaded backups.
     </p>
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">
-      <button class="footer-btn" id="gh-cancel">Cancel</button>
-      <button class="footer-btn" id="gh-sync-now">Sync now</button>
-      <button class="footer-btn footer-btn-primary" id="gh-save">Save</button>
+      <button class="modal-btn" id="gh-cancel">Cancel</button>
+      <button class="modal-btn" id="gh-sync-now">Sync now</button>
+      <button class="modal-btn modal-btn-primary" id="gh-save">Save</button>
     </div>
   `;
   document.getElementById('gh-cancel').addEventListener('click', closeGithubSyncModal);
@@ -1781,6 +1787,7 @@ async function exportBackup(){
   // brings attachments back, not just the filenames.
   const attachmentIds = [];
   Object.values(STATE.suppliers).forEach(arr => arr.forEach(o => (o.attachments||[]).forEach(a => attachmentIds.push(a.id))));
+  STATE.budget.forEach(r => (r.attachments||[]).forEach(a => attachmentIds.push(a.id)));
   const attachmentFiles = {};
   for(const id of attachmentIds){
     try{
@@ -2323,7 +2330,7 @@ function renderBudget(){
           <button data-action="budget-move-up" ${idx===0?'disabled':''} title="Move up">▲</button>
           <button data-action="budget-move-down" ${idx===STATE.budget.length-1?'disabled':''} title="Move down">▼</button>
         </div>
-        <button class="budget-expand-btn" data-action="toggle-budget-notes" title="${r.notes ? 'Has notes' : 'Add notes'}">${r.notes ? '📝' : '+'}</button>
+        <button class="budget-expand-btn" data-action="toggle-budget-notes" title="${r.notes || (r.attachments||[]).length ? 'Has notes / attachments' : 'Add notes'}">${r.notes || (r.attachments||[]).length ? '📝' : '+'}</button>
         <button class="row-del" data-action="delete-budget">×</button>
       </td>`;
     body.appendChild(mainRow);
@@ -2331,10 +2338,23 @@ function renderBudget(){
     const notesRow = document.createElement('tr');
     notesRow.className = 'budget-notes-row' + (r._expanded ? ' open' : '');
     notesRow.dataset.notesFor = r.id;
-    notesRow.innerHTML = `<td colspan="8"><textarea data-f="notes" placeholder="Notes, supplier details, quote references…">${escapeHtml(r.notes||'')}</textarea></td>`;
+    const batts = r.attachments || [];
+    notesRow.innerHTML = `<td colspan="8">
+      <textarea data-f="notes" placeholder="Notes, supplier details, quote references…">${escapeHtml(r.notes||'')}</textarea>
+      <div class="attach-zone" data-row-id="${r.id}">
+        <div class="attach-chips">
+          ${batts.map(a => attachmentChipHtml(a)).join('')}
+        </div>
+        <label class="attach-drop-target" title="Tap to pick a file, or drag one here">
+          <span class="drop-label">📎 Drop a file here or tap to attach</span>
+          <input type="file" class="attach-input" accept=".pdf,.png,.jpg,.jpeg,.eml,.msg,.txt,.doc,.docx" hidden multiple>
+        </label>
+      </div>
+    </td>`;
     body.appendChild(notesRow);
   });
   renderBudgetTotals();
+  preloadAttachments();
 }
 function renderBudgetTotals(){
   const est = STATE.budget.reduce((s,r)=>s+(parseFloat(r.est)||0),0);
@@ -2357,11 +2377,13 @@ document.getElementById('budget-body').addEventListener('click', (e) => {
     r._expanded = !r._expanded;
     const notesRow = document.querySelector(`tr[data-notes-for="${r.id}"]`);
     if(notesRow) notesRow.classList.toggle('open', r._expanded);
-    e.target.textContent = r._expanded ? '▴' : (r.notes ? '📝' : '+');
+    e.target.textContent = r._expanded ? '▴' : (r.notes || (r.attachments||[]).length ? '📝' : '+');
     return;
   }
   if(e.target.dataset.action === 'delete-budget'){
     const tr = e.target.closest('tr');
+    const row = STATE.budget.find(x => x.id === tr.dataset.id);
+    (row?.attachments||[]).forEach(a => window.storage.delete('file:'+a.id, false).catch(()=>{}));
     STATE.budget = STATE.budget.filter(x => x.id !== tr.dataset.id);
     scheduleSave('budget'); renderBudget(); renderOverview(); renderHero();
     return;
@@ -2650,7 +2672,9 @@ document.getElementById('suppliers-container').addEventListener('change', (e) =>
     return;
   }
   if(e.target.classList.contains('attach-input')){
-    handleAttachmentFiles(Array.from(e.target.files), e.target.closest('.supplier-card'));
+    const card = e.target.closest('.supplier-card');
+    const o = card ? (STATE.suppliers[card.dataset.cat]||[]).find(x => x.id === card.dataset.id) : null;
+    handleAttachmentFiles(Array.from(e.target.files), o, 'suppliers', renderSuppliers);
     e.target.value = '';
   }
 });
@@ -2709,7 +2733,8 @@ document.getElementById('suppliers-container').addEventListener('drop', async (e
   }
 
   if(files.length > 0){
-    handleAttachmentFiles(files, card);
+    const o = (STATE.suppliers[card.dataset.cat]||[]).find(x => x.id === card.dataset.id);
+    handleAttachmentFiles(files, o, 'suppliers', renderSuppliers);
   } else {
     // Apple Mail drag-and-drop doesn't expose file bytes to the browser at all —
     // it uses macOS's "promised file" system which Safari and Chrome can't access.
@@ -2730,11 +2755,8 @@ document.getElementById('suppliers-container').addEventListener('drop', async (e
 }, false);
 
 const MAX_ATTACHMENT_MB = 4;
-async function handleAttachmentFiles(files, card){
-  if(!files || !files.length || !card) return;
-  const cat = card.dataset.cat;
-  const o = (STATE.suppliers[cat]||[]).find(x => x.id === card.dataset.id);
-  if(!o) return;
+async function handleAttachmentFiles(files, target, saveKey, rerenderFn){
+  if(!files || !files.length || !target) return;
   for(const file of files){
     if(file.size > MAX_ATTACHMENT_MB * 1024 * 1024){
       alert(`"${file.name}" is ${(file.size/1024/1024).toFixed(1)} MB — over the ${MAX_ATTACHMENT_MB} MB limit. Try exporting as PDF or compressing it first.`);
@@ -2744,9 +2766,9 @@ async function handleAttachmentFiles(files, card){
       const reader = new FileReader();
       reader.onload = async () => {
         const attId = uid();
-        o.attachments = o.attachments || [];
-        o.attachments.push({ id: attId, name: file.name, type: file.type, size: file.size });
-        scheduleSave('suppliers');
+        target.attachments = target.attachments || [];
+        target.attachments.push({ id: attId, name: file.name, type: file.type, size: file.size });
+        scheduleSave(saveKey);
         await persist('file:' + attId, reader.result);
         resolve();
       };
@@ -2754,7 +2776,7 @@ async function handleAttachmentFiles(files, card){
       reader.readAsDataURL(file);
     });
   }
-  renderSuppliers();
+  rerenderFn();
 }
 
 function dataUrlToBlob(dataUrl){
@@ -2800,6 +2822,9 @@ async function preloadAttachments(){
   Object.values(STATE.suppliers).forEach(arr => arr.forEach(o =>
     (o.attachments||[]).forEach(a => { if(!attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); })
   ));
+  STATE.budget.forEach(r =>
+    (r.attachments||[]).forEach(a => { if(!attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); })
+  );
   for(const {id, name} of ids){
     try{
       const res = await window.storage.get('file:' + id, false);
@@ -2851,6 +2876,83 @@ document.getElementById('suppliers-container').addEventListener('click', (e) => 
     }
   }
 });
+
+// ── Attachments on Budget notes (same pattern as Suppliers) ──────────────
+document.getElementById('budget-body').addEventListener('click', (e) => {
+  if(e.target.closest('[data-action="open-att"]')){
+    const chip  = e.target.closest('.attach-chip');
+    const attId = chip.dataset.attId;
+    const name  = chip.dataset.attName || 'attachment';
+    const cached = attachmentCache.get(attId);
+    if(cached){
+      openAttachment(cached.url, cached.name || name);
+    } else {
+      chip.style.opacity = '0.5';
+      window.storage.get('file:' + attId, false).then(res => {
+        chip.style.opacity = '';
+        if(res && res.value){
+          attachmentCache.set(attId, { url: res.value, name });
+          openAttachment(res.value, name);
+        } else {
+          alert("Couldn't find that attachment in storage — it may not have finished saving.");
+        }
+      }).catch(() => {
+        chip.style.opacity = '';
+        alert("Couldn't load that attachment — it may not have finished saving.");
+      });
+    }
+    return;
+  }
+  if(e.target.closest('[data-action="del-att"]')){
+    const chip = e.target.closest('.attach-chip');
+    const attId = chip.dataset.attId;
+    const zone = e.target.closest('.attach-zone');
+    const r = STATE.budget.find(x => x.id === zone.dataset.rowId);
+    if(r){
+      r.attachments = (r.attachments||[]).filter(a => a.id !== attId);
+      scheduleSave('budget');
+      window.storage.delete('file:' + attId, false).catch(()=>{});
+      renderBudget();
+    }
+    return;
+  }
+});
+document.getElementById('budget-body').addEventListener('change', (e) => {
+  if(!e.target.classList.contains('attach-input')) return;
+  const zone = e.target.closest('.attach-zone');
+  const r = STATE.budget.find(x => x.id === zone.dataset.rowId);
+  handleAttachmentFiles(Array.from(e.target.files||[]), r, 'budget', renderBudget);
+  e.target.value = '';
+});
+document.getElementById('budget-body').addEventListener('dragenter', (e) => {
+  const zone = e.target.closest('.attach-drop-target');
+  if(zone){ e.preventDefault(); zone.classList.add('drag-over'); }
+}, false);
+document.getElementById('budget-body').addEventListener('dragover', (e) => {
+  const zone = e.target.closest('.attach-drop-target');
+  if(zone){ e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }
+}, false);
+document.getElementById('budget-body').addEventListener('dragleave', (e) => {
+  const zone = e.target.closest('.attach-drop-target');
+  if(zone && !zone.contains(e.relatedTarget)) zone.classList.remove('drag-over');
+}, false);
+document.getElementById('budget-body').addEventListener('drop', (e) => {
+  const zone = e.target.closest('.attach-drop-target');
+  if(!zone) return;
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  const attachZone = zone.closest('.attach-zone');
+  const r = STATE.budget.find(x => x.id === attachZone.dataset.rowId);
+  let files = Array.from(e.dataTransfer.files || []);
+  if(files.length === 0 && e.dataTransfer.items){
+    files = Array.from(e.dataTransfer.items).filter(item => item.kind === 'file').map(item => item.getAsFile()).filter(Boolean);
+  }
+  if(files.length > 0){
+    handleAttachmentFiles(files, r, 'budget', renderBudget);
+  } else {
+    alert("Couldn't read that drag — try dragging a file from Finder instead.");
+  }
+}, false);
 
 /* ============================= TIMELINE ============================= */
 function renderTimeline(){
@@ -3701,8 +3803,6 @@ function renderAll(){
   renderPhotoLocationsMap();
   setPhotosSubTab(photosSubTab);
   setResearchSubTab(researchSubTab);
-  const footerLabel = document.getElementById('footer-version-label');
-  if(footerLabel) footerLabel.textContent = `Private planning board · auto-backup every 20 min · ${APP_VERSION}`;
 }
 
 (async function init(){
