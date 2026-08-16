@@ -548,10 +548,11 @@
   .idea-row-wrap{ border-bottom:1px solid var(--line); }
   .idea-row-wrap:last-child{ border-bottom:none; }
   .idea-photos-panel{ padding:0 0 12px 24px; }
-  .idea-photos-grid{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
-  .idea-img-thumb{ position:relative; width:64px; height:64px; border-radius:3px; overflow:hidden; border:1px solid var(--line); cursor:zoom-in; background:var(--parchment-dim); }
-  .idea-img-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .idea-img-thumb .pl-img-del{ width:16px; height:16px; line-height:14px; font-size:10px; top:2px; right:2px; }
+  .idea-photos-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:10px; margin-bottom:10px; }
+  .idea-img-thumb{ position:relative; width:100%; aspect-ratio:4/3; border-radius:4px; overflow:hidden; border:1px solid var(--line); cursor:zoom-in; background:var(--parchment-dim); }
+  .idea-img-thumb img{ width:100%; height:100%; object-fit:cover; display:block; transition:transform .2s ease; }
+  .idea-img-thumb:hover img{ transform:scale(1.04); }
+  .idea-img-thumb .pl-img-del{ width:22px; height:22px; line-height:19px; font-size:14px; top:5px; right:5px; }
   .idea-photos-add{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
   .idea-photos-add .pl-upload-btn{ font-size:10px; padding:4px 8px; }
   .idea-photos-add .pl-image-url-input{ font-size:10px; padding:4px 8px; flex:1; min-width:120px; }
@@ -769,7 +770,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v22</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v23</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1254,8 +1255,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v22';
+const APP_VERSION = 'v23';
 const CHANGELOG = [
+  { version:'v23', date:'2026-08-13', notes:[
+    'Shot list example photos enlarged to match Photo locations gallery sizing (160px responsive grid, 4:3, hover zoom)'
+  ]},
   { version:'v22', date:'2026-08-13', notes:[
     'Budget notes can now have attachments — same upload/drag-drop system as Suppliers (PDFs, images, emails, up to 4MB each)',
     'Footer simplified to plain text links, dropped the "Private planning board · v..." label',
