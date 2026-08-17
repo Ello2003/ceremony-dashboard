@@ -476,6 +476,8 @@
     border-radius:2px; padding:8px; background:transparent; resize:vertical; min-height:52px; color:var(--ink);
   }
   .budget-notes-row textarea:focus{ outline:none; border-color:var(--holyrood); }
+  .budget-link-row{ display:flex; gap:6px; align-items:center; margin:8px 0; }
+  .budget-link-input{ flex:1; font-family:'IBM Plex Mono', monospace; font-size:11px; border:1px solid var(--line); border-radius:2px; padding:6px 8px; background:transparent; }
 
   /* ---------- PHOTO LOCATIONS ---------- */
   .photo-location-card{ background:var(--card); border:1px solid var(--line); border-left:3px solid var(--line); border-radius:3px; padding:16px; margin-bottom:12px; }
@@ -519,6 +521,10 @@
   .pl-shot-add-input:focus{ border-color:var(--heather); outline:none; }
   .photo-location-card .pl-link{ display:flex; gap:6px; align-items:center; margin-top:10px; }
   .photo-location-card .pl-link input{ flex:1; font-family:'IBM Plex Mono', monospace; font-size:11px; border:1px solid var(--line); border-radius:2px; padding:6px 8px; background:transparent; }
+  .pl-rating{ display:flex; gap:2px; margin:-2px 0 8px; }
+  .pl-star{ font-size:17px; line-height:1; cursor:pointer; background:none; border:none; padding:1px; color:rgba(43,42,40,.22); transition:color .1s ease; }
+  .pl-star.filled{ color:var(--gold); }
+  .pl-star:hover{ color:var(--gold); }
   .pl-map{ margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
   .pl-map-hint{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:rgba(43,42,40,.45); margin:6px 0 0; }
   .pl-map-input-row{ display:flex; gap:8px; }
@@ -770,7 +776,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v23</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v24</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1255,8 +1261,12 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v23';
+const APP_VERSION = 'v24';
 const CHANGELOG = [
+  { version:'v24', date:'2026-08-13', notes:[
+    'Photo locations: 5-star importance rating — click a star to set it, click the same star again to clear',
+    'Budget items: added a link field (quote, listing, contract…) inside the notes panel, with an open-in-new-tab icon'
+  ]},
   { version:'v23', date:'2026-08-13', notes:[
     'Shot list example photos enlarged to match Photo locations gallery sizing (160px responsive grid, 4:3, hover zoom)'
   ]},
@@ -2334,7 +2344,7 @@ function renderBudget(){
           <button data-action="budget-move-up" ${idx===0?'disabled':''} title="Move up">▲</button>
           <button data-action="budget-move-down" ${idx===STATE.budget.length-1?'disabled':''} title="Move down">▼</button>
         </div>
-        <button class="budget-expand-btn" data-action="toggle-budget-notes" title="${r.notes || (r.attachments||[]).length ? 'Has notes / attachments' : 'Add notes'}">${r.notes || (r.attachments||[]).length ? '📝' : '+'}</button>
+        <button class="budget-expand-btn" data-action="toggle-budget-notes" title="${r.notes || r.link || (r.attachments||[]).length ? 'Has notes / link / attachments' : 'Add notes'}">${r.notes || r.link || (r.attachments||[]).length ? '📝' : '+'}</button>
         <button class="row-del" data-action="delete-budget">×</button>
       </td>`;
     body.appendChild(mainRow);
@@ -2345,6 +2355,10 @@ function renderBudget(){
     const batts = r.attachments || [];
     notesRow.innerHTML = `<td colspan="8">
       <textarea data-f="notes" placeholder="Notes, supplier details, quote references…">${escapeHtml(r.notes||'')}</textarea>
+      <div class="budget-link-row">
+        <a class="link-open" href="${r.link ? (/^https?:\/\//i.test(r.link)?r.link:'https://'+r.link) : '#'}" target="_blank" rel="noopener noreferrer" ${!r.link?'aria-disabled="true"':''}>↗</a>
+        <input type="text" class="budget-link-input" data-f="link" value="${escapeHtml(r.link||'')}" placeholder="Link — quote, listing, contract…">
+      </div>
       <div class="attach-zone" data-row-id="${r.id}">
         <div class="attach-chips">
           ${batts.map(a => attachmentChipHtml(a)).join('')}
@@ -2381,7 +2395,7 @@ document.getElementById('budget-body').addEventListener('click', (e) => {
     r._expanded = !r._expanded;
     const notesRow = document.querySelector(`tr[data-notes-for="${r.id}"]`);
     if(notesRow) notesRow.classList.toggle('open', r._expanded);
-    e.target.textContent = r._expanded ? '▴' : (r.notes || (r.attachments||[]).length ? '📝' : '+');
+    e.target.textContent = r._expanded ? '▴' : (r.notes || r.link || (r.attachments||[]).length ? '📝' : '+');
     return;
   }
   if(e.target.dataset.action === 'delete-budget'){
@@ -2415,6 +2429,11 @@ document.getElementById('budget-body').addEventListener('input', (e) => {
   r[f] = e.target.value;
   scheduleSave('budget');
   renderHero();
+
+  if(f === 'link'){
+    const anchor = notesRow ? notesRow.querySelector('a.link-open') : null;
+    if(anchor){ const raw = e.target.value.trim(); anchor.href = raw ? (/^https?:\/\//i.test(raw)?raw:'https://'+raw) : '#'; }
+  }
 
   // While a line is "Paid in full", keep the paid amount locked to the total —
   // this is what stops the balance figure from ever contradicting the status.
@@ -3361,6 +3380,9 @@ function renderPhotoLocations(){
         </div>
         <button class="row-del" data-action="del-photo-loc">×</button>
       </div>
+      <div class="pl-rating" title="Importance">
+        ${[1,2,3,4,5].map(n => `<button class="pl-star ${n <= (loc.rating||0) ? 'filled' : ''}" data-action="set-pl-rating" data-val="${n}" title="${n} star${n>1?'s':''}">★</button>`).join('')}
+      </div>
       <div class="pl-tags">
         ${tagOptions.map(tag => `<span class="pl-tag-wrap"><button class="pl-tag ${tags.includes(tag)?'on':''}" data-tag="${escapeHtml(tag)}" data-action="toggle-pl-tag">${escapeHtml(tag)}</button><button class="pl-tag-del" data-tag="${escapeHtml(tag)}" data-action="del-pl-tag-option" title="Delete this tag everywhere">×</button></span>`).join('')}
         <span class="pl-tag-add-wrap">
@@ -3404,7 +3426,7 @@ function renderPhotoLocations(){
 }
 
 function addPhotoLocation(){
-  STATE.photoLocations.push({id:uid(), name:'', distance:'', status:'idea', tags:[], notes:'', link:'', images:[], shots:[]});
+  STATE.photoLocations.push({id:uid(), name:'', distance:'', status:'idea', tags:[], notes:'', link:'', images:[], shots:[], rating:0});
   scheduleSave('photoLocations'); renderPhotoLocations();
 }
 
@@ -3746,6 +3768,15 @@ document.getElementById('photo-locations-container').addEventListener('click', (
     const card = e.target.closest('.photo-location-card');
     STATE.photoLocations = STATE.photoLocations.filter(x => x.id !== card.dataset.id);
     scheduleSave('photoLocations'); renderPhotoLocations(); return;
+  }
+  if(e.target.dataset.action === 'set-pl-rating'){
+    const card = e.target.closest('.photo-location-card'); if(!card) return;
+    const loc = STATE.photoLocations.find(x => x.id === card.dataset.id); if(!loc) return;
+    const val = parseInt(e.target.dataset.val, 10);
+    loc.rating = (loc.rating === val) ? 0 : val; // click the current rating again to clear it
+    card.querySelectorAll('.pl-star').forEach((star, i) => star.classList.toggle('filled', i < loc.rating));
+    scheduleSave('photoLocations');
+    return;
   }
   if(e.target.dataset.action === 'pl-move-up' || e.target.dataset.action === 'pl-move-down'){
     const card = e.target.closest('.photo-location-card'); if(!card) return;
