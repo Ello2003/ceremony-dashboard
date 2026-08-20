@@ -796,7 +796,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v26</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v27</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1299,8 +1299,12 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v26';
+const APP_VERSION = 'v27';
 const CHANGELOG = [
+  { version:'v27', date:'2026-08-13', notes:[
+    'Fixed attachment files getting corrupted on save — every file was being double-encoded on write but only decoded once on read, adding stray characters to the start/end of the file. Verified byte-for-byte with a test before shipping.',
+    'Heads up: any PDFs/files attached before this version were saved corrupted and can\'t be recovered — you\'ll need to re-attach them. New attachments from now on are unaffected.'
+  ]},
   { version:'v26', date:'2026-08-13', notes:[
     'Fixed PDFs opening a blank tab (a Safari limitation with blob URLs in new tabs) — PDFs now open in an in-page viewer with a Download button, for both attachments and the Trip Timeline export'
   ]},
@@ -1855,7 +1859,7 @@ async function exportBackup(){
   for(const id of attachmentIds){
     try{
       const res = await window.storage.get('file:' + id, false);
-      if(res && res.value) attachmentFiles[id] = res.value;
+      if(res && res.value) attachmentFiles[id] = JSON.parse(res.value);
     }catch(e){ /* attachment missing — skip, metadata will just show a broken link */ }
   }
 
@@ -2409,8 +2413,9 @@ document.getElementById('checklist-container').addEventListener('click', (e) => 
       window.storage.get('file:' + attId, false).then(res => {
         chip.style.opacity = '';
         if(res && res.value){
-          attachmentCache.set(attId, { url: res.value, name });
-          openAttachment(res.value, name);
+          const dataUrl = JSON.parse(res.value);
+          attachmentCache.set(attId, { url: dataUrl, name });
+          openAttachment(dataUrl, name);
         } else {
           alert("Couldn't find that attachment in storage — it may not have finished saving.");
         }
@@ -3037,7 +3042,7 @@ async function preloadAttachments(){
   for(const {id, name} of ids){
     try{
       const res = await window.storage.get('file:' + id, false);
-      if(res && res.value) attachmentCache.set(id, { url: res.value, name });
+      if(res && res.value) attachmentCache.set(id, { url: JSON.parse(res.value), name });
     }catch(e){ /* not yet stored — will retry on next render */ }
   }
 }
@@ -3059,8 +3064,9 @@ document.getElementById('suppliers-container').addEventListener('click', (e) => 
       window.storage.get('file:' + attId, false).then(res => {
         chip.style.opacity = '';
         if(res && res.value){
-          attachmentCache.set(attId, { url: res.value, name });
-          openAttachment(res.value, name);
+          const dataUrl = JSON.parse(res.value);
+          attachmentCache.set(attId, { url: dataUrl, name });
+          openAttachment(dataUrl, name);
         } else {
           alert("Couldn't find that attachment in storage — it may not have finished saving.");
         }
@@ -3100,8 +3106,9 @@ document.getElementById('budget-body').addEventListener('click', (e) => {
       window.storage.get('file:' + attId, false).then(res => {
         chip.style.opacity = '';
         if(res && res.value){
-          attachmentCache.set(attId, { url: res.value, name });
-          openAttachment(res.value, name);
+          const dataUrl = JSON.parse(res.value);
+          attachmentCache.set(attId, { url: dataUrl, name });
+          openAttachment(dataUrl, name);
         } else {
           alert("Couldn't find that attachment in storage — it may not have finished saving.");
         }
