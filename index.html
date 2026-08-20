@@ -650,6 +650,13 @@
   .modal-close{ background:none; border:none; font-size:20px; color:rgba(43,42,40,0.5); cursor:pointer; line-height:1; }
   .modal-close:hover{ color:var(--rose); }
   .modal-sub{ font-size:12.5px; color:rgba(43,42,40,0.55); margin:0 0 16px; line-height:1.5; }
+  .pdf-viewer-panel{
+    background:var(--parchment); border-radius:4px; width:min(94vw, 900px); height:90vh;
+    box-shadow:0 20px 60px rgba(0,0,0,0.35); display:flex; flex-direction:column; overflow:hidden;
+  }
+  .pdf-viewer-head{ display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--line); }
+  .pdf-viewer-head #pdf-viewer-title{ font-family:'Fraunces', serif; font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #pdf-viewer-frame{ flex:1; width:100%; border:0; background:#525659; }
   .ab-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); }
   .ab-row:last-child{ border-bottom:none; }
   .ab-when{ font-size:13px; }
@@ -789,7 +796,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v25</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v26</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1066,6 +1073,18 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="pdf-viewer-overlay" onclick="if(event.target===this) closePdfViewer()">
+  <div class="pdf-viewer-panel">
+    <div class="pdf-viewer-head">
+      <span id="pdf-viewer-title">PDF</span>
+      <span style="flex:1;"></span>
+      <a id="pdf-viewer-download" class="modal-btn" download>Download</a>
+      <button class="modal-close" onclick="closePdfViewer()">×</button>
+    </div>
+    <iframe id="pdf-viewer-frame" src="about:blank" title="PDF preview"></iframe>
+  </div>
+</div>
+
 <script>
 /* ============================= OFFLINE / STORAGE MODE ============================= */
 // Inside Claude.ai, window.storage is injected by the host and syncs to your
@@ -1280,8 +1299,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v25';
+const APP_VERSION = 'v26';
 const CHANGELOG = [
+  { version:'v26', date:'2026-08-13', notes:[
+    'Fixed PDFs opening a blank tab (a Safari limitation with blob URLs in new tabs) — PDFs now open in an in-page viewer with a Download button, for both attachments and the Trip Timeline export'
+  ]},
   { version:'v25', date:'2026-08-13', notes:[
     'PDFs now open inline in a new tab (browser\'s built-in viewer) instead of downloading — applies everywhere attachments are used',
     'Trip timeline: stops can be reordered within their day with ▲▼ buttons; new "Export as PDF" button',
@@ -2956,24 +2978,33 @@ function dataUrlToBlob(dataUrl){
   }
 }
 
+let currentPdfViewerUrl = null;
+function openPdfViewer(objUrl, name){
+  if(currentPdfViewerUrl) URL.revokeObjectURL(currentPdfViewerUrl);
+  currentPdfViewerUrl = objUrl;
+  document.getElementById('pdf-viewer-title').textContent = name || 'PDF';
+  document.getElementById('pdf-viewer-frame').src = objUrl;
+  const dl = document.getElementById('pdf-viewer-download');
+  dl.href = objUrl;
+  dl.download = name || 'document.pdf';
+  document.getElementById('pdf-viewer-overlay').classList.add('open');
+}
+function closePdfViewer(){
+  document.getElementById('pdf-viewer-overlay').classList.remove('open');
+  document.getElementById('pdf-viewer-frame').src = 'about:blank';
+  if(currentPdfViewerUrl){ URL.revokeObjectURL(currentPdfViewerUrl); currentPdfViewerUrl = null; }
+}
 function openAttachment(dataUrl, name){
   try{
     const blob   = dataUrlToBlob(dataUrl);
     const objUrl = URL.createObjectURL(blob);
     const isPdf  = blob.type === 'application/pdf' || /\.pdf$/i.test(name||'');
     if(isPdf){
-      // PDFs open inline using the browser's built-in viewer — this is a
-      // synchronous window.open in direct response to the click, so it isn't
-      // blocked by Safari/Chrome mobile's popup rules.
-      const win = window.open(objUrl, '_blank');
-      if(!win){
-        // Popup blocked for some reason — fall back to a download so the file isn't lost.
-        const a = document.createElement('a');
-        a.href = objUrl; a.download = name; a.style.display = 'none';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      }
-      // Give the new tab plenty of time to finish loading before we free the memory.
-      setTimeout(() => URL.revokeObjectURL(objUrl), 5 * 60 * 1000);
+      // Deliberately NOT window.open() here: Safari (mobile and often desktop)
+      // opens the new tab but silently refuses to render a blob: URL loaded
+      // that way, leaving it blank. An in-page <iframe> avoids that entirely
+      // since the blob never has to cross a tab boundary.
+      openPdfViewer(objUrl, name);
       return;
     }
     // Everything else (images, docs, emails…) still downloads — most browsers
@@ -3206,10 +3237,10 @@ function exportTimelinePDF(){
     y += 10;
   });
 
-  // Open inline like everything else, rather than forcing a download.
+  // Open inline in the same PDF viewer used for attachments — window.open with
+  // a blob URL is unreliable on Safari (opens a blank tab), so avoid it here too.
   const blobUrl = doc.output('bloburl');
-  const win = window.open(blobUrl, '_blank');
-  if(!win) doc.save('trip-timeline.pdf'); // popup blocked — fall back to download
+  openPdfViewer(blobUrl, 'Trip Timeline.pdf');
 }
 function renderTimeline(){
   const c = document.getElementById('timeline-container');
