@@ -140,7 +140,7 @@
     .checklist-controls input{ max-width:100%; width:100%; }
     .filter-chips{ flex-wrap:wrap; }
     /* task row — collapse date below text on tiny screens */
-    .task-row{ grid-template-columns:24px 1fr 32px; }
+    .task-row{ grid-template-columns:24px 1fr 28px 32px; }
     .task-row .task-due{ display:none; }
     /* budget table — scroll horizontally */
     #budget-table{ display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; }
@@ -154,7 +154,7 @@
     /* phase head — tighter */
     .phase-head{ padding:11px 12px; }
     /* timeline — stack */
-    .tl-row{ grid-template-columns:88px 1fr 28px; gap:8px; }
+    .tl-row{ grid-template-columns:88px 1fr 22px 28px; gap:6px; }
     .day-card{ padding:14px; }
     /* toolbar — wrap neatly */
     .toolbar{ flex-direction:column; align-items:flex-start; }
@@ -244,11 +244,11 @@
   .phase-block.collapsed .phase-body{ display:none; }
 
   .task-row{
-    display:grid; grid-template-columns:24px 1fr 118px 32px; align-items:center; gap:10px;
+    display:grid; grid-template-columns:24px 1fr 118px 28px 32px; align-items:center; gap:10px;
     padding:8px 4px; border-bottom:1px solid var(--line); font-size:13.5px;
     border-left:2px solid transparent; margin-left:-4px; padding-left:4px;
   }
-  .task-row:last-child{ border-bottom:none; }
+  .task-row-wrap:last-child .task-row{ border-bottom:none; }
   .task-row input[type="checkbox"]{ width:16px; height:16px; accent-color:var(--holyrood); cursor:pointer; }
   .task-row.done .task-text{ text-decoration:line-through; color:rgba(43,42,40,0.4); }
   .task-row.overdue{ border-left-color:var(--rose); background:rgba(176,107,69,0.05); }
@@ -256,6 +256,11 @@
   .task-text{ outline:none; }
   .task-text:focus{ background:var(--parchment-dim); }
   .task-due{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; border:1px solid var(--line); border-radius:2px; padding:4px 6px; background:transparent; color:var(--ink); width:100%; }
+  .task-attach-toggle{ font-size:12px; background:none; border:none; padding:0; cursor:pointer; color:rgba(43,42,40,.25); line-height:1; }
+  .task-attach-toggle:hover{ color:var(--heather); }
+  .task-attach-toggle.has-extra{ color:var(--holyrood); }
+  .task-extra{ padding:8px 4px 12px 34px; border-bottom:1px solid var(--line); }
+  .task-row-wrap:last-child .task-extra{ border-bottom:none; }
   .row-del{ background:none; border:none; color:rgba(43,42,40,0.35); cursor:pointer; font-size:15px; }
   .row-del:hover{ color:var(--rose); }
   .add-task{ margin-top:8px; }
@@ -381,10 +386,12 @@
     overflow:hidden;
   }
   .tl-row{
-    display:grid; grid-template-columns:96px 1fr 34px; gap:0; align-items:stretch;
+    display:grid; grid-template-columns:96px 1fr 24px 34px; gap:0; align-items:stretch;
     border-bottom:1px solid var(--line);
   }
   .tl-row:last-child{ border-bottom:none; }
+  .tl-order-cell{ align-self:center; justify-self:center; }
+  .tl-order-cell button{ width:20px; height:18px; font-size:9px; }
   .tl-time-cell{
     display:flex; align-items:flex-start; justify-content:flex-end; padding:14px 12px;
     background:var(--parchment-dim); border-right:1px solid var(--line);
@@ -538,7 +545,12 @@
   .photos-subtab:hover{ border-color:var(--heather); color:var(--heather); }
   .photos-subtab.active{ background:var(--ink); color:var(--parchment); border-color:var(--ink); }
   .idea-group{ margin-bottom:22px; }
-  .idea-group-title{ font-family:'Fraunces', serif; font-weight:600; font-size:14.5px; margin:0 0 8px; display:flex; align-items:baseline; gap:8px; }
+  .idea-group-head{ display:flex; align-items:center; gap:8px; margin:0 0 8px; }
+  .idea-group-order button{ width:18px; height:16px; font-size:8px; }
+  .idea-group-title-input{ font-family:'Fraunces', serif; font-weight:600; font-size:14.5px; border:none; background:transparent; padding:2px 5px; border-radius:2px; flex:1; min-width:0; }
+  .idea-group-title-input:focus{ outline:none; background:rgba(135,120,158,.07); }
+  .idea-group-count{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:rgba(43,42,40,.4); font-weight:400; flex:none; }
+  .idea-group-title{ font-family:'Fraunces', serif; font-weight:600; font-size:14.5px; margin:0 0 8px; color:rgba(43,42,40,.6); }
   .idea-group-count{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:rgba(43,42,40,.4); font-weight:400; }
   .idea-row{ display:flex; align-items:center; gap:8px; padding:7px 0; }
   .idea-row input[type="checkbox"]{ width:16px; height:16px; accent-color:var(--holyrood); flex:none; cursor:pointer; }
@@ -769,6 +781,7 @@
   }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -776,7 +789,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v24</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v25</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -920,8 +933,13 @@
 
   <!-- TIMELINE -->
   <section class="panel" id="panel-timeline">
-    <h2 class="section-title">Trip timeline</h2>
-    <p class="section-sub">4–5 December, Edinburgh. Add stops, times and notes as the day takes shape.</p>
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+      <div>
+        <h2 class="section-title">Trip timeline</h2>
+        <p class="section-sub">4–5 December, Edinburgh. Add stops, times and notes as the day takes shape.</p>
+      </div>
+      <button class="ghost" onclick="exportTimelinePDF()" style="flex:none;">📄 Export as PDF</button>
+    </div>
     <div id="timeline-container"></div>
   </section>
 
@@ -1246,6 +1264,7 @@ const ALL_TABS = [
 ];
 function seedNavOrder(){ return ALL_TABS.map(t => t.id); }
 function seedPhotoLocations(){ return []; }
+function seedPhotoIdeaCategoryOrder(){ return ['Getting ready','Ceremony','Couple portraits','Family & group','Details','Edinburgh & location']; }
 function seedPhotoIdeas(){
   const mk = (category, text) => ({id:uid(), category, text, done:false, images:[]});
   return [
@@ -1261,8 +1280,14 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v24';
+const APP_VERSION = 'v25';
 const CHANGELOG = [
+  { version:'v25', date:'2026-08-13', notes:[
+    'PDFs now open inline in a new tab (browser\'s built-in viewer) instead of downloading — applies everywhere attachments are used',
+    'Trip timeline: stops can be reordered within their day with ▲▼ buttons; new "Export as PDF" button',
+    'Shot list: sections can be reordered and renamed inline',
+    'Master checklist: tasks can now have a link and file attachments, same as Suppliers and Budget'
+  ]},
   { version:'v24', date:'2026-08-13', notes:[
     'Photo locations: 5-star importance rating — click a star to set it, click the same star again to clear',
     'Budget items: added a link field (quote, listing, contract…) inside the notes panel, with an open-in-new-tab icon'
@@ -1352,6 +1377,7 @@ let STATE = {
   photoLocationsMap: '',
   plTagOptions: seedPlTagOptions(),
   photoIdeas: seedPhotoIdeas(),
+  photoIdeaCategoryOrder: seedPhotoIdeaCategoryOrder(),
   githubSettings: {enabled:false, token:'', owner:'', repo:'', path:'ceremony-data.json', branch:'main', sha:null, lastSyncAt:null}
 };
 
@@ -1598,7 +1624,7 @@ function applyModeCopy(){
 }
 
 async function loadAll(){
-  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoLocationsMap','plTagOptions','photoIdeas','githubSettings'];
+  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoLocationsMap','plTagOptions','photoIdeas','photoIdeaCategoryOrder','githubSettings'];
   for(const k of keys){
     try{
       const res = await window.storage.get(k, false);
@@ -1802,6 +1828,7 @@ async function exportBackup(){
   const attachmentIds = [];
   Object.values(STATE.suppliers).forEach(arr => arr.forEach(o => (o.attachments||[]).forEach(a => attachmentIds.push(a.id))));
   STATE.budget.forEach(r => (r.attachments||[]).forEach(a => attachmentIds.push(a.id)));
+  STATE.checklist.forEach(t => (t.attachments||[]).forEach(a => attachmentIds.push(a.id)));
   const attachmentFiles = {};
   for(const id of attachmentIds){
     try{
@@ -2173,6 +2200,7 @@ function renderChecklist(){
       <button class="ghost" data-action="add-phase">+ Add section</button>`;
     c.appendChild(addRow);
   }
+  preloadAttachments();
 }
 
 document.getElementById('checklist-search').addEventListener('input', (e) => {
@@ -2193,11 +2221,31 @@ function isOverdue(t){
   return new Date(t.due + 'T00:00:00') < today;
 }
 function taskRowHtml(t){
-  return `<div class="task-row ${t.done?'done':''} ${isOverdue(t)?'overdue':''}" data-id="${t.id}">
-    <input type="checkbox" ${t.done?'checked':''} data-action="toggle">
-    <span class="task-text" contenteditable="true" data-action="edit-text">${escapeHtml(t.text)}</span>
-    <input type="date" class="task-due" value="${t.due||''}" data-action="edit-due">
-    <button class="row-del" data-action="delete">×</button>
+  const tatts = t.attachments || [];
+  const hasExtra = t.link || tatts.length;
+  return `<div class="task-row-wrap" data-id="${t.id}">
+    <div class="task-row ${t.done?'done':''} ${isOverdue(t)?'overdue':''}">
+      <input type="checkbox" ${t.done?'checked':''} data-action="toggle">
+      <span class="task-text" contenteditable="true" data-action="edit-text">${escapeHtml(t.text)}</span>
+      <input type="date" class="task-due" value="${t.due||''}" data-action="edit-due">
+      <button class="task-attach-toggle ${hasExtra?'has-extra':''}" data-action="toggle-task-extra" title="Link / attachments">📎</button>
+      <button class="row-del" data-action="delete">×</button>
+    </div>
+    <div class="task-extra" style="display:${t._expanded?'block':'none'};">
+      <div class="budget-link-row">
+        <a class="link-open" href="${t.link ? (/^https?:\/\//i.test(t.link)?t.link:'https://'+t.link) : '#'}" target="_blank" rel="noopener noreferrer" ${!t.link?'aria-disabled="true"':''}>↗</a>
+        <input type="text" class="task-link-input" data-f="link" value="${escapeHtml(t.link||'')}" placeholder="Link — quote, booking confirmation…">
+      </div>
+      <div class="attach-zone" data-row-id="${t.id}">
+        <div class="attach-chips">
+          ${tatts.map(a => attachmentChipHtml(a)).join('')}
+        </div>
+        <label class="attach-drop-target" title="Tap to pick a file, or drag one here">
+          <span class="drop-label">📎 Drop a file here or tap to attach</span>
+          <input type="file" class="attach-input" accept=".pdf,.png,.jpg,.jpeg,.eml,.msg,.txt,.doc,.docx" hidden multiple>
+        </label>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -2264,10 +2312,20 @@ document.getElementById('checklist-container').addEventListener('click', (e) => 
   // ── Delete task ──
   const delBtn = e.target.closest('[data-action="delete"]');
   if(delBtn){
-    const id = delBtn.closest('.task-row').dataset.id;
+    const id = delBtn.closest('.task-row-wrap').dataset.id;
+    (STATE.checklist.find(t=>t.id===id)?.attachments||[]).forEach(a => window.storage.delete('file:'+a.id, false).catch(()=>{}));
     STATE.checklist = STATE.checklist.filter(t => t.id !== id);
     scheduleSave('checklist');
     renderChecklist(); renderOverview(); renderHero();
+    return;
+  }
+  // ── Toggle link/attachments panel ──
+  if(e.target.dataset.action === 'toggle-task-extra'){
+    const wrap = e.target.closest('.task-row-wrap'); if(!wrap) return;
+    const t = STATE.checklist.find(x => x.id === wrap.dataset.id); if(!t) return;
+    t._expanded = !t._expanded;
+    const panel = wrap.querySelector('.task-extra');
+    if(panel) panel.style.display = t._expanded ? 'block' : 'none';
     return;
   }
 });
@@ -2286,25 +2344,104 @@ document.getElementById('checklist-container').addEventListener('blur', (e) => {
     else if(p) e.target.value = p.name; // revert blank
   }
 }, true);
-document.getElementById('checklist-container').addEventListener('change', (e) => {
-  const row = e.target.closest('.task-row');
+document.getElementById('checklist-container').addEventListener('change', async (e) => {
+  const row = e.target.closest('.task-row-wrap');
   if(!row) return;
   const t = STATE.checklist.find(x => x.id === row.dataset.id);
   if(!t) return;
-  if(e.target.dataset.action === 'toggle'){ t.done = e.target.checked; row.classList.toggle('done', t.done); }
+  if(e.target.dataset.action === 'toggle'){ t.done = e.target.checked; row.querySelector('.task-row').classList.toggle('done', t.done); }
   if(e.target.dataset.action === 'edit-due'){ t.due = e.target.value; }
+  if(e.target.dataset.f === 'link'){
+    t.link = e.target.value;
+    const anchor = row.querySelector('a.link-open');
+    if(anchor){ const raw = e.target.value.trim(); anchor.href = raw ? (/^https?:\/\//i.test(raw)?raw:'https://'+raw) : '#'; }
+  }
+  if(e.target.classList.contains('attach-input')){
+    handleAttachmentFiles(Array.from(e.target.files||[]), t, 'checklist', renderChecklist);
+    e.target.value = '';
+  }
   scheduleSave('checklist');
   renderOverview(); renderHero();
   // refresh count badge without full rerender jank
-  renderChecklist();
+  if(e.target.dataset.action === 'toggle' || e.target.dataset.action === 'edit-due') renderChecklist();
 });
 document.getElementById('checklist-container').addEventListener('blur', (e) => {
   if(e.target.dataset && e.target.dataset.action === 'edit-text'){
-    const row = e.target.closest('.task-row');
+    const row = e.target.closest('.task-row-wrap');
     const t = STATE.checklist.find(x => x.id === row.dataset.id);
     if(t){ t.text = e.target.textContent; scheduleSave('checklist'); renderOverview(); }
   }
 }, true);
+
+// ── Attachments on checklist tasks (same pattern as Suppliers/Budget) ──────
+document.getElementById('checklist-container').addEventListener('click', (e) => {
+  if(e.target.closest('[data-action="open-att"]')){
+    const chip  = e.target.closest('.attach-chip');
+    const attId = chip.dataset.attId;
+    const name  = chip.dataset.attName || 'attachment';
+    const cached = attachmentCache.get(attId);
+    if(cached){
+      openAttachment(cached.url, cached.name || name);
+    } else {
+      chip.style.opacity = '0.5';
+      window.storage.get('file:' + attId, false).then(res => {
+        chip.style.opacity = '';
+        if(res && res.value){
+          attachmentCache.set(attId, { url: res.value, name });
+          openAttachment(res.value, name);
+        } else {
+          alert("Couldn't find that attachment in storage — it may not have finished saving.");
+        }
+      }).catch(() => {
+        chip.style.opacity = '';
+        alert("Couldn't load that attachment — it may not have finished saving.");
+      });
+    }
+    return;
+  }
+  if(e.target.closest('[data-action="del-att"]')){
+    const chip = e.target.closest('.attach-chip');
+    const attId = chip.dataset.attId;
+    const zone = e.target.closest('.attach-zone');
+    const t = STATE.checklist.find(x => x.id === zone.dataset.rowId);
+    if(t){
+      t.attachments = (t.attachments||[]).filter(a => a.id !== attId);
+      scheduleSave('checklist');
+      window.storage.delete('file:' + attId, false).catch(()=>{});
+      renderChecklist();
+    }
+    return;
+  }
+});
+document.getElementById('checklist-container').addEventListener('dragenter', (e) => {
+  const zone = e.target.closest('.attach-drop-target');
+  if(zone){ e.preventDefault(); zone.classList.add('drag-over'); }
+}, false);
+document.getElementById('checklist-container').addEventListener('dragover', (e) => {
+  const zone = e.target.closest('.attach-drop-target');
+  if(zone){ e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }
+}, false);
+document.getElementById('checklist-container').addEventListener('dragleave', (e) => {
+  const zone = e.target.closest('.attach-drop-target');
+  if(zone && !zone.contains(e.relatedTarget)) zone.classList.remove('drag-over');
+}, false);
+document.getElementById('checklist-container').addEventListener('drop', (e) => {
+  const zone = e.target.closest('.attach-drop-target');
+  if(!zone) return;
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  const attachZone = zone.closest('.attach-zone');
+  const t = STATE.checklist.find(x => x.id === attachZone.dataset.rowId);
+  let files = Array.from(e.dataTransfer.files || []);
+  if(files.length === 0 && e.dataTransfer.items){
+    files = Array.from(e.dataTransfer.items).filter(item => item.kind === 'file').map(item => item.getAsFile()).filter(Boolean);
+  }
+  if(files.length > 0){
+    handleAttachmentFiles(files, t, 'checklist', renderChecklist);
+  } else {
+    alert("Couldn't read that drag — try dragging a file from Finder instead.");
+  }
+}, false);
 
 /* ============================= BUDGET ============================= */
 function rowBalance(r){
@@ -2820,12 +2957,27 @@ function dataUrlToBlob(dataUrl){
 }
 
 function openAttachment(dataUrl, name){
-  // Always use <a download> with a blob URL — never window.open.
-  // window.open is blocked by async event handlers on Safari/Chrome mobile.
-  // Blob URLs work everywhere and let the OS hand the file to the right app.
   try{
     const blob   = dataUrlToBlob(dataUrl);
     const objUrl = URL.createObjectURL(blob);
+    const isPdf  = blob.type === 'application/pdf' || /\.pdf$/i.test(name||'');
+    if(isPdf){
+      // PDFs open inline using the browser's built-in viewer — this is a
+      // synchronous window.open in direct response to the click, so it isn't
+      // blocked by Safari/Chrome mobile's popup rules.
+      const win = window.open(objUrl, '_blank');
+      if(!win){
+        // Popup blocked for some reason — fall back to a download so the file isn't lost.
+        const a = document.createElement('a');
+        a.href = objUrl; a.download = name; a.style.display = 'none';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      }
+      // Give the new tab plenty of time to finish loading before we free the memory.
+      setTimeout(() => URL.revokeObjectURL(objUrl), 5 * 60 * 1000);
+      return;
+    }
+    // Everything else (images, docs, emails…) still downloads — most browsers
+    // wouldn't render these inline anyway, and Mail/Preview/Word need the real file.
     const a = document.createElement('a');
     a.href     = objUrl;
     a.download = name;
@@ -2847,6 +2999,9 @@ async function preloadAttachments(){
   ));
   STATE.budget.forEach(r =>
     (r.attachments||[]).forEach(a => { if(!attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); })
+  );
+  STATE.checklist.forEach(t =>
+    (t.attachments||[]).forEach(a => { if(!attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); })
   );
   for(const {id, name} of ids){
     try{
@@ -2978,6 +3133,84 @@ document.getElementById('budget-body').addEventListener('drop', (e) => {
 }, false);
 
 /* ============================= TIMELINE ============================= */
+function exportTimelinePDF(){
+  if(typeof window.jspdf === 'undefined'){
+    alert("PDF library didn't load — check your connection and try again.");
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'pt', format:'a4' });
+  const marginX = 48;
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 56;
+
+  const checkPageBreak = (needed) => {
+    if(y + needed > pageHeight - 48){ doc.addPage(); y = 56; }
+  };
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(30);
+  doc.text('Trip Timeline', marginX, y);
+  y += 10;
+  doc.setDrawColor(180);
+  doc.setLineWidth(0.5);
+  doc.line(marginX, y+6, pageWidth-marginX, y+6);
+  y += 32;
+
+  const dateOrder = [];
+  const byDate = {};
+  STATE.timeline.forEach(row => {
+    if(!byDate[row.date]){ dateOrder.push(row.date); byDate[row.date] = []; }
+    byDate[row.date].push(row);
+  });
+
+  dateOrder.forEach(date => {
+    checkPageBreak(40);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(40);
+    doc.text(date, marginX, y);
+    y += 8;
+    doc.setDrawColor(210);
+    doc.line(marginX, y+4, pageWidth-marginX, y+4);
+    y += 22;
+
+    byDate[date].forEach(r => {
+      checkPageBreak(36);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(110, 90, 140);
+      doc.text(r.time || '—', marginX, y);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11.5);
+      doc.setTextColor(30);
+      doc.text(r.activity || '(untitled)', marginX + 60, y);
+      y += 15;
+
+      if(r.notes){
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(9.5);
+        doc.setTextColor(100);
+        const lines = doc.splitTextToSize(r.notes, pageWidth - marginX*2 - 60);
+        lines.forEach(line => {
+          checkPageBreak(13);
+          doc.text(line, marginX + 60, y);
+          y += 13;
+        });
+      }
+      y += 10;
+    });
+    y += 10;
+  });
+
+  // Open inline like everything else, rather than forcing a download.
+  const blobUrl = doc.output('bloburl');
+  const win = window.open(blobUrl, '_blank');
+  if(!win) doc.save('trip-timeline.pdf'); // popup blocked — fall back to download
+}
 function renderTimeline(){
   const c = document.getElementById('timeline-container');
   c.innerHTML = '';
@@ -2996,7 +3229,7 @@ function renderTimeline(){
         <span class="rule"></span>
       </div>
       <div class="day-card" data-date="${escapeHtml(date)}">
-        ${byDate[date].map(r => timelineRowHtml(r)).join('')}
+        ${byDate[date].map((r, i) => timelineRowHtml(r, i, byDate[date].length)).join('')}
         <div class="tl-add-row">
           <button class="ghost" data-add-day="${escapeHtml(date)}" style="padding:5px 10px;">+ Add stop</button>
         </div>
@@ -3008,7 +3241,7 @@ function renderTimeline(){
   addDay.innerHTML = `<button class="ghost" data-action="add-new-day" style="margin-top:6px;">+ Add a day</button>`;
   c.appendChild(addDay);
 }
-function timelineRowHtml(r){
+function timelineRowHtml(r, posInDay, dayCount){
   return `<div class="tl-row" data-id="${r.id}">
     <div class="tl-time-cell">
       <input class="tl-time" type="time" placeholder="—" value="${escapeHtml(r.time||'')}" data-f="time">
@@ -3016,6 +3249,10 @@ function timelineRowHtml(r){
     <div class="tl-main">
       <input placeholder="What's happening" value="${escapeHtml(r.activity||'')}" data-f="activity">
       <textarea placeholder="Notes…" data-f="notes" rows="1">${escapeHtml(r.notes||'')}</textarea>
+    </div>
+    <div class="tl-order-cell row-order">
+      <button data-action="tl-move-up" ${posInDay===0?'disabled':''} title="Move up">▲</button>
+      <button data-action="tl-move-down" ${posInDay===dayCount-1?'disabled':''} title="Move down">▼</button>
     </div>
     <div class="tl-del-cell"><button class="row-del" data-action="delete-tl">×</button></div>
   </div>`;
@@ -3038,6 +3275,21 @@ document.getElementById('timeline-container').addEventListener('click', (e) => {
     const row = e.target.closest('.tl-row');
     STATE.timeline = STATE.timeline.filter(x => x.id !== row.dataset.id);
     scheduleSave('timeline'); renderTimeline();
+    return;
+  }
+  if(e.target.dataset.action === 'tl-move-up' || e.target.dataset.action === 'tl-move-down'){
+    const row = e.target.closest('.tl-row'); if(!row) return;
+    const r = STATE.timeline.find(x => x.id === row.dataset.id); if(!r) return;
+    const sameDate = STATE.timeline.filter(x => x.date === r.date);
+    const posInDay = sameDate.findIndex(x => x.id === r.id);
+    const swapPos = e.target.dataset.action === 'tl-move-up' ? posInDay - 1 : posInDay + 1;
+    if(swapPos < 0 || swapPos >= sameDate.length) return;
+    const other = sameDate[swapPos];
+    const idxA = STATE.timeline.findIndex(x => x.id === r.id);
+    const idxB = STATE.timeline.findIndex(x => x.id === other.id);
+    [STATE.timeline[idxA], STATE.timeline[idxB]] = [STATE.timeline[idxB], STATE.timeline[idxA]];
+    scheduleSave('timeline'); renderTimeline();
+    return;
   }
 });
 document.getElementById('timeline-container').addEventListener('input', (e) => {
@@ -3492,13 +3744,21 @@ function renderPhotoIdeas(){
   if(!c) return;
   const groups = {};
   (STATE.photoIdeas||[]).forEach(idea => { (groups[idea.category] = groups[idea.category]||[]).push(idea); });
-  const order = [...new Set([
-    'Getting ready','Ceremony','Couple portraits','Family & group','Details','Edinburgh & location',
-    ...Object.keys(groups)
-  ])].filter(cat => groups[cat] && groups[cat].length);
-  c.innerHTML = order.map(cat => `
+  STATE.photoIdeaCategoryOrder = STATE.photoIdeaCategoryOrder || [];
+  let orderChanged = false;
+  Object.keys(groups).forEach(cat => { if(!STATE.photoIdeaCategoryOrder.includes(cat)){ STATE.photoIdeaCategoryOrder.push(cat); orderChanged = true; } });
+  if(orderChanged) scheduleSave('photoIdeaCategoryOrder');
+  const order = STATE.photoIdeaCategoryOrder.filter(cat => groups[cat] && groups[cat].length);
+  c.innerHTML = order.map((cat, catIdx) => `
     <div class="idea-group" data-cat="${escapeHtml(cat)}">
-      <div class="idea-group-title">${escapeHtml(cat)} <span class="idea-group-count">${groups[cat].filter(i=>i.done).length}/${groups[cat].length}</span></div>
+      <div class="idea-group-head">
+        <div class="idea-group-order row-order">
+          <button data-action="idea-cat-up" ${catIdx===0?'disabled':''} title="Move section up">▲</button>
+          <button data-action="idea-cat-down" ${catIdx===order.length-1?'disabled':''} title="Move section down">▼</button>
+        </div>
+        <input type="text" class="idea-group-title-input" value="${escapeHtml(cat)}" data-orig-cat="${escapeHtml(cat)}">
+        <span class="idea-group-count">${groups[cat].filter(i=>i.done).length}/${groups[cat].length}</span>
+      </div>
       ${groups[cat].map(idea => {
         const imgs = idea.images || [];
         return `
@@ -3546,6 +3806,17 @@ document.getElementById('photo-ideas-container').addEventListener('input', (e) =
 document.getElementById('photo-ideas-container').addEventListener('click', (e) => {
   const thumb = e.target.closest('[data-action="open-pl-lightbox"]');
   if(thumb){ openPlLightbox(thumb.dataset.src); return; }
+  if(e.target.dataset.action === 'idea-cat-up' || e.target.dataset.action === 'idea-cat-down'){
+    const group = e.target.closest('.idea-group'); if(!group) return;
+    const cat = group.dataset.cat;
+    const idx = STATE.photoIdeaCategoryOrder.indexOf(cat); if(idx < 0) return;
+    const swapWith = e.target.dataset.action === 'idea-cat-up' ? idx - 1 : idx + 1;
+    if(swapWith < 0 || swapWith >= STATE.photoIdeaCategoryOrder.length) return;
+    [STATE.photoIdeaCategoryOrder[idx], STATE.photoIdeaCategoryOrder[swapWith]] = [STATE.photoIdeaCategoryOrder[swapWith], STATE.photoIdeaCategoryOrder[idx]];
+    scheduleSave('photoIdeaCategoryOrder');
+    renderPhotoIdeas();
+    return;
+  }
   const wrap = e.target.closest('.idea-row-wrap'); if(!wrap) return;
   const idea = STATE.photoIdeas.find(i => i.id === wrap.dataset.id); if(!idea) return;
   if(e.target.dataset.action === 'toggle-idea'){
@@ -3579,6 +3850,24 @@ document.getElementById('photo-ideas-container').addEventListener('click', (e) =
   }
 });
 document.getElementById('photo-ideas-container').addEventListener('change', async (e) => {
+  if(e.target.classList.contains('idea-group-title-input')){
+    const oldCat = e.target.dataset.origCat;
+    const newCat = e.target.value.trim();
+    if(!newCat){ e.target.value = oldCat; return; }
+    if(newCat === oldCat) return;
+    if(STATE.photoIdeaCategoryOrder.includes(newCat)){
+      showToast(`"${newCat}" already exists — pick a different name`, [], 5000);
+      e.target.value = oldCat;
+      return;
+    }
+    STATE.photoIdeas.forEach(i => { if(i.category === oldCat) i.category = newCat; });
+    const idx = STATE.photoIdeaCategoryOrder.indexOf(oldCat);
+    if(idx >= 0) STATE.photoIdeaCategoryOrder[idx] = newCat;
+    scheduleSave('photoIdeas');
+    scheduleSave('photoIdeaCategoryOrder');
+    renderPhotoIdeas();
+    return;
+  }
   if(!e.target.classList.contains('idea-image-file')) return;
   const wrap = e.target.closest('.idea-row-wrap'); if(!wrap) return;
   const idea = STATE.photoIdeas.find(i => i.id === wrap.dataset.id); if(!idea) return;
