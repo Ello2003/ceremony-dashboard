@@ -164,6 +164,8 @@
     #guest-table{ display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; }
     /* footer */
     footer{ flex-direction:row; padding:18px 16px 40px; }
+    .task-link-item, .task-link-add-row{ flex-wrap:wrap; }
+    .task-link-name-input, .task-link-add-name{ width:100%; }
     /* modal */
     .modal-panel{ padding:18px 16px; }
     /* attach zone drop target */
@@ -481,9 +483,18 @@
   .budget-notes-row textarea{
     width:100%; font-family:'Source Serif 4', serif; font-size:13px; border:1px solid var(--line);
     border-radius:2px; padding:8px; background:transparent; resize:vertical; min-height:52px; color:var(--ink);
+    overflow:hidden;
   }
   .budget-notes-row textarea:focus{ outline:none; border-color:var(--holyrood); }
   .budget-link-row{ display:flex; gap:6px; align-items:center; margin:8px 0; }
+  .task-links{ margin:8px 0; }
+  .task-link-item{ display:flex; gap:6px; align-items:center; margin-bottom:5px; }
+  .task-link-name-input{ width:110px; flex:none; font-family:'IBM Plex Mono', monospace; font-size:11px; border:1px solid var(--line); border-radius:2px; padding:6px 8px; background:transparent; }
+  .task-link-url-input{ flex:1; font-family:'IBM Plex Mono', monospace; font-size:11px; border:1px solid var(--line); border-radius:2px; padding:6px 8px; background:transparent; }
+  .task-link-add-row{ display:flex; gap:6px; }
+  .task-link-add-name{ width:110px; flex:none; font-family:'IBM Plex Mono', monospace; font-size:11px; border:1px dashed var(--line); border-radius:2px; padding:6px 8px; background:transparent; }
+  .task-link-add-url{ flex:1; font-family:'IBM Plex Mono', monospace; font-size:11px; border:1px dashed var(--line); border-radius:2px; padding:6px 8px; background:transparent; }
+  .task-link-add-name:focus, .task-link-add-url:focus{ border-color:var(--heather); outline:none; }
   .budget-link-input{ flex:1; font-family:'IBM Plex Mono', monospace; font-size:11px; border:1px solid var(--line); border-radius:2px; padding:6px 8px; background:transparent; }
 
   /* ---------- PHOTO LOCATIONS ---------- */
@@ -796,7 +807,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v27</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v28</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1299,8 +1310,12 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v27';
+const APP_VERSION = 'v28';
 const CHANGELOG = [
+  { version:'v28', date:'2026-08-13', notes:[
+    'Master checklist: tasks can now hold multiple links, each with its own label — add as many as you need, rename or remove any of them',
+    'Budget notes: expand/collapse state is now remembered (persisted, not just for the session), and the notes box auto-grows to fit what you\'ve typed instead of scrolling inside a small fixed box'
+  ]},
   { version:'v27', date:'2026-08-13', notes:[
     'Fixed attachment files getting corrupted on save — every file was being double-encoded on write but only decoded once on read, adding stray characters to the start/end of the file. Verified byte-for-byte with a test before shipping.',
     'Heads up: any PDFs/files attached before this version were saved corrupted and can\'t be recovered — you\'ll need to re-attach them. New attachments from now on are unaffected.'
@@ -2098,7 +2113,7 @@ function linkSupplierToBudget(o, cat, budgetStatus){
   let row = o.budgetId ? STATE.budget.find(r => r.id === o.budgetId) : null;
   let created = false;
   if(!row){
-    row = {id:uid(), category:cat, item:o.name||cat, est:o.price||'', actual:'', deposit:'', status:budgetStatus, notes:`Auto-linked from supplier card (${cat}).`, _expanded:false, supplierId:o.id};
+    row = {id:uid(), category:cat, item:o.name||cat, est:o.price||'', actual:'', deposit:'', status:budgetStatus, notes:`Auto-linked from supplier card (${cat}).`, expanded:true, supplierId:o.id};
     STATE.budget.push(row);
     o.budgetId = row.id;
     created = true;
@@ -2248,19 +2263,29 @@ function isOverdue(t){
 }
 function taskRowHtml(t){
   const tatts = t.attachments || [];
-  const hasExtra = t.link || tatts.length;
+  const tlinks = t.links || (t.link ? [{id:uid(), name:'', url:t.link}] : []); // migrate legacy single link
+  const hasExtra = tlinks.length || tatts.length;
   return `<div class="task-row-wrap" data-id="${t.id}">
     <div class="task-row ${t.done?'done':''} ${isOverdue(t)?'overdue':''}">
       <input type="checkbox" ${t.done?'checked':''} data-action="toggle">
       <span class="task-text" contenteditable="true" data-action="edit-text">${escapeHtml(t.text)}</span>
       <input type="date" class="task-due" value="${t.due||''}" data-action="edit-due">
-      <button class="task-attach-toggle ${hasExtra?'has-extra':''}" data-action="toggle-task-extra" title="Link / attachments">📎</button>
+      <button class="task-attach-toggle ${hasExtra?'has-extra':''}" data-action="toggle-task-extra" title="Links / attachments">📎</button>
       <button class="row-del" data-action="delete">×</button>
     </div>
     <div class="task-extra" style="display:${t._expanded?'block':'none'};">
-      <div class="budget-link-row">
-        <a class="link-open" href="${t.link ? (/^https?:\/\//i.test(t.link)?t.link:'https://'+t.link) : '#'}" target="_blank" rel="noopener noreferrer" ${!t.link?'aria-disabled="true"':''}>↗</a>
-        <input type="text" class="task-link-input" data-f="link" value="${escapeHtml(t.link||'')}" placeholder="Link — quote, booking confirmation…">
+      <div class="task-links">
+        ${tlinks.map(l => `
+          <div class="task-link-item" data-link-id="${l.id}">
+            <a class="link-open" href="${l.url ? (/^https?:\/\//i.test(l.url)?l.url:'https://'+l.url) : '#'}" target="_blank" rel="noopener noreferrer" ${!l.url?'aria-disabled="true"':''}>↗</a>
+            <input type="text" class="task-link-name-input" value="${escapeHtml(l.name||'')}" placeholder="Label">
+            <input type="text" class="task-link-url-input" value="${escapeHtml(l.url||'')}" placeholder="URL">
+            <button class="idea-del" data-action="del-task-link" title="Remove link">×</button>
+          </div>`).join('')}
+        <div class="task-link-add-row">
+          <input type="text" class="task-link-add-name" placeholder="Label (optional)">
+          <input type="text" class="task-link-add-url" placeholder="Paste a URL, press Enter">
+        </div>
       </div>
       <div class="attach-zone" data-row-id="${t.id}">
         <div class="attach-chips">
@@ -2345,6 +2370,17 @@ document.getElementById('checklist-container').addEventListener('click', (e) => 
     renderChecklist(); renderOverview(); renderHero();
     return;
   }
+  // ── Remove a link ──
+  if(e.target.dataset.action === 'del-task-link'){
+    const wrap = e.target.closest('.task-row-wrap'); if(!wrap) return;
+    const t = STATE.checklist.find(x => x.id === wrap.dataset.id); if(!t) return;
+    const item = e.target.closest('.task-link-item');
+    t.links = (t.links || (t.link ? [{id:uid(), name:'', url:t.link}] : [])).filter(l => l.id !== item.dataset.linkId);
+    delete t.link;
+    scheduleSave('checklist');
+    renderChecklist();
+    return;
+  }
   // ── Toggle link/attachments panel ──
   if(e.target.dataset.action === 'toggle-task-extra'){
     const wrap = e.target.closest('.task-row-wrap'); if(!wrap) return;
@@ -2359,6 +2395,22 @@ document.getElementById('checklist-container').addEventListener('click', (e) => 
 document.getElementById('checklist-container').addEventListener('keydown', (e) => {
   if(e.target.id === 'new-phase-input' && e.key === 'Enter'){
     document.querySelector('[data-action="add-phase"]')?.click();
+    return;
+  }
+  if(e.target.classList.contains('task-link-add-url') && e.key === 'Enter'){
+    e.preventDefault();
+    const wrap = e.target.closest('.task-row-wrap'); if(!wrap) return;
+    const t = STATE.checklist.find(x => x.id === wrap.dataset.id); if(!t) return;
+    const url = e.target.value.trim();
+    if(!url) return;
+    const nameInput = wrap.querySelector('.task-link-add-name');
+    const name = (nameInput?.value || '').trim();
+    t.links = t.links || (t.link ? [{id:uid(), name:'', url:t.link}] : []);
+    delete t.link;
+    t.links.push({id: uid(), name, url});
+    scheduleSave('checklist');
+    renderChecklist();
+    return;
   }
 });
 // Inline phase rename on blur
@@ -2377,10 +2429,17 @@ document.getElementById('checklist-container').addEventListener('change', async 
   if(!t) return;
   if(e.target.dataset.action === 'toggle'){ t.done = e.target.checked; row.querySelector('.task-row').classList.toggle('done', t.done); }
   if(e.target.dataset.action === 'edit-due'){ t.due = e.target.value; }
-  if(e.target.dataset.f === 'link'){
-    t.link = e.target.value;
-    const anchor = row.querySelector('a.link-open');
-    if(anchor){ const raw = e.target.value.trim(); anchor.href = raw ? (/^https?:\/\//i.test(raw)?raw:'https://'+raw) : '#'; }
+  if(e.target.classList.contains('task-link-name-input') || e.target.classList.contains('task-link-url-input')){
+    const item = e.target.closest('.task-link-item');
+    const link = (t.links||[]).find(l => l.id === item.dataset.linkId);
+    if(link){
+      if(e.target.classList.contains('task-link-name-input')) link.name = e.target.value;
+      else{
+        link.url = e.target.value;
+        const anchor = item.querySelector('a.link-open');
+        if(anchor){ const raw = e.target.value.trim(); anchor.href = raw ? (/^https?:\/\//i.test(raw)?raw:'https://'+raw) : '#'; }
+      }
+    }
   }
   if(e.target.classList.contains('attach-input')){
     handleAttachmentFiles(Array.from(e.target.files||[]), t, 'checklist', renderChecklist);
@@ -2476,12 +2535,19 @@ function rowBalance(r){
   const deposit = parseFloat(r.deposit) || 0;
   return total - deposit;
 }
+function autoGrowTextarea(el){
+  if(!el) return;
+  el.style.height = 'auto';
+  el.style.height = (el.scrollHeight + 2) + 'px';
+}
 function renderBudget(){
   const body = document.getElementById('budget-body');
   body.innerHTML = '';
   STATE.budget.forEach((r, idx) => {
     const bal = rowBalance(r);
     const isPaid = r.status === 'paid';
+    const hasNoteContent = r.notes || r.link || (r.attachments||[]).length;
+    if(r.expanded === undefined) r.expanded = !!hasNoteContent; // first time seeing this row: open it if there's already something to show
     const mainRow = document.createElement('tr');
     mainRow.dataset.id = r.id;
     mainRow.className = `budget-status-${r.status||'idea'}`;
@@ -2514,11 +2580,11 @@ function renderBudget(){
     body.appendChild(mainRow);
     // Notes expansion row
     const notesRow = document.createElement('tr');
-    notesRow.className = 'budget-notes-row' + (r._expanded ? ' open' : '');
+    notesRow.className = 'budget-notes-row' + (r.expanded ? ' open' : '');
     notesRow.dataset.notesFor = r.id;
     const batts = r.attachments || [];
     notesRow.innerHTML = `<td colspan="8">
-      <textarea data-f="notes" placeholder="Notes, supplier details, quote references…">${escapeHtml(r.notes||'')}</textarea>
+      <textarea class="budget-notes-textarea" data-f="notes" placeholder="Notes, supplier details, quote references…">${escapeHtml(r.notes||'')}</textarea>
       <div class="budget-link-row">
         <a class="link-open" href="${r.link ? (/^https?:\/\//i.test(r.link)?r.link:'https://'+r.link) : '#'}" target="_blank" rel="noopener noreferrer" ${!r.link?'aria-disabled="true"':''}>↗</a>
         <input type="text" class="budget-link-input" data-f="link" value="${escapeHtml(r.link||'')}" placeholder="Link — quote, listing, contract…">
@@ -2534,6 +2600,7 @@ function renderBudget(){
       </div>
     </td>`;
     body.appendChild(notesRow);
+    if(r.expanded) autoGrowTextarea(notesRow.querySelector('.budget-notes-textarea'));
   });
   renderBudgetTotals();
   preloadAttachments();
@@ -2549,17 +2616,21 @@ function renderBudgetTotals(){
   document.getElementById('budget-balance-total').textContent = '£' + bal.toLocaleString('en-GB',{maximumFractionDigits:0});
 }
 function addBudgetRow(){
-  STATE.budget.push({id:uid(), category:STATE.categories[0]||'', item:'', est:'', actual:'', deposit:'', status:'idea', notes:'', _expanded:false});
+  STATE.budget.push({id:uid(), category:STATE.categories[0]||'', item:'', est:'', actual:'', deposit:'', status:'idea', notes:'', expanded:false});
   scheduleSave('budget'); renderBudget();
 }
 document.getElementById('budget-body').addEventListener('click', (e) => {
   if(e.target.dataset.action === 'toggle-budget-notes'){
     const tr = e.target.closest('tr');
     const r = STATE.budget.find(x => x.id === tr.dataset.id); if(!r) return;
-    r._expanded = !r._expanded;
+    r.expanded = !r.expanded;
+    scheduleSave('budget');
     const notesRow = document.querySelector(`tr[data-notes-for="${r.id}"]`);
-    if(notesRow) notesRow.classList.toggle('open', r._expanded);
-    e.target.textContent = r._expanded ? '▴' : (r.notes || r.link || (r.attachments||[]).length ? '📝' : '+');
+    if(notesRow){
+      notesRow.classList.toggle('open', r.expanded);
+      if(r.expanded) autoGrowTextarea(notesRow.querySelector('.budget-notes-textarea'));
+    }
+    e.target.textContent = r.expanded ? '▴' : (r.notes || r.link || (r.attachments||[]).length ? '📝' : '+');
     return;
   }
   if(e.target.dataset.action === 'delete-budget'){
@@ -2597,6 +2668,9 @@ document.getElementById('budget-body').addEventListener('input', (e) => {
   if(f === 'link'){
     const anchor = notesRow ? notesRow.querySelector('a.link-open') : null;
     if(anchor){ const raw = e.target.value.trim(); anchor.href = raw ? (/^https?:\/\//i.test(raw)?raw:'https://'+raw) : '#'; }
+  }
+  if(f === 'notes'){
+    autoGrowTextarea(e.target);
   }
 
   // While a line is "Paid in full", keep the paid amount locked to the total —
