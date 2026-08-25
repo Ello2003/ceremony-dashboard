@@ -807,7 +807,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v28</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v29</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1310,8 +1310,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v28';
+const APP_VERSION = 'v29';
 const CHANGELOG = [
+  { version:'v29', date:'2026-08-13', notes:[
+    'Fixed "Couldn\'t load that attachment" errors on PDFs: the 4MB size check was measuring the file before encoding, but encoding inflates it by about a third — large PDFs could silently fail to save while still showing as attached. Lowered the limit to 3.5MB and, more importantly, attachments now only appear once the save is actually confirmed — if it fails, you get a clear error immediately instead of a broken attachment later.'
+  ]},
   { version:'v28', date:'2026-08-13', notes:[
     'Master checklist: tasks can now hold multiple links, each with its own label — add as many as you need, rename or remove any of them',
     'Budget notes: expand/collapse state is now remembered (persisted, not just for the session), and the notes box auto-grows to fit what you\'ve typed instead of scrolling inside a small fixed box'
@@ -1901,13 +1904,16 @@ document.getElementById('restore-input').addEventListener('change', async (e) =>
     if(!confirm('Restoring will replace everything currently on this board with the contents of the backup. Continue?')){ e.target.value=''; return; }
     required.forEach(k => { if(incoming[k] !== undefined) STATE[k] = incoming[k]; });
     for(const k of required) await persist(k, STATE[k]);
+    let failedAttachments = 0;
     if(parsed.attachmentFiles){
       for(const [id, dataUrl] of Object.entries(parsed.attachmentFiles)){
-        await persist('file:' + id, dataUrl);
+        try{ await saveAttachmentBlob(id, dataUrl); }catch(err){ console.error('Restore attachment failed:', id, err); failedAttachments++; }
       }
     }
     renderAll();
-    alert('Backup restored.');
+    alert(failedAttachments
+      ? `Backup restored, but ${failedAttachments} attachment file${failedAttachments===1?'':'s'} couldn't be saved — everything else came through fine.`
+      : 'Backup restored.');
   }catch(err){
     console.error(err);
     alert('Could not read that file — make sure it\'s a backup downloaded from this board.');
@@ -3015,22 +3021,36 @@ document.getElementById('suppliers-container').addEventListener('drop', async (e
   }
 }, false);
 
-const MAX_ATTACHMENT_MB = 4;
+const MAX_ATTACHMENT_MB = 3.5; // raw file size — base64 encoding adds ~33%, and the storage backend caps stored values around 5MB, so this leaves a safety margin
+async function saveAttachmentBlob(attId, dataUrl){
+  // Direct write, NOT routed through persist()'s silent-retry wrapper — for
+  // attachments we need to know immediately if the save failed, rather than
+  // showing the file as "attached" when it was never actually saved (which is
+  // exactly what caused "couldn't load that attachment" errors later).
+  const res = await window.storage.set('file:' + attId, JSON.stringify(dataUrl), false);
+  if(!res) throw new Error('Storage set returned no result');
+}
 async function handleAttachmentFiles(files, target, saveKey, rerenderFn){
   if(!files || !files.length || !target) return;
   for(const file of files){
     if(file.size > MAX_ATTACHMENT_MB * 1024 * 1024){
-      alert(`"${file.name}" is ${(file.size/1024/1024).toFixed(1)} MB — over the ${MAX_ATTACHMENT_MB} MB limit. Try exporting as PDF or compressing it first.`);
+      alert(`"${file.name}" is ${(file.size/1024/1024).toFixed(1)} MB — over the ${MAX_ATTACHMENT_MB} MB limit (files get roughly a third bigger once encoded for storage). Try compressing it or exporting a smaller PDF.`);
       continue;
     }
     await new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = async () => {
         const attId = uid();
-        target.attachments = target.attachments || [];
-        target.attachments.push({ id: attId, name: file.name, type: file.type, size: file.size });
-        scheduleSave(saveKey);
-        await persist('file:' + attId, reader.result);
+        try{
+          await saveAttachmentBlob(attId, reader.result);
+          target.attachments = target.attachments || [];
+          target.attachments.push({ id: attId, name: file.name, type: file.type, size: file.size });
+          attachmentCache.set(attId, { url: reader.result, name: file.name });
+          scheduleSave(saveKey);
+        }catch(err){
+          console.error('Attachment save failed:', err);
+          alert(`Couldn't save "${file.name}" — there was a storage error. Try a smaller file, or try again in a moment.`);
+        }
         resolve();
       };
       reader.onerror = () => { alert(`Couldn't read "${file.name}"`); resolve(); };
