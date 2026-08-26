@@ -674,6 +674,14 @@
   .ab-when .rel{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:rgba(43,42,40,0.5); display:block; margin-top:2px; }
   .ab-restore{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; background:none; border:1px solid var(--line); border-radius:2px; padding:5px 10px; cursor:pointer; color:rgba(43,42,40,0.65); }
   .ab-restore:hover{ border-color:var(--holyrood); color:var(--holyrood); }
+  .su-total{ display:flex; justify-content:space-between; align-items:baseline; padding:4px 0 14px; border-bottom:1px solid var(--line); margin-bottom:8px; }
+  .su-total-label{ font-family:'Fraunces', serif; font-weight:600; font-size:15px; }
+  .su-total-value{ font-family:'IBM Plex Mono', monospace; font-size:14px; color:var(--holyrood); font-weight:600; }
+  .su-row{ display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); }
+  .su-row:last-child{ border-bottom:none; }
+  .su-row-label{ font-size:13px; }
+  .su-row-count{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:rgba(43,42,40,0.45); display:block; margin-top:2px; }
+  .su-row-size{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:rgba(43,42,40,0.7); }
 
   /* ---------- SCRIPT / VOWS / READINGS ---------- */
   h3.sub-head{ font-family:'Fraunces', serif; font-weight:600; font-size:16px; margin:0 0 12px; padding-top:4px; border-top:1px solid var(--line); padding-top:18px; }
@@ -807,7 +815,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v29</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v30</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1044,6 +1052,7 @@
 <footer>
   <button class="footer-btn" onclick="openGithubSyncModal()">GitHub Sync</button>
   <button class="footer-btn" onclick="openAutoBackupModal()">Auto-backups <span id="autobackup-count"></span></button>
+  <button class="footer-btn" onclick="openStorageUsageModal()">Storage usage</button>
   <button class="footer-btn" onclick="exportSpreadsheet()" style="display:none;">Export .xlsx</button>
   <button class="footer-btn footer-btn-primary" onclick="exportBackup()">Download backup</button>
   <button class="footer-btn" onclick="document.getElementById('restore-input').click()">Restore backup</button>
@@ -1093,6 +1102,17 @@
       <button class="modal-close" onclick="closePdfViewer()">×</button>
     </div>
     <iframe id="pdf-viewer-frame" src="about:blank" title="PDF preview"></iframe>
+  </div>
+</div>
+
+<div class="modal-overlay" id="storage-usage-overlay" onclick="if(event.target===this) closeStorageUsageModal()">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h3>Storage usage</h3>
+      <button class="modal-close" onclick="closeStorageUsageModal()">×</button>
+    </div>
+    <p class="modal-sub">Everything on this board — text, photos and attachments — is stored directly in this browser (this page runs outside Claude.ai, so there's no cloud storage backing it). Browsers cap how much any one site can use, typically around 5–10MB total. Delete large or old items below to free up space.</p>
+    <div id="storage-usage-body"></div>
   </div>
 </div>
 
@@ -1310,8 +1330,12 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v29';
+const APP_VERSION = 'v30';
 const CHANGELOG = [
+  { version:'v30', date:'2026-08-13', notes:[
+    'Found the real cause of "storage error" on small files: this dashboard runs on GitHub Pages, outside Claude.ai, so it has no cloud storage — everything (text, photos, attachments) is saved directly in the browser, which caps total site storage around 5–10MB regardless of any single file\'s size. The v29 fix addressed a different, real bug (base64 inflating file size past a per-file limit) but wasn\'t the whole story for this deployment.',
+    'The error message now explains this accurately and points to a new "Storage usage" button in the footer, which shows total space used and a breakdown by area (budget/supplier/checklist attachments, photo location images, shot list photos) so you can find and delete what\'s taking up room.'
+  ]},
   { version:'v29', date:'2026-08-13', notes:[
     'Fixed "Couldn\'t load that attachment" errors on PDFs: the 4MB size check was measuring the file before encoding, but encoding inflates it by about a third — large PDFs could silently fail to save while still showing as attached. Lowered the limit to 3.5MB and, more importantly, attachments now only appear once the save is actually confirmed — if it fails, you get a clear error immediately instead of a broken attachment later.'
   ]},
@@ -3022,13 +3046,85 @@ document.getElementById('suppliers-container').addEventListener('drop', async (e
 }, false);
 
 const MAX_ATTACHMENT_MB = 3.5; // raw file size — base64 encoding adds ~33%, and the storage backend caps stored values around 5MB, so this leaves a safety margin
+function estimateLocalStorageBytes(){
+  let bytes = 0;
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(k && k.startsWith('ceremony:')){
+        bytes += (k.length + (localStorage.getItem(k)||'').length) * 2; // rough UTF-16 estimate
+      }
+    }
+  }catch(e){ /* localStorage inaccessible — ignore */ }
+  return bytes;
+}
+function formatBytes(bytes){
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' KB';
+  return (bytes/(1024*1024)).toFixed(2) + ' MB';
+}
+function computeStorageBreakdown(){
+  const rows = [];
+  // Attachments store their original file size; stored/base64 form is ~33% bigger.
+  const attBytes = (list) => list.reduce((sum, a) => sum + Math.round((a.size||0) * 4/3), 0);
+  let budgetAtts = [], supplierAtts = [], checklistAtts = [];
+  STATE.budget.forEach(r => budgetAtts.push(...(r.attachments||[])));
+  Object.values(STATE.suppliers).forEach(arr => arr.forEach(o => supplierAtts.push(...(o.attachments||[]))));
+  STATE.checklist.forEach(t => checklistAtts.push(...(t.attachments||[])));
+  if(budgetAtts.length) rows.push({label:'Budget attachments', count:budgetAtts.length, bytes:attBytes(budgetAtts)});
+  if(supplierAtts.length) rows.push({label:'Supplier attachments', count:supplierAtts.length, bytes:attBytes(supplierAtts)});
+  if(checklistAtts.length) rows.push({label:'Checklist attachments', count:checklistAtts.length, bytes:attBytes(checklistAtts)});
+
+  // Inline images (data URLs) don't carry a stored size — estimate from the string itself.
+  const imgBytes = (imgs) => imgs.reduce((sum, im) => sum + Math.round(((im.src||'').length) * 3/4), 0);
+  let locImgs = [], ideaImgs = [];
+  STATE.photoLocations.forEach(l => locImgs.push(...(l.images||[])));
+  STATE.photoIdeas.forEach(i => ideaImgs.push(...(i.images||[])));
+  if(locImgs.length) rows.push({label:'Photo location images', count:locImgs.length, bytes:imgBytes(locImgs)});
+  if(ideaImgs.length) rows.push({label:'Shot list example photos', count:ideaImgs.length, bytes:imgBytes(ideaImgs)});
+
+  rows.sort((a,b) => b.bytes - a.bytes);
+  const knownBytes = rows.reduce((s,r) => s + r.bytes, 0);
+  const totalBytes = estimateLocalStorageBytes();
+  const otherBytes = Math.max(0, totalBytes - knownBytes);
+  rows.push({label:'Everything else (checklist, budget, script, guests…)', count:null, bytes:otherBytes});
+  return { totalBytes, rows };
+}
+function openStorageUsageModal(){
+  renderStorageUsageModal();
+  document.getElementById('storage-usage-overlay').classList.add('open');
+}
+function closeStorageUsageModal(){
+  document.getElementById('storage-usage-overlay').classList.remove('open');
+}
+function renderStorageUsageModal(){
+  const { totalBytes, rows } = computeStorageBreakdown();
+  const c = document.getElementById('storage-usage-body');
+  c.innerHTML = `
+    <div class="su-total">
+      <span class="su-total-label">Total used</span>
+      <span class="su-total-value">${formatBytes(totalBytes)}</span>
+    </div>
+    ${rows.map(r => `
+      <div class="su-row">
+        <div class="su-row-label">${escapeHtml(r.label)}${r.count!==null ? `<span class="su-row-count">${r.count} item${r.count===1?'':'s'}</span>` : ''}</div>
+        <div class="su-row-size">${formatBytes(r.bytes)}</div>
+      </div>`).join('')}
+  `;
+}
 async function saveAttachmentBlob(attId, dataUrl){
   // Direct write, NOT routed through persist()'s silent-retry wrapper — for
   // attachments we need to know immediately if the save failed, rather than
   // showing the file as "attached" when it was never actually saved (which is
   // exactly what caused "couldn't load that attachment" errors later).
   const res = await window.storage.set('file:' + attId, JSON.stringify(dataUrl), false);
-  if(!res) throw new Error('Storage set returned no result');
+  if(!res){
+    if(STORAGE_MODE === 'local'){
+      const usedMB = (estimateLocalStorageBytes() / (1024*1024)).toFixed(1);
+      throw new Error(`local-storage-full:${usedMB}`);
+    }
+    throw new Error('Storage set returned no result');
+  }
 }
 async function handleAttachmentFiles(files, target, saveKey, rerenderFn){
   if(!files || !files.length || !target) return;
@@ -3049,7 +3145,12 @@ async function handleAttachmentFiles(files, target, saveKey, rerenderFn){
           scheduleSave(saveKey);
         }catch(err){
           console.error('Attachment save failed:', err);
-          alert(`Couldn't save "${file.name}" — there was a storage error. Try a smaller file, or try again in a moment.`);
+          if(String(err.message||'').startsWith('local-storage-full:')){
+            const usedMB = err.message.split(':')[1];
+            alert(`Couldn't save "${file.name}" — this browser's storage for this site is full (about ${usedMB} MB already used). This isn't about this file's size — it's everything on the board combined (photos, other attachments, etc.) filling up the space this browser allows the site. Open "Storage usage" in the footer to see what's taking up room and delete something to free up space.`);
+          } else {
+            alert(`Couldn't save "${file.name}" — there was a storage error. Try again in a moment.`);
+          }
         }
         resolve();
       };
