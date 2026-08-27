@@ -815,7 +815,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v30</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v31</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1065,7 +1065,7 @@
       <h3>GitHub Sync</h3>
       <button class="modal-close" onclick="closeGithubSyncModal()">×</button>
     </div>
-    <p class="modal-sub">Keeps this board's data in a JSON file in a GitHub repo of your choice, so the same data shows up wherever you open this dashboard from. Debounced a few seconds after each change, not per keystroke.</p>
+    <p class="modal-sub">Keeps this board's data in a JSON file in a GitHub repo of your choice, so the same data shows up wherever you open this dashboard from. Debounced a few seconds after each change, not per keystroke. Turning this on also routes new file attachments through the repo instead of browser storage — files up to 100MB, no local storage limits, and the same files show up on every device.</p>
     <div id="github-sync-form"></div>
   </div>
 </div>
@@ -1330,8 +1330,13 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v30';
+const APP_VERSION = 'v31';
 const CHANGELOG = [
+  { version:'v31', date:'2026-08-13', notes:[
+    'Attachments now upload directly to your GitHub repo (in an "attachments" folder) when GitHub Sync is turned on — no more browser storage limit, files up to 100MB, and the same files show up on every device/browser, fixing the desktop-vs-mobile inconsistency and the "delete doesn\'t free space" issue at the root',
+    'Falls back to the previous browser-storage method automatically if GitHub Sync isn\'t configured',
+    'Storage usage panel now separates GitHub-hosted attachments (0 browser space) from ones still stored locally'
+  ]},
   { version:'v30', date:'2026-08-13', notes:[
     'Found the real cause of "storage error" on small files: this dashboard runs on GitHub Pages, outside Claude.ai, so it has no cloud storage — everything (text, photos, attachments) is saved directly in the browser, which caps total site storage around 5–10MB regardless of any single file\'s size. The v29 fix addressed a different, real bug (base64 inflating file size past a per-file limit) but wasn\'t the whole story for this deployment.',
     'The error message now explains this accurately and points to a new "Storage usage" button in the footer, which shows total space used and a breakdown by area (budget/supplier/checklist attachments, photo location images, shot list photos) so you can find and delete what\'s taking up room.'
@@ -1604,6 +1609,51 @@ async function githubPullOnLoad(){
     setGithubSyncStatus('error', msg);
   }
 }
+
+/* ---- GitHub-backed attachments: store the actual file in the repo instead of
+   the browser, so file size is limited by GitHub (up to 100MB) rather than the
+   5-10MB total the browser allows per site, and every device sees the same files. ---- */
+function githubAttachmentsReady(){
+  const s = STATE.githubSettings;
+  return !!(s && s.enabled && s.token && s.owner && s.repo);
+}
+function githubAttachmentPath(attId, filename){
+  const dot = (filename||'').lastIndexOf('.');
+  const ext = dot > -1 ? filename.slice(dot) : '';
+  return `attachments/${attId}${ext}`;
+}
+function githubContentsUrlForPath(path){
+  const s = STATE.githubSettings;
+  const parts = path.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  return `https://api.github.com/repos/${encodeURIComponent(s.owner)}/${encodeURIComponent(s.repo)}/contents/${parts}`;
+}
+async function githubUploadAttachment(attId, filename, base64Content){
+  const s = STATE.githubSettings;
+  const path = githubAttachmentPath(attId, filename);
+  const res = await fetch(githubContentsUrlForPath(path), {
+    method: 'PUT',
+    headers: { 'Authorization': `token ${s.token}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: `Add attachment: ${filename}`, content: base64Content, branch: s.branch || 'main' })
+  });
+  if(res.status === 401 || res.status === 403) throw new Error('github-auth-failed');
+  if(!res.ok){
+    const err = await res.json().catch(()=>({}));
+    throw new Error('github-upload-failed:' + res.status + (err.message ? ':' + err.message : ''));
+  }
+  const data = await res.json();
+  const rawUrl = `https://raw.githubusercontent.com/${s.owner}/${s.repo}/${s.branch||'main'}/${path}`;
+  return { path, sha: data.content.sha, url: rawUrl };
+}
+async function githubDeleteAttachment(path, sha){
+  const s = STATE.githubSettings;
+  const res = await fetch(githubContentsUrlForPath(path), {
+    method: 'DELETE',
+    headers: { 'Authorization': `token ${s.token}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: `Remove attachment`, sha, branch: s.branch || 'main' })
+  });
+  if(!res.ok) throw new Error('github-delete-failed:' + res.status);
+}
+
 function openGithubSyncModal(){
   document.getElementById('github-sync-overlay').classList.add('open');
   renderGithubSyncForm();
@@ -2491,28 +2541,7 @@ document.getElementById('checklist-container').addEventListener('blur', (e) => {
 // ── Attachments on checklist tasks (same pattern as Suppliers/Budget) ──────
 document.getElementById('checklist-container').addEventListener('click', (e) => {
   if(e.target.closest('[data-action="open-att"]')){
-    const chip  = e.target.closest('.attach-chip');
-    const attId = chip.dataset.attId;
-    const name  = chip.dataset.attName || 'attachment';
-    const cached = attachmentCache.get(attId);
-    if(cached){
-      openAttachment(cached.url, cached.name || name);
-    } else {
-      chip.style.opacity = '0.5';
-      window.storage.get('file:' + attId, false).then(res => {
-        chip.style.opacity = '';
-        if(res && res.value){
-          const dataUrl = JSON.parse(res.value);
-          attachmentCache.set(attId, { url: dataUrl, name });
-          openAttachment(dataUrl, name);
-        } else {
-          alert("Couldn't find that attachment in storage — it may not have finished saving.");
-        }
-      }).catch(() => {
-        chip.style.opacity = '';
-        alert("Couldn't load that attachment — it may not have finished saving.");
-      });
-    }
+    openAttachmentChip(e.target.closest('.attach-chip'));
     return;
   }
   if(e.target.closest('[data-action="del-att"]')){
@@ -2521,9 +2550,8 @@ document.getElementById('checklist-container').addEventListener('click', (e) => 
     const zone = e.target.closest('.attach-zone');
     const t = STATE.checklist.find(x => x.id === zone.dataset.rowId);
     if(t){
-      t.attachments = (t.attachments||[]).filter(a => a.id !== attId);
+      deleteAttachmentRecord(t, attId);
       scheduleSave('checklist');
-      window.storage.delete('file:' + attId, false).catch(()=>{});
       renderChecklist();
     }
     return;
@@ -2815,7 +2843,7 @@ function supplierCardHtml(cat, o){
 }
 function attachmentChipHtml(a){
   const kb = a.size ? (a.size/1024).toFixed(0) + ' KB' : '';
-  return `<span class="attach-chip" data-att-id="${a.id}" data-att-name="${escapeHtml(a.name||'attachment')}" title="${escapeHtml(a.name)} · ${kb}">
+  return `<span class="attach-chip" data-att-id="${a.id}" data-att-name="${escapeHtml(a.name||'attachment')}" data-att-url="${a.url?escapeHtml(a.url):''}" data-att-github-path="${a.githubPath?escapeHtml(a.githubPath):''}" data-att-sha="${a.sha?escapeHtml(a.sha):''}" title="${escapeHtml(a.name)} · ${kb}${a.url?' · stored on GitHub':''}">
     <button class="attach-open" data-action="open-att">${fileIcon(a.type)} ${escapeHtml(truncateName(a.name))}</button>
     <button class="attach-del" data-action="del-att">×</button>
   </span>`;
@@ -3066,14 +3094,19 @@ function formatBytes(bytes){
 function computeStorageBreakdown(){
   const rows = [];
   // Attachments store their original file size; stored/base64 form is ~33% bigger.
-  const attBytes = (list) => list.reduce((sum, a) => sum + Math.round((a.size||0) * 4/3), 0);
+  // GitHub-hosted attachments (a.url set) live in the repo, not the browser — they
+  // don't count against local quota at all.
+  const attBytes = (list) => list.filter(a => !a.url).reduce((sum, a) => sum + Math.round((a.size||0) * 4/3), 0);
   let budgetAtts = [], supplierAtts = [], checklistAtts = [];
   STATE.budget.forEach(r => budgetAtts.push(...(r.attachments||[])));
   Object.values(STATE.suppliers).forEach(arr => arr.forEach(o => supplierAtts.push(...(o.attachments||[]))));
   STATE.checklist.forEach(t => checklistAtts.push(...(t.attachments||[])));
-  if(budgetAtts.length) rows.push({label:'Budget attachments', count:budgetAtts.length, bytes:attBytes(budgetAtts)});
-  if(supplierAtts.length) rows.push({label:'Supplier attachments', count:supplierAtts.length, bytes:attBytes(supplierAtts)});
-  if(checklistAtts.length) rows.push({label:'Checklist attachments', count:checklistAtts.length, bytes:attBytes(checklistAtts)});
+  const githubAttCount = [...budgetAtts, ...supplierAtts, ...checklistAtts].filter(a => a.url).length;
+  const localBudgetAtts = budgetAtts.filter(a => !a.url), localSupplierAtts = supplierAtts.filter(a => !a.url), localChecklistAtts = checklistAtts.filter(a => !a.url);
+  if(localBudgetAtts.length) rows.push({label:'Budget attachments', count:localBudgetAtts.length, bytes:attBytes(budgetAtts)});
+  if(localSupplierAtts.length) rows.push({label:'Supplier attachments', count:localSupplierAtts.length, bytes:attBytes(supplierAtts)});
+  if(localChecklistAtts.length) rows.push({label:'Checklist attachments', count:localChecklistAtts.length, bytes:attBytes(checklistAtts)});
+  if(githubAttCount) rows.push({label:'Attachments stored on GitHub (not counted here)', count:githubAttCount, bytes:0});
 
   // Inline images (data URLs) don't carry a stored size — estimate from the string itself.
   const imgBytes = (imgs) => imgs.reduce((sum, im) => sum + Math.round(((im.src||'').length) * 3/4), 0);
@@ -3126,11 +3159,16 @@ async function saveAttachmentBlob(attId, dataUrl){
     throw new Error('Storage set returned no result');
   }
 }
+function base64FromDataUrl(dataUrl){
+  const idx = dataUrl.indexOf(',');
+  return idx >= 0 ? dataUrl.slice(idx+1) : dataUrl;
+}
 async function handleAttachmentFiles(files, target, saveKey, rerenderFn){
   if(!files || !files.length || !target) return;
+  const useGithub = githubAttachmentsReady();
   for(const file of files){
-    if(file.size > MAX_ATTACHMENT_MB * 1024 * 1024){
-      alert(`"${file.name}" is ${(file.size/1024/1024).toFixed(1)} MB — over the ${MAX_ATTACHMENT_MB} MB limit (files get roughly a third bigger once encoded for storage). Try compressing it or exporting a smaller PDF.`);
+    if(!useGithub && file.size > MAX_ATTACHMENT_MB * 1024 * 1024){
+      alert(`"${file.name}" is ${(file.size/1024/1024).toFixed(1)} MB — over the ${MAX_ATTACHMENT_MB} MB limit for browser storage. Turn on GitHub Sync in the footer to store larger files directly in your repo instead — files up to 100MB are fine there.`);
       continue;
     }
     await new Promise((resolve) => {
@@ -3138,16 +3176,26 @@ async function handleAttachmentFiles(files, target, saveKey, rerenderFn){
       reader.onload = async () => {
         const attId = uid();
         try{
-          await saveAttachmentBlob(attId, reader.result);
-          target.attachments = target.attachments || [];
-          target.attachments.push({ id: attId, name: file.name, type: file.type, size: file.size });
-          attachmentCache.set(attId, { url: reader.result, name: file.name });
+          if(useGithub){
+            const { path, sha, url } = await githubUploadAttachment(attId, file.name, base64FromDataUrl(reader.result));
+            target.attachments = target.attachments || [];
+            target.attachments.push({ id: attId, name: file.name, type: file.type, size: file.size, githubPath: path, sha, url });
+          } else {
+            await saveAttachmentBlob(attId, reader.result);
+            target.attachments = target.attachments || [];
+            target.attachments.push({ id: attId, name: file.name, type: file.type, size: file.size });
+            attachmentCache.set(attId, { url: reader.result, name: file.name });
+          }
           scheduleSave(saveKey);
         }catch(err){
           console.error('Attachment save failed:', err);
           if(String(err.message||'').startsWith('local-storage-full:')){
             const usedMB = err.message.split(':')[1];
-            alert(`Couldn't save "${file.name}" — this browser's storage for this site is full (about ${usedMB} MB already used). This isn't about this file's size — it's everything on the board combined (photos, other attachments, etc.) filling up the space this browser allows the site. Open "Storage usage" in the footer to see what's taking up room and delete something to free up space.`);
+            alert(`Couldn't save "${file.name}" — this browser's storage for this site is full (about ${usedMB} MB already used). This isn't about this file's size — it's everything on the board combined (photos, other attachments, etc.) filling up the space this browser allows the site. Open "Storage usage" in the footer to see what's taking up room and delete something to free up space — or turn on GitHub Sync to store files in your repo instead.`);
+          } else if(err.message === 'github-auth-failed'){
+            alert(`Couldn't save "${file.name}" to GitHub — your token may be missing "Contents: Read and write" permission. Check GitHub Sync settings in the footer.`);
+          } else if(String(err.message||'').startsWith('github-upload-failed:')){
+            alert(`Couldn't save "${file.name}" to GitHub — the upload was rejected. Check the repo/branch in GitHub Sync settings, or try a smaller file.`);
           } else {
             alert(`Couldn't save "${file.name}" — there was a storage error. Try again in a moment.`);
           }
@@ -3180,7 +3228,7 @@ function dataUrlToBlob(dataUrl){
 
 let currentPdfViewerUrl = null;
 function openPdfViewer(objUrl, name){
-  if(currentPdfViewerUrl) URL.revokeObjectURL(currentPdfViewerUrl);
+  if(currentPdfViewerUrl && currentPdfViewerUrl.startsWith('blob:')) URL.revokeObjectURL(currentPdfViewerUrl);
   currentPdfViewerUrl = objUrl;
   document.getElementById('pdf-viewer-title').textContent = name || 'PDF';
   document.getElementById('pdf-viewer-frame').src = objUrl;
@@ -3192,7 +3240,49 @@ function openPdfViewer(objUrl, name){
 function closePdfViewer(){
   document.getElementById('pdf-viewer-overlay').classList.remove('open');
   document.getElementById('pdf-viewer-frame').src = 'about:blank';
-  if(currentPdfViewerUrl){ URL.revokeObjectURL(currentPdfViewerUrl); currentPdfViewerUrl = null; }
+  if(currentPdfViewerUrl && currentPdfViewerUrl.startsWith('blob:')) URL.revokeObjectURL(currentPdfViewerUrl);
+  currentPdfViewerUrl = null;
+}
+function openAttachmentChip(chip){
+  const attId = chip.dataset.attId;
+  const name  = chip.dataset.attName || 'attachment';
+  const githubUrl = chip.dataset.attUrl;
+  if(githubUrl){
+    // GitHub-hosted: the URL is already known, so this opens synchronously —
+    // no fetch, no cache, no risk of the "still saving" race at all.
+    const isPdf = /\.pdf$/i.test(name);
+    if(isPdf) openPdfViewer(githubUrl, name);
+    else window.open(githubUrl, '_blank');
+    return;
+  }
+  const cached = attachmentCache.get(attId);
+  if(cached){
+    openAttachment(cached.url, cached.name || name);
+    return;
+  }
+  chip.style.opacity = '0.5';
+  window.storage.get('file:' + attId, false).then(res => {
+    chip.style.opacity = '';
+    if(res && res.value){
+      const dataUrl = JSON.parse(res.value);
+      attachmentCache.set(attId, { url: dataUrl, name });
+      openAttachment(dataUrl, name);
+    } else {
+      alert("Couldn't find that attachment in storage — it may not have finished saving.");
+    }
+  }).catch(() => {
+    chip.style.opacity = '';
+    alert("Couldn't load that attachment — it may not have finished saving.");
+  });
+}
+function deleteAttachmentRecord(target, attId){
+  const record = (target.attachments||[]).find(a => a.id === attId);
+  target.attachments = (target.attachments||[]).filter(a => a.id !== attId);
+  if(record && record.githubPath && record.sha){
+    githubDeleteAttachment(record.githubPath, record.sha).catch(err => console.error('GitHub attachment delete failed:', err));
+  } else {
+    window.storage.delete('file:' + attId, false).catch(()=>{});
+  }
 }
 function openAttachment(dataUrl, name){
   try{
@@ -3226,13 +3316,13 @@ function openAttachment(dataUrl, name){
 async function preloadAttachments(){
   const ids = [];
   Object.values(STATE.suppliers).forEach(arr => arr.forEach(o =>
-    (o.attachments||[]).forEach(a => { if(!attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); })
+    (o.attachments||[]).forEach(a => { if(!a.url && !attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); })
   ));
   STATE.budget.forEach(r =>
-    (r.attachments||[]).forEach(a => { if(!attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); })
+    (r.attachments||[]).forEach(a => { if(!a.url && !attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); })
   );
   STATE.checklist.forEach(t =>
-    (t.attachments||[]).forEach(a => { if(!attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); })
+    (t.attachments||[]).forEach(a => { if(!a.url && !attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); })
   );
   for(const {id, name} of ids){
     try{
@@ -3247,29 +3337,7 @@ async function preloadAttachments(){
 // hasn't loaded yet we show a spinner chip and retry automatically.
 document.getElementById('suppliers-container').addEventListener('click', (e) => {
   if(e.target.closest('[data-action="open-att"]')){
-    const chip  = e.target.closest('.attach-chip');
-    const attId = chip.dataset.attId;
-    const name  = chip.dataset.attName || 'attachment';
-    const cached = attachmentCache.get(attId);
-    if(cached){
-      openAttachment(cached.url, cached.name || name);
-    } else {
-      // Not cached yet — load it now, then open automatically when ready
-      chip.style.opacity = '0.5';
-      window.storage.get('file:' + attId, false).then(res => {
-        chip.style.opacity = '';
-        if(res && res.value){
-          const dataUrl = JSON.parse(res.value);
-          attachmentCache.set(attId, { url: dataUrl, name });
-          openAttachment(dataUrl, name);
-        } else {
-          alert("Couldn't find that attachment in storage — it may not have finished saving.");
-        }
-      }).catch(() => {
-        chip.style.opacity = '';
-        alert("Couldn't load that attachment — it may not have finished saving.");
-      });
-    }
+    openAttachmentChip(e.target.closest('.attach-chip'));
     return;
   }
   if(e.target.closest('[data-action="del-att"]')){
@@ -3279,9 +3347,8 @@ document.getElementById('suppliers-container').addEventListener('click', (e) => 
     const cat = card.dataset.cat;
     const o = (STATE.suppliers[cat]||[]).find(x => x.id === card.dataset.id);
     if(o){
-      o.attachments = (o.attachments||[]).filter(a => a.id !== attId);
+      deleteAttachmentRecord(o, attId);
       scheduleSave('suppliers');
-      window.storage.delete('file:' + attId, false).catch(()=>{});
       renderSuppliers();
     }
   }
@@ -3290,28 +3357,7 @@ document.getElementById('suppliers-container').addEventListener('click', (e) => 
 // ── Attachments on Budget notes (same pattern as Suppliers) ──────────────
 document.getElementById('budget-body').addEventListener('click', (e) => {
   if(e.target.closest('[data-action="open-att"]')){
-    const chip  = e.target.closest('.attach-chip');
-    const attId = chip.dataset.attId;
-    const name  = chip.dataset.attName || 'attachment';
-    const cached = attachmentCache.get(attId);
-    if(cached){
-      openAttachment(cached.url, cached.name || name);
-    } else {
-      chip.style.opacity = '0.5';
-      window.storage.get('file:' + attId, false).then(res => {
-        chip.style.opacity = '';
-        if(res && res.value){
-          const dataUrl = JSON.parse(res.value);
-          attachmentCache.set(attId, { url: dataUrl, name });
-          openAttachment(dataUrl, name);
-        } else {
-          alert("Couldn't find that attachment in storage — it may not have finished saving.");
-        }
-      }).catch(() => {
-        chip.style.opacity = '';
-        alert("Couldn't load that attachment — it may not have finished saving.");
-      });
-    }
+    openAttachmentChip(e.target.closest('.attach-chip'));
     return;
   }
   if(e.target.closest('[data-action="del-att"]')){
@@ -3320,9 +3366,8 @@ document.getElementById('budget-body').addEventListener('click', (e) => {
     const zone = e.target.closest('.attach-zone');
     const r = STATE.budget.find(x => x.id === zone.dataset.rowId);
     if(r){
-      r.attachments = (r.attachments||[]).filter(a => a.id !== attId);
+      deleteAttachmentRecord(r, attId);
       scheduleSave('budget');
-      window.storage.delete('file:' + attId, false).catch(()=>{});
       renderBudget();
     }
     return;
