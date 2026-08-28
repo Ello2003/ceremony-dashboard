@@ -816,7 +816,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v32</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v33</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1331,9 +1331,14 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v32';
+const APP_VERSION = 'v33';
 const CHANGELOG = [
-  { version:'v32', date:'2026-08-13', notes:[
+  { version:'v33', date:'2026-08-13', notes:[
+    'Migrate tool: GitHub Sync settings now have a "Migrate attachments" button (also in Storage usage) that moves existing local attachments into the repo and frees the browser space they were using',
+    'GitHub Sync now defaults to enabled with the owner/repo/branch pre-filled — paste your token and save to turn it on (token is never pre-filled, for security)'
+  ]},
+  { version:'v32'
+, date:'2026-08-13', notes:[
     'Fixed PDFs opening blank on Safari (desktop and mobile) — the iframe+blob approach from v26 only worked in Chrome. Switched to PDF.js, which renders pages as canvas images and works identically on every browser.'
   ]},
   { version:'v31'
@@ -1456,7 +1461,7 @@ let STATE = {
   plTagOptions: seedPlTagOptions(),
   photoIdeas: seedPhotoIdeas(),
   photoIdeaCategoryOrder: seedPhotoIdeaCategoryOrder(),
-  githubSettings: {enabled:false, token:'', owner:'', repo:'', path:'ceremony-data.json', branch:'main', sha:null, lastSyncAt:null}
+  githubSettings: {enabled:true, token:'', owner:'Ello2003', repo:'ceremony-dashboard', path:'ceremony-data.json', branch:'main', sha:null, lastSyncAt:null}
 };
 
 /* ============================= STORAGE ============================= */
@@ -1658,6 +1663,41 @@ async function githubDeleteAttachment(path, sha){
   });
   if(!res.ok) throw new Error('github-delete-failed:' + res.status);
 }
+async function migrateAttachmentsToGithub(statusEl){
+  if(!githubAttachmentsReady()){ alert('Save a valid GitHub token first, then try again.'); return; }
+  const targets = [];
+  STATE.budget.forEach(r => targets.push({record:r, saveKey:'budget'}));
+  Object.values(STATE.suppliers).forEach(arr => arr.forEach(o => targets.push({record:o, saveKey:'suppliers'})));
+  STATE.checklist.forEach(t => targets.push({record:t, saveKey:'checklist'}));
+  const legacy = [];
+  targets.forEach(({record}) => (record.attachments||[]).forEach(a => { if(!a.url) legacy.push(a); }));
+  if(!legacy.length){ if(statusEl) statusEl.textContent = 'Nothing to migrate — everything is already on GitHub.'; return; }
+  if(!confirm(`Move ${legacy.length} attachment${legacy.length===1?'':'s'} from browser storage to your GitHub repo?`)) return;
+  let ok = 0, failed = 0, i = 0;
+  const savedKeys = new Set();
+  for(const {record, saveKey} of targets){
+    for(const a of (record.attachments||[])){
+      if(a.url) continue;
+      i++;
+      if(statusEl) statusEl.textContent = `Migrating ${i} of ${legacy.length}: ${a.name}…`;
+      try{
+        const res = await window.storage.get('file:' + a.id, false);
+        if(!res || !res.value) throw new Error('missing-blob');
+        const dataUrl = JSON.parse(res.value);
+        const { path, sha, url } = await githubUploadAttachment(a.id, a.name, base64FromDataUrl(dataUrl));
+        a.githubPath = path; a.sha = sha; a.url = url;
+        window.storage.delete('file:' + a.id, false).catch(()=>{});
+        attachmentCache.delete(a.id);
+        savedKeys.add(saveKey);
+        ok++;
+      }catch(err){ console.error('Migration failed:', a.name, err); failed++; }
+    }
+  }
+  savedKeys.forEach(k => scheduleSave(k));
+  renderBudget(); renderSuppliers(); renderChecklist();
+  const msg = `Done — ${ok} moved to GitHub${failed?`, ${failed} failed (see console)`:''}.`;
+  if(statusEl) statusEl.textContent = msg; else alert(msg);
+}
 
 function openGithubSyncModal(){
   document.getElementById('github-sync-overlay').classList.add('open');
@@ -1691,6 +1731,11 @@ function renderGithubSyncForm(){
     <p style="font-size:12px;color:rgba(43,42,40,0.55);line-height:1.5;">
       Data syncs to a JSON file in this repo, kept separate from index.html itself. Use a <strong>fine-grained</strong> token scoped to only this repo with <strong>Contents: Read and write</strong> permission — not a broad classic token. The token is saved only in this browser's storage: it's never written into the synced file, committed to the repo, or included in downloaded backups.
     </p>
+    ${githubAttachmentsReady() ? `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
+      <p id="gh-migrate-status" style="font-size:12px;color:rgba(43,42,40,0.55);margin:0;flex:1;">Move existing local attachments into this repo.</p>
+      <button class="modal-btn" id="gh-migrate">Migrate attachments</button>
+    </div>` : ''}
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">
       <button class="modal-btn" id="gh-cancel">Cancel</button>
       <button class="modal-btn" id="gh-sync-now">Sync now</button>
@@ -1698,6 +1743,8 @@ function renderGithubSyncForm(){
     </div>
   `;
   document.getElementById('gh-cancel').addEventListener('click', closeGithubSyncModal);
+  const migrateBtn = document.getElementById('gh-migrate');
+  if(migrateBtn) migrateBtn.addEventListener('click', () => migrateAttachmentsToGithub(document.getElementById('gh-migrate-status')));
   document.getElementById('gh-sync-now').addEventListener('click', async () => {
     const statusEl = document.getElementById('gh-status');
     statusEl.textContent = 'Syncing…';
@@ -3148,7 +3195,17 @@ function renderStorageUsageModal(){
         <div class="su-row-label">${escapeHtml(r.label)}${r.count!==null ? `<span class="su-row-count">${r.count} item${r.count===1?'':'s'}</span>` : ''}</div>
         <div class="su-row-size">${formatBytes(r.bytes)}</div>
       </div>`).join('')}
+    ${githubAttachmentsReady() ? `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
+      <p id="su-migrate-status" style="font-size:12px;color:rgba(43,42,40,0.55);margin:0;flex:1;">Free up space by moving local attachments to GitHub.</p>
+      <button class="modal-btn" id="su-migrate">Migrate now</button>
+    </div>` : ''}
   `;
+  const migrateBtn = document.getElementById('su-migrate');
+  if(migrateBtn) migrateBtn.addEventListener('click', async () => {
+    await migrateAttachmentsToGithub(document.getElementById('su-migrate-status'));
+    renderStorageUsageModal();
+  });
 }
 async function saveAttachmentBlob(attId, dataUrl){
   // Direct write, NOT routed through persist()'s silent-retry wrapper — for
