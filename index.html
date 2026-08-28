@@ -667,7 +667,7 @@
   }
   .pdf-viewer-head{ display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--line); }
   .pdf-viewer-head #pdf-viewer-title{ font-family:'Fraunces', serif; font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  #pdf-viewer-frame{ flex:1; width:100%; border:0; background:#525659; }
+  #pdf-viewer-frame{ flex:1; width:100%; overflow:auto; background:#525659; padding:16px; box-sizing:border-box; }
   .ab-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); }
   .ab-row:last-child{ border-bottom:none; }
   .ab-when{ font-size:13px; }
@@ -808,6 +808,7 @@
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 
@@ -815,7 +816,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v31</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v32</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1101,7 +1102,7 @@
       <a id="pdf-viewer-download" class="modal-btn" download>Download</a>
       <button class="modal-close" onclick="closePdfViewer()">×</button>
     </div>
-    <iframe id="pdf-viewer-frame" src="about:blank" title="PDF preview"></iframe>
+    <div id="pdf-viewer-frame"></div>
   </div>
 </div>
 
@@ -1330,9 +1331,13 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v31';
+const APP_VERSION = 'v32';
 const CHANGELOG = [
-  { version:'v31', date:'2026-08-13', notes:[
+  { version:'v32', date:'2026-08-13', notes:[
+    'Fixed PDFs opening blank on Safari (desktop and mobile) — the iframe+blob approach from v26 only worked in Chrome. Switched to PDF.js, which renders pages as canvas images and works identically on every browser.'
+  ]},
+  { version:'v31'
+, date:'2026-08-13', notes:[
     'Attachments now upload directly to your GitHub repo (in an "attachments" folder) when GitHub Sync is turned on — no more browser storage limit, files up to 100MB, and the same files show up on every device/browser, fixing the desktop-vs-mobile inconsistency and the "delete doesn\'t free space" issue at the root',
     'Falls back to the previous browser-storage method automatically if GitHub Sync isn\'t configured',
     'Storage usage panel now separates GitHub-hosted attachments (0 browser space) from ones still stored locally'
@@ -3227,19 +3232,48 @@ function dataUrlToBlob(dataUrl){
 }
 
 let currentPdfViewerUrl = null;
-function openPdfViewer(objUrl, name){
+let currentPdfLoadToken = 0;
+if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+async function openPdfViewer(objUrl, name){
   if(currentPdfViewerUrl && currentPdfViewerUrl.startsWith('blob:')) URL.revokeObjectURL(currentPdfViewerUrl);
   currentPdfViewerUrl = objUrl;
   document.getElementById('pdf-viewer-title').textContent = name || 'PDF';
-  document.getElementById('pdf-viewer-frame').src = objUrl;
   const dl = document.getElementById('pdf-viewer-download');
   dl.href = objUrl;
   dl.download = name || 'document.pdf';
   document.getElementById('pdf-viewer-overlay').classList.add('open');
+  const container = document.getElementById('pdf-viewer-frame');
+  container.innerHTML = '<p style="color:#fff;text-align:center;padding:40px;">Loading PDF…</p>';
+  const myToken = ++currentPdfLoadToken;
+  try{
+    if(!window.pdfjsLib) throw new Error('pdfjs-not-loaded');
+    const pdf = await pdfjsLib.getDocument(objUrl).promise;
+    if(myToken !== currentPdfLoadToken) return;
+    container.innerHTML = '';
+    for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++){
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 1.4 });
+      const canvas = document.createElement('canvas');
+      canvas.style.display = 'block';
+      canvas.style.margin = '0 auto 12px';
+      canvas.style.boxShadow = '0 2px 8px rgba(0,0,0,.4)';
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      if(myToken !== currentPdfLoadToken) return;
+      container.appendChild(canvas);
+    }
+  }catch(err){
+    console.error('PDF render failed:', err);
+    if(myToken === currentPdfLoadToken){
+      container.innerHTML = `<p style="color:#fff;text-align:center;padding:40px;">Couldn't preview this PDF here — try the Download button instead.</p>`;
+    }
+  }
 }
 function closePdfViewer(){
   document.getElementById('pdf-viewer-overlay').classList.remove('open');
-  document.getElementById('pdf-viewer-frame').src = 'about:blank';
+  document.getElementById('pdf-viewer-frame').innerHTML = '';
+  currentPdfLoadToken++; // cancel any in-flight render
   if(currentPdfViewerUrl && currentPdfViewerUrl.startsWith('blob:')) URL.revokeObjectURL(currentPdfViewerUrl);
   currentPdfViewerUrl = null;
 }
