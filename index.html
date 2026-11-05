@@ -805,6 +805,182 @@
     .card, .script-section, .vow-card, .reading-card, .enquiry-card, .task-row, .supplier-card{ break-inside:avoid; border-color:#ddd; }
     .task-row{ grid-template-columns:16px 1fr 90px; }
   }
+
+  /* =====================================================================
+     MOBILE REDESIGN (v34) — phones only (<=700px). Desktop is untouched.
+     ===================================================================== */
+  #bottom-nav, #more-sheet, #more-backdrop{ display:none; }
+
+  @media (max-width:700px){
+    :root{ --bn-h:62px; --safe-b:env(safe-area-inset-bottom, 0px); }
+    html{ -webkit-text-size-adjust:100%; }
+    body{ padding-bottom:calc(var(--bn-h) + var(--safe-b) + 12px); }
+
+    /* ---- Compact hero ---- */
+    header.hero{ padding:max(14px, env(safe-area-inset-top)) 16px 14px; }
+    .hero-top-row{ flex-wrap:nowrap; align-items:center; margin-bottom:2px; }
+    .eyebrow{ font-size:9px; letter-spacing:.12em; margin:0; gap:6px; white-space:nowrap; overflow:hidden; }
+    .eyebrow .rule{ display:none; }
+    .version-badge{ min-height:0; height:30px; padding:0 12px; font-size:10px; }
+    .hero-title{ font-size:24px; margin:4px 0 4px; }
+    .hero-dates{ flex-direction:row; flex-wrap:wrap; gap:4px 14px; margin:0; font-size:10.5px; }
+    .hero-meta{
+      display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:12px;
+    }
+    .hero-stat{ min-width:0; background:rgba(246,241,233,.07); border:1px solid rgba(246,241,233,.1); border-radius:8px; padding:8px 6px 7px; text-align:center; }
+    .hero-stat .num{ font-size:19px; }
+    .hero-stat .lbl{ font-size:8px; letter-spacing:.04em; margin-top:4px; line-height:1.25; }
+
+    /* ---- Top tab bar is replaced by the bottom nav ---- */
+    nav.tabs{ display:none; }
+
+    /* ---- Sync bar: slim, sticky under the notch ---- */
+    .sync-bar{ position:sticky; top:0; z-index:20; background:var(--parchment); padding:6px 16px; font-size:10px; flex-wrap:nowrap; }
+    .sync-bar button{ min-height:32px; padding:4px 12px; }
+
+    main{ padding:14px 14px 8px; }
+    h2.section-title{ font-size:22px; }
+    p.section-sub{ font-size:13px; margin-bottom:14px; }
+    .card{ padding:14px; border-radius:10px; }
+    .grid{ gap:10px; }
+
+    /* ---- Overview: stat cards as a 2-up grid ---- */
+    #panel-overview .grid.cols-3{ grid-template-columns:repeat(3,1fr); gap:8px; }
+    #panel-overview .stat-card{ padding:12px 10px; }
+    #panel-overview .stat-card .num{ font-size:21px; }
+    #panel-overview .stat-card .lbl{ font-size:10.5px; line-height:1.3; margin-top:4px; }
+    #panel-overview .card > div > span[style*="IBM Plex Mono"]{ display:none; }
+    /* Gantt: shorter labels, no sideways scroll */
+    .gantt-wrap{ overflow-x:visible; }
+    .gantt-row{ flex-wrap:wrap; gap:2px 8px; padding:7px 0; }
+    .gantt-label{ width:auto; flex:1; font-size:11px; }
+    .gantt-pct{ width:auto; font-size:10.5px; }
+    .gantt-track{ flex:0 0 100%; min-width:0; height:14px; order:3; }
+    .gantt-bar{ top:2px; bottom:2px; }
+    .phase-row{ flex-wrap:wrap; gap:4px 10px; }
+    .phase-name{ flex:1 1 55%; }
+    .phase-due{ width:auto; }
+    .bar-track{ flex:0 0 100%; width:auto; order:5; }
+
+    /* ---- Tap targets & iOS no-zoom inputs ---- */
+    button, select, input[type="date"], input[type="time"]{ min-height:44px; }
+    input[type="text"], input[type="search"], input[type="number"], input[type="url"],
+    input[type="date"], input[type="time"], select, textarea, [contenteditable]{ font-size:16px !important; }
+    .row-del{ min-width:44px; min-height:44px; font-size:22px; }
+    .filter-chips{ overflow-x:auto; flex-wrap:nowrap; padding-bottom:4px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .filter-chips::-webkit-scrollbar{ display:none; }
+    .filter-chips button{ flex:none; min-height:38px; padding:0 14px; }
+    .photos-subtabs{ overflow-x:auto; scrollbar-width:none; }
+    .photos-subtab{ min-height:40px; flex:none; font-size:12px; }
+    .checklist-controls{ align-items:stretch; }
+    .checklist-controls input{ min-height:44px; max-width:none; width:100%; flex:none; }
+    .phase-controls{ display:none; }   /* reorder/delete section: desktop only, avoids accidental taps */
+    .phase-head .chev{ font-size:16px; padding:0 4px; }
+    .phase-head .phase-name-input{ font-size:16px !important; min-height:40px; }
+    /* hero collapses to a slim header on every tab except Home */
+    body:not([data-panel="overview"]) .hero-meta,
+    body:not([data-panel="overview"]) .hero-dates{ display:none; }
+    body:not([data-panel="overview"]) header.hero{ padding-bottom:10px; }
+    body:not([data-panel="overview"]) .hero-title{ font-size:20px; margin:2px 0 0; }
+
+    /* ---- Checklist: two-line cards, date visible ---- */
+    .task-row{
+      grid-template-columns:44px 1fr 44px 44px; grid-template-areas:"chk text att del" ". due due due";
+      gap:0 2px; padding:4px 0; margin-left:0; min-height:56px;
+    }
+    .task-row input[type="checkbox"]{ grid-area:chk; width:26px; height:26px; margin:0 auto; }
+    .task-row .task-text{ grid-area:text; padding:10px 6px; line-height:1.4; font-size:15px; }
+    .task-row .task-attach-toggle{ grid-area:att; font-size:18px; min-height:44px; }
+    .task-row .row-del{ grid-area:del; }
+    .task-row .task-due{ display:block !important; grid-area:due; width:auto; justify-self:start; margin:0 0 8px 6px; min-height:36px; font-size:13px !important; border-radius:6px; }
+    .task-row.done .task-due{ opacity:.5; }
+    .task-extra{ padding:8px 6px 14px; }
+    .phase-head{ min-height:52px; padding:12px; }
+    .task-link-item, .task-link-add-row{ flex-wrap:wrap; }
+    .task-link-item input, .task-link-add-row input{ min-height:44px; flex:1 1 100%; }
+
+    /* ---- Trip timeline: big readable time chip, stacked ---- */
+    .tl-row{ grid-template-columns:104px 1fr 40px; grid-template-areas:"time main del" "time main ord"; }
+    .tl-time-cell{ grid-area:time; padding:12px 6px; justify-content:center; }
+    .tl-time-cell input{ width:100%; min-width:0; font-size:15px !important; text-align:center; padding:0 2px; }
+    .tl-main{ grid-area:main; padding:6px 4px; }
+    .tl-del-cell{ grid-area:del; }
+    .tl-order-cell{ grid-area:ord; display:flex; }
+    .tl-order-cell button{ width:36px; height:30px; min-height:0; font-size:11px; }
+    .tl-main input{ min-height:44px; font-weight:600; }
+    .tl-main textarea{ min-height:40px; }
+
+    /* ---- Photos / locations ---- */
+    .photo-location-card{ padding:14px; }
+    .photo-location-card .pl-head{ grid-template-columns:1fr 40px 44px; gap:8px; align-items:center; }
+    .photo-location-card .pl-head > *{ min-width:0; }
+    .photo-location-card .pl-name{ grid-column:1; grid-row:1; min-height:44px; }
+    .photo-location-card .pl-order{ grid-column:2; grid-row:1; flex-direction:row; }
+    .photo-location-card .pl-order button{ width:36px; height:36px; min-height:0; font-size:12px; }
+    .photo-location-card .row-del{ grid-column:3; grid-row:1; }
+    .photo-location-card .pl-dist{ grid-column:1 / -1; grid-row:3; min-height:44px; }
+    .photo-location-card .pl-status{ grid-column:1 / -1; grid-row:2; min-height:44px; font-size:14px !important; }
+    .photo-location-card .pl-row2{ grid-template-columns:1fr; }
+    .pl-star{ font-size:26px; padding:6px 4px; min-height:44px; }
+    .pl-tag{ min-height:34px; padding:4px 12px; font-size:11px; }
+    .pl-shots-list{ max-height:220px; }
+    .pl-shot-del{ width:40px; height:40px; }
+
+    /* ---- Cards, tables, forms ---- */
+    .supplier-card .row2{ flex-wrap:wrap; }
+    .supplier-card input.sprice{ width:100%; }
+    #budget-table, #guest-table{ -webkit-overflow-scrolling:touch; }
+    .toolbar button, .toolbar select, .toolbar input{ width:100%; }
+    button.ghost, .add-task, .add-phase-row button{ min-height:44px; }
+    .add-phase-row{ flex-wrap:wrap; }
+    .add-phase-row input{ max-width:none; min-height:44px; }
+
+    /* ---- Modals become bottom sheets ---- */
+    .modal-overlay{ align-items:flex-end; padding:0; }
+    .modal-panel{ max-width:none; max-height:88vh; border-radius:18px 18px 0 0; padding:20px 18px calc(20px + var(--safe-b)); }
+    .modal-close{ min-width:44px; min-height:44px; font-size:26px; }
+
+    footer{ flex-wrap:wrap; gap:4px 18px; padding:18px 16px 24px; }
+    .footer-btn{ min-height:44px; }
+
+    /* ---- Bottom navigation ---- */
+    #bottom-nav{
+      display:flex; position:fixed; left:0; right:0; bottom:0; z-index:50;
+      height:calc(var(--bn-h) + var(--safe-b)); padding-bottom:var(--safe-b);
+      background:rgba(246,241,233,.97); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+      border-top:1px solid var(--line); box-shadow:0 -4px 18px rgba(43,42,40,.07);
+    }
+    #bottom-nav button{
+      flex:1; min-width:0; min-height:var(--bn-h); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+      background:none; border:none; cursor:pointer; color:rgba(43,42,40,.5);
+      font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.03em; text-transform:uppercase;
+      position:relative; -webkit-tap-highlight-color:transparent;
+    }
+    #bottom-nav button svg{ width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+    #bottom-nav button.active{ color:var(--holyrood); font-weight:600; }
+    #bottom-nav button.active::before{ content:""; position:absolute; top:0; left:25%; right:25%; height:3px; border-radius:0 0 3px 3px; background:var(--gold); }
+
+    #more-backdrop{ position:fixed; inset:0; z-index:60; background:rgba(43,42,40,.45); }
+    #more-backdrop.open{ display:block; }
+    #more-sheet{
+      position:fixed; left:0; right:0; bottom:0; z-index:70; background:var(--parchment);
+      border-radius:18px 18px 0 0; padding:10px 16px calc(18px + var(--safe-b)); box-shadow:0 -12px 40px rgba(0,0,0,.25);
+      transform:translateY(105%); transition:transform .25s ease; display:block;
+    }
+    #more-sheet.open{ transform:translateY(0); }
+    #more-sheet .grab{ width:40px; height:4px; border-radius:2px; background:var(--line); margin:0 auto 14px; }
+    #more-sheet .tiles{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    #more-sheet .tile{
+      display:flex; align-items:center; gap:12px; min-height:60px; padding:12px 14px; text-align:left;
+      background:var(--card); border:1px solid var(--line); border-radius:12px; cursor:pointer;
+      font-family:'Fraunces',serif; font-size:15px; color:var(--ink);
+    }
+    #more-sheet .tile svg{ width:22px; height:22px; flex:none; stroke:var(--holyrood); fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+    #more-sheet .tile.active{ border-color:var(--gold); background:rgba(198,151,90,.12); }
+    #more-sheet .more-tools{ display:flex; flex-wrap:wrap; gap:4px 18px; margin-top:14px; padding-top:10px; border-top:1px solid var(--line); }
+    #more-sheet .more-tools button{ background:none; border:none; font-family:'IBM Plex Mono',monospace; font-size:11px; color:rgba(43,42,40,.6); min-height:44px; cursor:pointer; text-decoration:underline; }
+  }
+  @media (prefers-reduced-motion:reduce){ #more-sheet{ transition:none; } }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -816,7 +992,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v33</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v34</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -830,6 +1006,19 @@
 </header>
 
 <nav class="tabs" id="tabs"></nav>
+
+<!-- Mobile bottom navigation + More sheet (hidden on desktop via CSS) -->
+<nav id="bottom-nav" aria-label="Main navigation"></nav>
+<div id="more-backdrop" onclick="closeMoreSheet()"></div>
+<div id="more-sheet" role="dialog" aria-label="More sections" aria-hidden="true">
+  <div class="grab"></div>
+  <div class="tiles" id="more-tiles"></div>
+  <div class="more-tools">
+    <button onclick="closeMoreSheet();openGithubSyncModal()">GitHub Sync</button>
+    <button onclick="closeMoreSheet();openAutoBackupModal()">Auto-backups</button>
+    <button onclick="closeMoreSheet();exportBackup()">Download backup</button>
+  </div>
+</div>
 
 <div class="sync-bar">
   <span style="display:flex; align-items:center; gap:10px;">
@@ -1331,8 +1520,13 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v33';
+const APP_VERSION = 'v34';
 const CHANGELOG = [
+  { version:'v34', date:'2026-11-05', notes:[
+    'Full mobile redesign (phones only — desktop layout unchanged): bottom navigation bar with a More sheet, compact hero with a 4-up stat strip, and the Overview stats/Gantt reflowed for narrow screens',
+    'Checklist rows are now two-line cards with big checkboxes and the due date always visible; timeline, photo and form controls enlarged to 44px tap targets with 16px text so iOS no longer zooms on focus',
+    'Modals open as bottom sheets on mobile'
+  ]},
   { version:'v33', date:'2026-08-13', notes:[
     'Migrate tool: GitHub Sync settings now have a "Migrate attachments" button (also in Storage usage) that moves existing local attachments into the repo and frees the browser space they were using',
     'GitHub Sync now defaults to enabled with the owner/repo/branch pre-filled — paste your token and save to turn it on (token is never pre-filled, for security)'
@@ -2100,6 +2294,75 @@ document.getElementById('tabs').addEventListener('click', (e) => {
   document.querySelectorAll('section.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + activePanel).classList.add('active');
 });
+
+
+/* ============================= MOBILE BOTTOM NAV (v34) ============================= */
+const BN_ICONS = {
+  overview:'<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>',
+  checklist:'<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/></svg>',
+  timeline:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  budget:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/></svg>',
+  photos:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>',
+  script:'<svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7"/></svg>',
+  research:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>',
+  guests:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.5 3.2-5.5 6.5-5.5s5.9 2 6.5 5.5"/><path d="M16 5.2a3.3 3.3 0 010 6.2M18 14.8c2 .6 3.3 2.4 3.5 5.2"/></svg>',
+  decisions:'<svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>',
+  more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>'
+};
+const BN_PRIMARY = [
+  {id:'overview', label:'Home'},
+  {id:'checklist', label:'Tasks'},
+  {id:'timeline', label:'The Day'},
+  {id:'budget', label:'Budget'},
+  {id:'photos', label:'Photos'}
+];
+function goToPanel(id){
+  if(!ALL_TABS.some(t => t.id === id)) return;
+  activePanel = id;
+  renderNav();
+  document.querySelectorAll('section.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  window.scrollTo({top:0, behavior:'auto'});
+}
+function renderBottomNav(){
+  document.body.dataset.panel = activePanel;
+  const nav = document.getElementById('bottom-nav');
+  if(!nav) return;
+  const primaryIds = BN_PRIMARY.map(t => t.id);
+  const moreActive = !primaryIds.includes(activePanel);
+  nav.innerHTML = BN_PRIMARY.map(t =>
+    `<button data-bn="${t.id}" class="${activePanel===t.id?'active':''}" aria-label="${t.label}"${activePanel===t.id?' aria-current="page"':''}>${BN_ICONS[t.id]}<span>${t.label}</span></button>`
+  ).join('') +
+    `<button data-bn="more" class="${moreActive?'active':''}" aria-label="More sections" aria-haspopup="dialog">${BN_ICONS.more}<span>More</span></button>`;
+  const tiles = document.getElementById('more-tiles');
+  if(tiles){
+    tiles.innerHTML = ALL_TABS.filter(t => !primaryIds.includes(t.id)).map(t =>
+      `<button class="tile ${activePanel===t.id?'active':''}" data-bn-tile="${t.id}">${BN_ICONS[t.id]||''}<span>${t.label}</span></button>`
+    ).join('');
+  }
+}
+function openMoreSheet(){
+  document.getElementById('more-backdrop').classList.add('open');
+  const sh = document.getElementById('more-sheet'); sh.classList.add('open'); sh.setAttribute('aria-hidden','false');
+}
+function closeMoreSheet(){
+  document.getElementById('more-backdrop').classList.remove('open');
+  const sh = document.getElementById('more-sheet'); sh.classList.remove('open'); sh.setAttribute('aria-hidden','true');
+}
+document.getElementById('bottom-nav').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-bn]'); if(!b) return;
+  if(b.dataset.bn === 'more'){ openMoreSheet(); return; }
+  if(b.dataset.bn === activePanel){ window.scrollTo({top:0, behavior:'smooth'}); return; }
+  goToPanel(b.dataset.bn);
+});
+document.getElementById('more-sheet').addEventListener('click', (e) => {
+  const t = e.target.closest('[data-bn-tile]'); if(!t) return;
+  closeMoreSheet(); goToPanel(t.dataset.bnTile);
+});
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeMoreSheet(); });
+// Keep the bottom nav in sync whenever the top nav re-renders (also covers jumpToPhase etc.)
+(function(){ const _renderNav = renderNav; renderNav = function(){ _renderNav(); renderBottomNav(); }; })();
+renderBottomNav();
 
 /* ============================= HERO STATS ============================= */
 function renderHero(){
@@ -4519,5 +4782,6 @@ function renderAll(){
   }catch(e){ updateAutoBackupCount(0); }
 })();
 </script>
+
 </body>
 </html>
