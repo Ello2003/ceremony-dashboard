@@ -4002,10 +4002,13 @@ function addDecision(){
 }
 document.getElementById('decisions-container').addEventListener('input', (e) => {
   if(e.target.classList.contains('attach-input')) return;
+  if(e.target.type === 'checkbox') return;
   const row = e.target.closest('.decision-item'); if(!row) return;
   const d = STATE.decisions.find(x => x.id === row.dataset.id); if(!d) return;
-  d[e.target.dataset.f || 'text'] = e.target.value;
-  if(e.target.dataset.f === 'type') row.dataset.type = e.target.value;
+  const field = e.target.dataset.f || (e.target.tagName === 'TEXTAREA' ? 'text' : null);
+  if(!field) return;
+  d[field] = e.target.value;
+  if(field === 'type') row.dataset.type = e.target.value;
   scheduleSave('decisions');
 });
 document.getElementById('decisions-container').addEventListener('change', (e) => {
