@@ -458,6 +458,38 @@
   .tl-add-row .tl-add-sec{ border-style:dashed; color:var(--holyrood); }
   #tl-organise-btn.on{ background:var(--ink); color:var(--parchment); border-color:var(--ink); }
 
+
+  /* ---------- FILES LIBRARY (v37) ---------- */
+  .files-upload{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:16px; }
+  .files-upload-top{ display:flex; justify-content:flex-end; margin-bottom:10px; }
+  .files-cat-label{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:rgba(43,42,40,.6); display:flex; align-items:center; gap:8px; }
+  .files-cat-label select{ font-size:12.5px; padding:6px 8px; border:1px solid var(--line); border-radius:4px; background:var(--parchment); color:var(--ink); }
+  .files-drop{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; text-align:center; padding:26px 16px; cursor:pointer;
+    border:2px dashed var(--gold); border-radius:10px; background:rgba(198,151,90,.07); transition:background .15s, border-color .15s; }
+  .files-drop:hover, .files-drop.drag-over{ background:rgba(198,151,90,.18); border-color:var(--holyrood); }
+  .files-drop-icon{ font-size:22px; color:var(--holyrood); }
+  .files-drop-main{ font-family:'Fraunces', serif; font-size:17px; color:var(--ink); }
+  .files-drop-sub{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:rgba(43,42,40,.55); }
+  .files-busy{ margin-top:10px; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--holyrood); }
+  .files-controls{ display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .files-controls input{ flex:1; min-width:200px; padding:9px 12px; border:1px solid var(--line); border-radius:6px; background:var(--card); font-size:14px; }
+  .files-controls select{ padding:9px 10px; border:1px solid var(--line); border-radius:6px; background:var(--card); font-size:13px; }
+  .files-summary{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:rgba(43,42,40,.55); margin:6px 0 10px; }
+  .file-row{ display:grid; grid-template-columns:44px 1fr auto; gap:4px 12px; align-items:center; padding:12px 14px; background:var(--card); border:1px solid var(--line); border-radius:10px; margin-bottom:8px; }
+  .file-ico{ width:44px; height:44px; border-radius:8px; background:var(--parchment-dim); display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .file-main{ min-width:0; }
+  .file-name{ background:none; border:none; padding:0; text-align:left; cursor:pointer; font-family:'Fraunces', serif; font-size:15.5px; font-weight:600; color:var(--ink); max-width:100%; overflow-wrap:anywhere; }
+  .file-name:hover{ color:var(--holyrood); text-decoration:underline; }
+  .file-meta{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:rgba(43,42,40,.55); margin-top:3px; display:flex; flex-wrap:wrap; gap:2px 10px; }
+  .file-src{ display:inline-block; padding:1px 8px; border-radius:99px; background:rgba(46,99,103,.1); color:var(--holyrood); }
+  .file-src.elsewhere{ background:rgba(198,151,90,.18); color:#8a6428; }
+  .file-actions{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+  .file-actions select{ font-size:12px; padding:5px 6px; border:1px solid var(--line); border-radius:4px; background:var(--parchment); max-width:150px; }
+  .file-actions button{ background:none; border:1px solid var(--line); border-radius:4px; cursor:pointer; font-family:'IBM Plex Mono', monospace; font-size:10.5px; padding:5px 9px; color:rgba(43,42,40,.7); }
+  .file-actions button:hover{ border-color:var(--holyrood); color:var(--holyrood); }
+  .file-actions .file-del:hover{ border-color:var(--rose); color:var(--rose); }
+  .files-empty{ text-align:center; padding:30px 10px; color:rgba(43,42,40,.5); font-size:14px; }
+
   /* ---------- NOTES & ACTIONS ---------- */
   .decision-item{
     display:grid; grid-template-columns:40px 80px 100px 1fr 34px; gap:0; align-items:stretch;
@@ -969,6 +1001,17 @@
     .tl-sec-ctrls button{ width:44px; height:40px; font-size:13px; }
     .tl-insert-bar{ min-height:44px; font-size:11px; }
 
+
+    /* ---- Files library ---- */
+    .files-drop{ padding:30px 14px; min-height:120px; }
+    .files-cat-label select{ font-size:16px; min-height:44px; }
+    .files-controls input, .files-controls select{ min-height:44px; font-size:16px; }
+    .files-controls input{ min-width:0; flex:1 1 100%; }
+    .file-row{ grid-template-columns:44px 1fr; padding:12px; }
+    .file-actions{ grid-column:1 / -1; justify-content:flex-start; margin-top:6px; }
+    .file-actions button{ min-height:40px; padding:0 14px; font-size:11px; }
+    .file-actions select{ min-height:40px; font-size:16px; max-width:none; flex:1 1 150px; }
+
     /* ---- Photos / locations ---- */
     .photo-location-card{ padding:14px; }
     .photo-location-card .pl-head{ grid-template-columns:1fr 40px 44px; gap:8px; align-items:center; }
@@ -1051,7 +1094,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v34</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v37</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1268,6 +1311,37 @@
       <button class="ghost" onclick="addDecision()">+ Add entry</button>
     </div>
     <div id="decisions-container"></div>
+  </section>
+
+  <!-- FILES LIBRARY -->
+  <section class="panel" id="panel-files">
+    <h2 class="section-title">Files</h2>
+    <p class="section-sub">One place for every document. Upload here, or see everything you've attached across the board.</p>
+    <div class="files-upload" id="files-upload">
+      <div class="files-upload-top">
+        <label class="files-cat-label">Add to
+          <select id="files-upload-cat"></select>
+        </label>
+      </div>
+      <label class="files-drop attach-drop-target" id="files-drop" title="Tap to choose files, or drag them here">
+        <span class="files-drop-icon">⬆</span>
+        <span class="files-drop-main">Drop files here or tap to upload</span>
+        <span class="files-drop-sub">PDFs, images, emails, Word / Excel &middot; several at once is fine</span>
+        <input type="file" id="files-input" hidden multiple accept=".pdf,.png,.jpg,.jpeg,.heic,.webp,.gif,.eml,.msg,.txt,.md,.doc,.docx,.xls,.xlsx,.csv,.pages,.numbers">
+      </label>
+      <div class="files-busy" id="files-busy" hidden>Uploading…</div>
+    </div>
+    <div class="files-controls">
+      <input type="search" id="files-search" placeholder="Search files, tasks, suppliers…">
+      <select id="files-sort" aria-label="Sort files">
+        <option value="new">Newest first</option>
+        <option value="name">Name A–Z</option>
+        <option value="size">Largest first</option>
+      </select>
+    </div>
+    <div class="filter-chips" id="files-chips"></div>
+    <div id="files-summary" class="files-summary"></div>
+    <div id="files-list"></div>
   </section>
 
   <!-- PHOTO LOCATIONS -->
@@ -1689,6 +1763,7 @@ const ALL_TABS = [
   {id:'photos',     label:'Photos'},
   {id:'guests',     label:'Guests & Sharing'},
   {id:'decisions',  label:'Notes & Actions'},
+  {id:'files',      label:'Files'},
 ];
 function seedNavOrder(){ return ALL_TABS.map(t => t.id); }
 function seedPhotoLocations(){ return []; }
@@ -1708,8 +1783,13 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v36';
+const APP_VERSION = 'v37';
 const CHANGELOG = [
+  { version:'v37', date:'2026-11-06', notes:[
+    'New Files tab: one place to upload and keep documents (contracts, invoices, tickets, ID & legal, inspiration) — drag-and-drop or tap to upload, tag each file with a category, rename it, search and sort',
+    'The Files tab also lists every file already attached elsewhere (Checklist, Budget, Research suppliers, Notes & Actions) with a link back to where it lives, so nothing is hidden',
+    'Library files use the same storage as other attachments (GitHub repo when Sync is on), and are included in backups, restore and the Migrate tool. Notes & Actions attachments are now included in backups and Migrate too'
+  ]},
   { version:'v36', date:'2026-11-06', notes:[
     'IndexedDB local storage: board data and auto-backups persist in IndexedDB with migration from localStorage',
     'Firestore cloud backup: optional Firebase sync so changes survive across browsers and devices',
@@ -1841,6 +1921,7 @@ let STATE = {
     {id:uid(), date:'5 Dec', time:'', activity:'', notes:''},
   ],
   decisions: [],
+  library: {attachments: []},
   script: seedScript(),
   vows: seedVows(),
   readings: [],
@@ -2062,6 +2143,8 @@ async function migrateAttachmentsToGithub(statusEl){
   STATE.budget.forEach(r => targets.push({record:r, saveKey:'budget'}));
   Object.values(STATE.suppliers).forEach(arr => arr.forEach(o => targets.push({record:o, saveKey:'suppliers'})));
   STATE.checklist.forEach(t => targets.push({record:t, saveKey:'checklist'}));
+  STATE.decisions.forEach(d => targets.push({record:d, saveKey:'decisions'}));
+  if(STATE.library) targets.push({record:STATE.library, saveKey:'library'});
   const legacy = [];
   targets.forEach(({record}) => (record.attachments||[]).forEach(a => { if(!a.url) legacy.push(a); }));
   if(!legacy.length){ if(statusEl) statusEl.textContent = 'Nothing to migrate — everything is already on GitHub.'; return; }
@@ -2187,7 +2270,7 @@ function applyModeCopy(){
 }
 
 async function loadAll(){
-  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoLocationsMap','plTagOptions','photoIdeas','photoIdeaCategoryOrder','githubSettings','firestoreSettings'];
+  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','library','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoLocationsMap','plTagOptions','photoIdeas','photoIdeaCategoryOrder','githubSettings','firestoreSettings'];
   for(const k of keys){
     try{
       const res = await window.storage.get(k, false);
@@ -2532,7 +2615,7 @@ document.getElementById('autobackup-list').addEventListener('click', async (e) =
   try{
     const res = await window.storage.get('autobackup:' + id, false);
     const snap = JSON.parse(res.value);
-    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoIdeas'];
+    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','library','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoIdeas'];
     required.forEach(k => { if(snap.data[k] !== undefined) STATE[k] = snap.data[k]; });
     for(const k of required) await persist(k, STATE[k]);
     renderAll();
@@ -2551,6 +2634,8 @@ async function exportBackup(){
   Object.values(STATE.suppliers).forEach(arr => arr.forEach(o => (o.attachments||[]).forEach(a => attachmentIds.push(a.id))));
   STATE.budget.forEach(r => (r.attachments||[]).forEach(a => attachmentIds.push(a.id)));
   STATE.checklist.forEach(t => (t.attachments||[]).forEach(a => attachmentIds.push(a.id)));
+  STATE.decisions.forEach(d => (d.attachments||[]).forEach(a => attachmentIds.push(a.id)));
+  ((STATE.library||{}).attachments||[]).forEach(a => attachmentIds.push(a.id));
   const attachmentFiles = {};
   for(const id of attachmentIds){
     try{
@@ -2576,7 +2661,7 @@ document.getElementById('restore-input').addEventListener('change', async (e) =>
     const text = await file.text();
     const parsed = JSON.parse(text);
     const incoming = parsed.data || parsed; // allow raw-state files too
-    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoIdeas'];
+    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','library','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoIdeas'];
     const hasShape = required.some(k => k in incoming);
     if(!hasShape){ alert('This file doesn\'t look like a ceremony dashboard backup.'); e.target.value=''; return; }
     if(!confirm('Restoring will replace everything currently on this board with the contents of the backup. Continue?')){ e.target.value=''; return; }
@@ -2604,7 +2689,163 @@ document.getElementById('restore-input').addEventListener('change', async (e) =>
 let navEditMode = false;
 let activePanel = 'overview';
 
+
+/* ============================= FILES LIBRARY (v37) ============================= */
+const FILE_CATS = ['Contracts & quotes','Invoices & receipts','Bookings & tickets','ID & legal','Photos & inspiration','Other'];
+const FILE_SRC = {
+  library:   {label:'Uploaded here',    tab:'files'},
+  checklist: {label:'Checklist',        tab:'checklist'},
+  budget:    {label:'Budget',           tab:'budget'},
+  suppliers: {label:'Research',         tab:'research'},
+  decisions: {label:'Notes & Actions',  tab:'decisions'}
+};
+let filesFilter = 'all', filesQuery = '', filesSort = 'new', filesUploadCat = 'Other';
+function ensureLibrary(){
+  if(!STATE.library || typeof STATE.library !== 'object') STATE.library = {attachments: []};
+  if(!Array.isArray(STATE.library.attachments)) STATE.library.attachments = [];
+  return STATE.library;
+}
+function collectAllFiles(){
+  const out = [];
+  ensureLibrary().attachments.forEach(a => out.push({a, src:'library', where:a.category || 'Other'}));
+  STATE.checklist.forEach(t => (t.attachments||[]).forEach(a => out.push({a, src:'checklist', where:t.text || 'Task'})));
+  STATE.budget.forEach(r => (r.attachments||[]).forEach(a => out.push({a, src:'budget', where:(r.item || r.category || 'Budget line')})));
+  Object.entries(STATE.suppliers||{}).forEach(([cat, arr]) => (arr||[]).forEach(o => (o.attachments||[]).forEach(a => out.push({a, src:'suppliers', where:`${o.name || 'Supplier'} (${cat})`}))));
+  STATE.decisions.forEach(d => (d.attachments||[]).forEach(a => out.push({a, src:'decisions', where:(d.text || 'Note').slice(0, 60)})));
+  return out;
+}
+function fileSizeLabel(n){
+  if(!n) return '';
+  return n >= 1048576 ? (n/1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n/1024)) + ' KB';
+}
+function fileDateLabel(ts){
+  if(!ts) return '';
+  return new Date(ts).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+}
+function renderFiles(){
+  const panel = document.getElementById('panel-files');
+  if(!panel) return;
+  ensureLibrary();
+  const sel = document.getElementById('files-upload-cat');
+  if(sel && sel.options.length !== FILE_CATS.length){
+    sel.innerHTML = FILE_CATS.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  }
+  if(sel) sel.value = filesUploadCat;
+  const all = collectAllFiles();
+  const counts = {all: all.length};
+  Object.keys(FILE_SRC).forEach(k => { counts[k] = all.filter(f => f.src === k).length; });
+  const chipDefs = [['all','All']].concat(Object.keys(FILE_SRC).map(k => [k, FILE_SRC[k].label]));
+  document.getElementById('files-chips').innerHTML = chipDefs
+    .filter(([k]) => k === 'all' || k === 'library' || counts[k] > 0)
+    .map(([k, label]) => `<button data-files-filter="${k}" class="chip ${filesFilter===k?'active':''}">${escapeHtml(label)} (${counts[k]})</button>`).join('');
+  if(filesFilter !== 'all' && !counts[filesFilter]) filesFilter = 'all';
+  const q = filesQuery.trim().toLowerCase();
+  let rows = all.filter(f => (filesFilter === 'all' || f.src === filesFilter) &&
+    (!q || (f.a.name||'').toLowerCase().includes(q) || (f.where||'').toLowerCase().includes(q) || FILE_SRC[f.src].label.toLowerCase().includes(q)));
+  if(filesSort === 'name') rows.sort((x, y) => (x.a.name||'').localeCompare(y.a.name||'', undefined, {sensitivity:'base'}));
+  else if(filesSort === 'size') rows.sort((x, y) => (y.a.size||0) - (x.a.size||0));
+  else rows.sort((x, y) => (y.a.added||0) - (x.a.added||0) || (x.src === 'library' ? -1 : 1));
+  const totalBytes = all.reduce((n, f) => n + (f.a.size||0), 0);
+  document.getElementById('files-summary').textContent =
+    `${all.length} file${all.length===1?'':'s'} in total${totalBytes ? ' \u00b7 ' + fileSizeLabel(totalBytes) : ''}` +
+    (rows.length !== all.length ? ` \u00b7 showing ${rows.length}` : '');
+  const list = document.getElementById('files-list');
+  if(!rows.length){
+    list.innerHTML = `<div class="files-empty">${all.length ? 'No files match that search.' : 'No files yet — drop your first one above.'}</div>`;
+    return;
+  }
+  list.innerHTML = rows.map(({a, src, where}) => {
+    const isLib = src === 'library';
+    const meta = [
+      `<span class="file-src ${isLib?'':'elsewhere'}">${escapeHtml(FILE_SRC[src].label)}</span>`,
+      isLib ? '' : `<span>${escapeHtml(truncateWhere(where))}</span>`,
+      fileSizeLabel(a.size), fileDateLabel(a.added)
+    ].filter(Boolean).map(x => x.startsWith('<') ? x : `<span>${escapeHtml(x)}</span>`).join('');
+    return `<div class="file-row" data-att-id="${a.id}" data-att-name="${escapeHtml(a.name||'file')}" data-att-url="${a.url?escapeHtml(a.url):''}" data-src="${src}">
+      <div class="file-ico">${fileIcon(a.type)}</div>
+      <div class="file-main">
+        <button class="file-name" data-fa="open">${escapeHtml(a.name||'file')}</button>
+        <div class="file-meta">${meta}</div>
+      </div>
+      <div class="file-actions">
+        ${isLib ? `<select data-fa="cat" aria-label="Category">${FILE_CATS.map(c => `<option value="${escapeHtml(c)}" ${(a.category||'Other')===c?'selected':''}>${escapeHtml(c)}</option>`).join('')}</select>
+          <button data-fa="rename">Rename</button>
+          <button class="file-del" data-fa="del">Delete</button>`
+        : `<button data-fa="goto">Go to ${escapeHtml(FILE_SRC[src].label)} \u2192</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+function truncateWhere(w){ w = String(w||''); return w.length > 48 ? w.slice(0, 46) + '\u2026' : w; }
+async function uploadToLibrary(files){
+  files = Array.from(files || []).filter(Boolean);
+  if(!files.length) return;
+  const lib = ensureLibrary();
+  const before = new Set(lib.attachments.map(a => a.id));
+  const busy = document.getElementById('files-busy');
+  busy.hidden = false; busy.textContent = `Uploading ${files.length} file${files.length===1?'':'s'}\u2026`;
+  try{
+    await handleAttachmentFiles(files, lib, 'library', () => {});
+  } finally { busy.hidden = true; }
+  const now = Date.now();
+  lib.attachments.forEach(a => { if(!before.has(a.id)){ a.added = now; a.category = filesUploadCat; } });
+  scheduleSave('library');
+  renderFiles();
+}
+(function(){
+  const drop = document.getElementById('files-drop');
+  const input = document.getElementById('files-input');
+  input.addEventListener('change', (e) => { uploadToLibrary(e.target.files); e.target.value = ''; });
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('drag-over'); }));
+  drop.addEventListener('dragleave', (e) => { if(!drop.contains(e.relatedTarget)) drop.classList.remove('drag-over'); });
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault(); drop.classList.remove('drag-over');
+    let files = Array.from(e.dataTransfer.files || []);
+    if(!files.length && e.dataTransfer.items) files = Array.from(e.dataTransfer.items).filter(i => i.kind === 'file').map(i => i.getAsFile()).filter(Boolean);
+    uploadToLibrary(files);
+  });
+  document.getElementById('files-upload-cat').addEventListener('change', (e) => { filesUploadCat = e.target.value; });
+  document.getElementById('files-search').addEventListener('input', (e) => { filesQuery = e.target.value; renderFiles(); });
+  document.getElementById('files-sort').addEventListener('change', (e) => { filesSort = e.target.value; renderFiles(); });
+  document.getElementById('files-chips').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-files-filter]'); if(!b) return;
+    filesFilter = b.dataset.filesFilter; renderFiles();
+  });
+  const list = document.getElementById('files-list');
+  list.addEventListener('click', (e) => {
+    const act = e.target.closest('[data-fa]'); if(!act) return;
+    const row = act.closest('.file-row'); if(!row) return;
+    const id = row.dataset.attId, src = row.dataset.src;
+    if(act.dataset.fa === 'open'){ openAttachmentChip(row); return; }
+    if(act.dataset.fa === 'goto'){ goToPanel(FILE_SRC[src].tab); return; }
+    const att = ensureLibrary().attachments.find(a => a.id === id); if(!att) return;
+    if(act.dataset.fa === 'rename'){
+      const name = prompt('Rename file:', att.name || '');
+      if(name && name.trim() && name.trim() !== att.name){
+        let nn = name.trim();
+        const oldExt = (att.name.match(/\.[A-Za-z0-9]{1,5}$/) || [''])[0];
+        if(oldExt && !/\.[A-Za-z0-9]{1,5}$/.test(nn)) nn += oldExt;
+        att.name = nn;
+        const cached = attachmentCache.get(id); if(cached) cached.name = nn;
+        scheduleSave('library'); renderFiles();
+      }
+      return;
+    }
+    if(act.dataset.fa === 'del'){
+      if(!confirm(`Delete "${att.name}"? This removes the file itself.`)) return;
+      deleteAttachmentRecord(STATE.library, id);
+      scheduleSave('library'); renderFiles();
+    }
+  });
+  list.addEventListener('change', (e) => {
+    const sel = e.target.closest('select[data-fa="cat"]'); if(!sel) return;
+    const att = ensureLibrary().attachments.find(a => a.id === sel.closest('.file-row').dataset.attId);
+    if(att){ att.category = sel.value; scheduleSave('library'); }
+  });
+})();
+
 function renderNav(){
+  if(typeof renderFiles === 'function' && activePanel === 'files') renderFiles();
   const nav = document.getElementById('tabs');
   // Backwards compat: drop any tab ids that no longer exist (e.g. old separate
   // Suppliers/Enquiries tabs, now merged into Research), then add any new ones.
@@ -2665,6 +2906,7 @@ const BN_ICONS = {
   research:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>',
   guests:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.5 3.2-5.5 6.5-5.5s5.9 2 6.5 5.5"/><path d="M16 5.2a3.3 3.3 0 010 6.2M18 14.8c2 .6 3.3 2.4 3.5 5.2"/></svg>',
   decisions:'<svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>',
+  files:'<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2.5h8a2 2 0 012 2V18a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>',
   more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>'
 };
 const BN_PRIMARY = [
@@ -4041,6 +4283,7 @@ async function preloadAttachments(){
   STATE.decisions.forEach(d =>
     (d.attachments||[]).forEach(a => { if(!a.url && !attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); })
   );
+  ((STATE.library||{}).attachments||[]).forEach(a => { if(!a.url && !attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); });
   for(const {id, name} of ids){
     try{
       const res = await window.storage.get('file:' + id, false);
@@ -5286,6 +5529,7 @@ function renderAll(){
   renderTimeline();
   renderGuestsPage();
   renderDecisions();
+  renderFiles();
   renderPhotoLocations();
   renderPhotoLocationsMap();
   setPhotosSubTab(photosSubTab);
