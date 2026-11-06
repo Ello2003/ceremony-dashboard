@@ -388,7 +388,7 @@
     overflow:hidden;
   }
   .tl-row{
-    display:grid; grid-template-columns:96px 1fr 24px 34px; gap:0; align-items:stretch;
+    display:grid; grid-template-columns:22px 96px 1fr 24px 34px; gap:0; align-items:stretch;
     border-bottom:1px solid var(--line);
   }
   .tl-row:last-child{ border-bottom:none; }
@@ -403,7 +403,7 @@
     border:none; background:transparent; width:100%; padding:2px 0; color:var(--heather); cursor:pointer; min-width:0;
   }
   .tl-time-cell input.tl-time:focus{ outline:none; color:var(--ink); }
-  .tl-main{ padding:12px 14px; display:flex; flex-direction:column; gap:4px; }
+  .tl-main{ padding:12px 14px; display:flex; flex-direction:column; gap:4px; min-width:0; }
   .tl-main input{
     font-size:14px; font-family:'Source Serif 4', serif; font-weight:600;
     border:none; background:transparent; width:100%; padding:0; color:var(--ink);
@@ -415,8 +415,28 @@
     border:none; background:transparent; resize:vertical; padding:0;
     font-family:'Source Serif 4', serif; min-height:0;
   }
+  .tl-main textarea.tl-act{
+    font-size:15px; font-weight:600; font-style:normal; color:var(--ink);
+    line-height:1.35; letter-spacing:-0.01em;
+  }
+  .tl-main textarea.tl-act::placeholder{ font-weight:400; font-style:normal; color:rgba(43,42,40,0.35); }
+  .tl-main textarea[data-f="notes"]{ font-size:12.5px; font-weight:400; font-style:italic; color:rgba(43,42,40,0.6); }
   .tl-main textarea:focus{ outline:none; color:var(--ink); font-style:normal; }
   .tl-del-cell{ display:flex; align-items:center; justify-content:center; padding:0 8px; }
+  .tl-drag-handle{
+    display:flex; align-items:center; justify-content:center; cursor:grab;
+    color:rgba(43,42,40,.28); font-size:14px; line-height:1; user-select:none;
+    padding:0 2px; touch-action:none;
+  }
+  .tl-drag-handle:active{ cursor:grabbing; }
+  .tl-row.dragging, .tl-section.dragging{ opacity:.45; }
+  .tl-row.drag-over, .tl-section.drag-over{ box-shadow: inset 0 2px 0 0 var(--gold); }
+  .tl-section .tl-sec-del, .tl-row .row-del{
+    background:none; border:1px solid transparent; border-radius:3px;
+    color:rgba(43,42,40,0.35); cursor:pointer; font-size:16px; width:26px; height:26px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .tl-section .tl-sec-del:hover, .tl-row .row-del:hover{ color:var(--rose); border-color:var(--rose); background:rgba(176,107,69,.08); }
   .tl-add-row{
     border-top:1px dashed var(--line); padding:10px 14px;
     display:flex; align-items:center; gap:10px;
@@ -424,8 +444,8 @@
 
   /* ---------- TIMELINE SECTIONS (v35) ---------- */
   .tl-section{
-    display:grid; grid-template-columns:30px 30px 1fr auto auto; align-items:center; gap:4px 10px;
-    padding:11px 14px 11px 8px; background:linear-gradient(90deg, rgba(46,99,103,.11), rgba(46,99,103,.03));
+    display:grid; grid-template-columns:22px 28px 28px 1fr auto auto; align-items:center; gap:4px 8px;
+    padding:11px 10px 11px 6px; background:linear-gradient(90deg, rgba(46,99,103,.11), rgba(46,99,103,.03));
     border-top:1px solid var(--line); border-bottom:1px solid var(--line); border-left:3px solid var(--gold);
   }
   .tl-section:first-child{ border-top:none; }
@@ -1790,6 +1810,9 @@ function uid(){ return Math.random().toString(36).slice(2,10); }
 /* ============================= VERSION HISTORY ============================= */
 const APP_VERSION = 'v37';
 const CHANGELOG = [
+  { version:'v36.2', date:'2026-11-06', notes:[
+    'Trip timeline: bold stop names; drag handles to reorder sections/stops; section delete always visible'
+  ]},
   { version:'v36.1', date:'2026-11-06', notes:[
     'Sync bar: separate Push and Pull buttons (GitHub + Firestore when enabled); same controls in the GitHub Sync modal'
   ]},
@@ -4548,19 +4571,20 @@ function renderTimeline(){
         secNo++; hidden = tlCollapsed.has(r.id); prevWasSec = true;
         const secs = rows.filter(isSec);
         const sIdx = secs.findIndex(x => x.id === r.id);
-        return `<div class="tl-section ${hidden?'collapsed':''}" data-id="${r.id}">
-          <button class="tl-sec-toggle" data-action="tl-sec-toggle" title="${hidden?'Expand':'Collapse'} section" aria-expanded="${!hidden}">\u25be</button>
+        return `<div class="tl-section ${hidden?'collapsed':''}" data-id="${r.id}" data-tl-kind="section">
+          <span class="tl-drag-handle" draggable="true" title="Drag to reorder section" aria-label="Drag section">⋮⋮</span>
+          <button class="tl-sec-toggle" data-action="tl-sec-toggle" title="${hidden?'Expand':'Collapse'} section" aria-expanded="${!hidden}">▾</button>
           <span class="tl-sec-badge">${secNo}</span>
           <div class="tl-sec-main">
             <input class="tl-sec-title" placeholder="Section heading, e.g. Preparation &amp; ceremony" value="${escapeHtml(r.title||'')}" data-f="title">
             <textarea class="tl-sec-note" rows="1" placeholder="Optional note (e.g. golden hour, transport)" data-f="note">${escapeHtml(r.note||'')}</textarea>
           </div>
           <span class="tl-sec-meta">${escapeHtml(tlSectionMeta(rows, r.id))}</span>
-          ${tlOrganise ? `<div class="tl-sec-ctrls">
-            <button data-action="tl-sec-up" ${sIdx===0?'disabled':''} title="Move whole section up">\u25b2</button>
-            <button data-action="tl-sec-down" ${sIdx===secs.length-1?'disabled':''} title="Move whole section down">\u25bc</button>
-            <button class="tl-sec-del" data-action="tl-sec-del" title="Remove heading (stops are kept)">\u00d7</button>
-          </div>` : ''}
+          <div class="tl-sec-ctrls">
+            ${tlOrganise ? `<button data-action="tl-sec-up" ${sIdx===0?'disabled':''} title="Move whole section up">▲</button>
+            <button data-action="tl-sec-down" ${sIdx===secs.length-1?'disabled':''} title="Move whole section down">▼</button>` : ''}
+            <button class="tl-sec-del" data-action="tl-sec-del" title="Remove heading (stops are kept)">×</button>
+          </div>
         </div>`;
       }
       if(hidden){ prevWasSec = false; return ''; }
@@ -4596,19 +4620,20 @@ function renderTimeline(){
   }
 }
 function timelineRowHtml(r, posInDay, dayCount){
-  return `<div class="tl-row" data-id="${r.id}">
+  return `<div class="tl-row" data-id="${r.id}" data-tl-kind="stop">
+    <span class="tl-drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag stop">⋮⋮</span>
     <div class="tl-time-cell">
-      <input class="tl-time" type="time" placeholder="\u2014" value="${escapeHtml(r.time||'')}" data-f="time">
+      <input class="tl-time" type="time" placeholder="—" value="${escapeHtml(r.time||'')}" data-f="time">
     </div>
     <div class="tl-main">
       <textarea class="tl-act" rows="1" placeholder="What's happening" data-f="activity">${escapeHtml(r.activity||'')}</textarea>
-      <textarea placeholder="Notes\u2026" data-f="notes" rows="1">${escapeHtml(r.notes||'')}</textarea>
+      <textarea placeholder="Notes…" data-f="notes" rows="1">${escapeHtml(r.notes||'')}</textarea>
     </div>
     <div class="tl-order-cell row-order">
-      <button data-action="tl-move-up" ${posInDay===0?'disabled':''} title="Move up">\u25b2</button>
-      <button data-action="tl-move-down" ${posInDay===dayCount-1?'disabled':''} title="Move down">\u25bc</button>
+      <button data-action="tl-move-up" ${posInDay===0?'disabled':''} title="Move up">▲</button>
+      <button data-action="tl-move-down" ${posInDay===dayCount-1?'disabled':''} title="Move down">▼</button>
     </div>
-    <div class="tl-del-cell"><button class="row-del" data-action="delete-tl">\u00d7</button></div>
+    <div class="tl-del-cell"><button class="row-del" data-action="delete-tl" title="Remove stop">×</button></div>
   </div>`;
 }
 function tlAutosize(root){
@@ -4706,6 +4731,88 @@ document.getElementById('timeline-container').addEventListener('input', (e) => {
   scheduleSave('timeline');
   refreshTlMeta();
 });
+
+/* ---- Timeline drag-and-drop reorder ---- */
+let tlDragId = null;
+let tlDragKind = null;
+document.getElementById('timeline-container').addEventListener('dragstart', (e) => {
+  const handle = e.target.closest('.tl-drag-handle');
+  if(!handle){ e.preventDefault(); return; }
+  const item = handle.closest('.tl-row, .tl-section');
+  if(!item){ e.preventDefault(); return; }
+  tlDragId = item.dataset.id;
+  tlDragKind = item.dataset.tlKind || (item.classList.contains('tl-section') ? 'section' : 'stop');
+  item.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  try{ e.dataTransfer.setData('text/plain', tlDragId); }catch(err){}
+});
+document.getElementById('timeline-container').addEventListener('dragend', (e) => {
+  document.querySelectorAll('.tl-row.dragging, .tl-section.dragging, .tl-row.drag-over, .tl-section.drag-over').forEach(el => {
+    el.classList.remove('dragging', 'drag-over');
+  });
+  tlDragId = null; tlDragKind = null;
+});
+document.getElementById('timeline-container').addEventListener('dragover', (e) => {
+  const item = e.target.closest('.tl-row, .tl-section');
+  if(!item || !tlDragId || item.dataset.id === tlDragId) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.tl-row.drag-over, .tl-section.drag-over').forEach(el => el.classList.remove('drag-over'));
+  item.classList.add('drag-over');
+});
+document.getElementById('timeline-container').addEventListener('dragleave', (e) => {
+  const item = e.target.closest('.tl-row, .tl-section');
+  if(item && !item.contains(e.relatedTarget)) item.classList.remove('drag-over');
+});
+document.getElementById('timeline-container').addEventListener('drop', (e) => {
+  const target = e.target.closest('.tl-row, .tl-section');
+  if(!target || !tlDragId) return;
+  e.preventDefault();
+  const targetId = target.dataset.id;
+  if(targetId === tlDragId) return;
+  tlReorderByDrag(tlDragId, targetId, tlDragKind);
+  tlDragId = null; tlDragKind = null;
+  scheduleSave('timeline');
+  renderTimeline();
+});
+function tlSectionBlockIds(secId){
+  const idx = STATE.timeline.findIndex(x => x.id === secId);
+  if(idx < 0) return [secId];
+  const ids = [secId];
+  for(let i = idx + 1; i < STATE.timeline.length; i++){
+    if(isSec(STATE.timeline[i])) break;
+    ids.push(STATE.timeline[i].id);
+  }
+  return ids;
+}
+function tlReorderByDrag(dragId, targetId, kind){
+  const dragIdx = STATE.timeline.findIndex(x => x.id === dragId);
+  const targetIdx = STATE.timeline.findIndex(x => x.id === targetId);
+  if(dragIdx < 0 || targetIdx < 0) return;
+  const dragItem = STATE.timeline[dragIdx];
+  const targetItem = STATE.timeline[targetIdx];
+  if(dragItem.date && targetItem.date && dragItem.date !== targetItem.date){
+    if(kind === 'section' || isSec(dragItem)){
+      const blockIds = new Set(tlSectionBlockIds(dragId));
+      STATE.timeline.forEach(x => { if(blockIds.has(x.id)) x.date = targetItem.date; });
+    } else {
+      dragItem.date = targetItem.date;
+    }
+  }
+  if(kind === 'section' || isSec(dragItem)){
+    const blockIds = tlSectionBlockIds(dragId);
+    const block = STATE.timeline.filter(x => blockIds.includes(x.id));
+    STATE.timeline = STATE.timeline.filter(x => !blockIds.includes(x.id));
+    let insertAt = STATE.timeline.findIndex(x => x.id === targetId);
+    if(insertAt < 0) insertAt = STATE.timeline.length;
+    STATE.timeline.splice(insertAt, 0, ...block);
+  } else {
+    const [moved] = STATE.timeline.splice(dragIdx, 1);
+    let insertAt = STATE.timeline.findIndex(x => x.id === targetId);
+    if(insertAt < 0) insertAt = STATE.timeline.length;
+    STATE.timeline.splice(insertAt, 0, moved);
+  }
+}
 
 /* ============================= DECISIONS ============================= */
 const NOTE_TYPES = [
