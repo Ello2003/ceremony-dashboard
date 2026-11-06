@@ -422,6 +422,42 @@
     display:flex; align-items:center; gap:10px;
   }
 
+  /* ---------- TIMELINE SECTIONS (v35) ---------- */
+  .tl-section{
+    display:grid; grid-template-columns:30px 30px 1fr auto auto; align-items:center; gap:4px 10px;
+    padding:11px 14px 11px 8px; background:linear-gradient(90deg, rgba(46,99,103,.11), rgba(46,99,103,.03));
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line); border-left:3px solid var(--gold);
+  }
+  .tl-section:first-child{ border-top:none; }
+  .tl-sec-toggle{ background:none; border:none; cursor:pointer; font-size:13px; color:rgba(43,42,40,.55); padding:0; transition:transform .15s; line-height:1; }
+  .tl-section.collapsed .tl-sec-toggle{ transform:rotate(-90deg); }
+  .tl-sec-badge{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:600; color:var(--parchment);
+    background:var(--holyrood); width:26px; height:22px; border-radius:3px; display:flex; align-items:center; justify-content:center;
+  }
+  .tl-sec-main{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .tl-sec-main input{ border:none; background:transparent; width:100%; padding:0; color:var(--ink); }
+  .tl-sec-main textarea{ border:none; background:transparent; width:100%; padding:0; resize:none; overflow:hidden; line-height:1.35; }
+  .tl-sec-main input:focus, .tl-sec-main textarea:focus{ outline:none; }
+  .tl-sec-title{ font-family:'Fraunces', serif; font-weight:600; font-size:16px; letter-spacing:.01em; }
+  .tl-sec-title::placeholder{ font-weight:400; font-style:italic; color:rgba(43,42,40,.35); }
+  .tl-sec-note{ font-family:'Source Serif 4', serif; font-style:italic; font-size:12.5px; color:rgba(43,42,40,.6); }
+  .tl-sec-note::placeholder{ color:rgba(43,42,40,.28); }
+  .tl-sec-meta{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:rgba(43,42,40,.5); white-space:nowrap; text-align:right; }
+  .tl-sec-ctrls{ display:flex; gap:4px; align-items:center; }
+  .tl-sec-ctrls button{ background:none; border:1px solid var(--line); border-radius:2px; color:rgba(43,42,40,.5); cursor:pointer; width:24px; height:22px; font-size:10px; padding:0; }
+  .tl-sec-ctrls button:hover:not(:disabled){ border-color:var(--holyrood); color:var(--holyrood); }
+  .tl-sec-ctrls button:disabled{ opacity:.3; cursor:default; }
+  .tl-sec-ctrls .tl-sec-del:hover{ border-color:var(--rose); color:var(--rose); }
+  .tl-insert-bar{
+    display:block; width:100%; border:none; border-top:1px dashed var(--gold); border-bottom:1px dashed var(--gold);
+    background:rgba(198,151,90,.09); color:var(--holyrood); cursor:pointer; padding:7px 14px;
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; text-align:left;
+  }
+  .tl-insert-bar:hover{ background:rgba(198,151,90,.2); }
+  .tl-add-row .tl-add-sec{ border-style:dashed; color:var(--holyrood); }
+  #tl-organise-btn.on{ background:var(--ink); color:var(--parchment); border-color:var(--ink); }
+
   /* ---------- NOTES & ACTIONS ---------- */
   .decision-item{
     display:grid; grid-template-columns:40px 80px 100px 1fr 34px; gap:0; align-items:stretch;
@@ -922,6 +958,16 @@
     .tl-order-cell button{ width:36px; height:30px; min-height:0; font-size:11px; }
     .tl-main input{ min-height:44px; font-weight:600; }
     .tl-main textarea{ min-height:40px; }
+
+    /* ---- Timeline sections ---- */
+    .tl-section{ grid-template-columns:32px 28px 1fr; padding:12px 12px 12px 4px; }
+    .tl-sec-toggle{ min-height:44px; font-size:16px; }
+    .tl-sec-title{ font-size:17px !important; min-height:36px; }
+    .tl-sec-note{ min-height:32px; }
+    .tl-sec-meta{ grid-column:2 / -1; text-align:left; white-space:normal; }
+    .tl-sec-ctrls{ grid-column:2 / -1; gap:8px; }
+    .tl-sec-ctrls button{ width:44px; height:40px; font-size:13px; }
+    .tl-insert-bar{ min-height:44px; font-size:11px; }
 
     /* ---- Photos / locations ---- */
     .photo-location-card{ padding:14px; }
@@ -1667,7 +1713,8 @@ const CHANGELOG = [
   { version:'v36', date:'2026-11-06', notes:[
     'IndexedDB local storage: board data and auto-backups persist in IndexedDB with migration from localStorage',
     'Firestore cloud backup: optional Firebase sync so changes survive across browsers and devices',
-    'Auto-backups: IndexedDB, every 10 minutes, keep last 30 snapshots'
+    'Auto-backups: IndexedDB, every 10 minutes, keep last 30 snapshots',
+    'Consolidated third-party Trip timeline “Organise sections” (numbered headings, collapse, PDF)'
   ]},
   { version:'v35', date:'2026-11-06', notes:[
     'Notes & Actions: each entry is now check-offable (checkbox) so actions and follow-ups can be marked done',
@@ -4082,93 +4129,119 @@ document.getElementById('budget-body').addEventListener('drop', (e) => {
 
 /* ============================= TIMELINE ============================= */
 function exportTimelinePDF(){
-  if(typeof window.jspdf === 'undefined'){
-    alert("PDF library didn't load — check your connection and try again.");
-    return;
-  }
+  if(typeof window.jspdf === 'undefined'){ alert("PDF library didn't load \u2014 check your connection and try again."); return; }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'pt', format:'a4' });
   const marginX = 48;
   const pageHeight = doc.internal.pageSize.getHeight();
   const pageWidth = doc.internal.pageSize.getWidth();
   let y = 56;
-
-  const checkPageBreak = (needed) => {
-    if(y + needed > pageHeight - 48){ doc.addPage(); y = 56; }
-  };
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.setTextColor(30);
-  doc.text('Trip Timeline', marginX, y);
-  y += 10;
-  doc.setDrawColor(180);
-  doc.setLineWidth(0.5);
-  doc.line(marginX, y+6, pageWidth-marginX, y+6);
-  y += 32;
-
-  const dateOrder = [];
-  const byDate = {};
-  STATE.timeline.forEach(row => {
-    if(!byDate[row.date]){ dateOrder.push(row.date); byDate[row.date] = []; }
-    byDate[row.date].push(row);
-  });
-
+  const checkPageBreak = (needed) => { if(y + needed > pageHeight - 48){ doc.addPage(); y = 56; } };
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(30);
+  doc.text('Trip Timeline', marginX, y); y += 10;
+  doc.setDrawColor(180); doc.setLineWidth(0.5); doc.line(marginX, y+6, pageWidth-marginX, y+6); y += 32;
+  const {dateOrder, byDate} = tlGroupByDate();
   dateOrder.forEach(date => {
     checkPageBreak(40);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(40);
-    doc.text(date, marginX, y);
-    y += 8;
-    doc.setDrawColor(210);
-    doc.line(marginX, y+4, pageWidth-marginX, y+4);
-    y += 22;
-
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(40);
+    doc.text(date, marginX, y); y += 8; doc.setDrawColor(210); doc.line(marginX, y+4, pageWidth-marginX, y+4); y += 22;
+    let pdfSec = 0;
     byDate[date].forEach(r => {
+      if(r.type === 'section'){
+        pdfSec++; checkPageBreak(60); y += 4;
+        doc.setFillColor(232, 240, 240); doc.rect(marginX - 6, y - 14, pageWidth - marginX*2 + 12, 22, 'F');
+        doc.setFillColor(198, 151, 90); doc.rect(marginX - 6, y - 14, 3, 22, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(11.5); doc.setTextColor(46, 99, 103);
+        doc.text(`${pdfSec}   ${(r.title || 'Untitled section').toUpperCase()}`, marginX + 4, y); y += 20;
+        if(r.note){
+          doc.setFont('helvetica', 'italic'); doc.setFontSize(9.5); doc.setTextColor(100);
+          doc.splitTextToSize(r.note, pageWidth - marginX*2 - 10).forEach(line => { checkPageBreak(13); doc.text(line, marginX + 4, y); y += 13; });
+        }
+        y += 6; return;
+      }
       checkPageBreak(36);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10.5);
-      doc.setTextColor(110, 90, 140);
-      doc.text(r.time || '—', marginX, y);
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11.5);
-      doc.setTextColor(30);
-      doc.text(r.activity || '(untitled)', marginX + 60, y);
-      y += 15;
-
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(110, 90, 140);
+      doc.text(r.time || '\u2014', marginX, y);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11.5); doc.setTextColor(30);
+      doc.text(r.activity || '(untitled)', marginX + 60, y); y += 15;
       if(r.notes){
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(9.5);
-        doc.setTextColor(100);
-        const lines = doc.splitTextToSize(r.notes, pageWidth - marginX*2 - 60);
-        lines.forEach(line => {
-          checkPageBreak(13);
-          doc.text(line, marginX + 60, y);
-          y += 13;
-        });
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(9.5); doc.setTextColor(100);
+        doc.splitTextToSize(r.notes, pageWidth - marginX*2 - 60).forEach(line => { checkPageBreak(13); doc.text(line, marginX + 60, y); y += 13; });
       }
       y += 10;
     });
     y += 10;
   });
-
-  // Open inline in the same PDF viewer used for attachments — window.open with
-  // a blob URL is unreliable on Safari (opens a blank tab), so avoid it here too.
-  const blobUrl = doc.output('bloburl');
-  openPdfViewer(blobUrl, 'Trip Timeline.pdf');
+  openPdfViewer(doc.output('bloburl'), 'Trip Timeline.pdf');
 }
-function renderTimeline(){
-  const c = document.getElementById('timeline-container');
-  c.innerHTML = '';
-  const dateOrder = [];
-  const byDate = {};
+let tlOrganise = false;
+const tlCollapsed = new Set();
+let tlFocusId = null;
+const isSec = r => r && r.type === 'section';
+function toggleTlOrganise(){
+  tlOrganise = !tlOrganise;
+  const btn = document.getElementById('tl-organise-btn');
+  if(btn){ btn.classList.toggle('on', tlOrganise); btn.textContent = tlOrganise ? '\u2713 Done organising' : '\u00a7 Organise sections'; }
+  renderTimeline();
+}
+function tlGroupByDate(){
+  const dateOrder = [], byDate = {};
   STATE.timeline.forEach(row => {
     if(!byDate[row.date]){ dateOrder.push(row.date); byDate[row.date] = []; }
     byDate[row.date].push(row);
   });
+  return {dateOrder, byDate};
+}
+function tlSectionMeta(dayRows, secId){
+  const i = dayRows.findIndex(r => r.id === secId);
+  const stops = [];
+  for(let j = i + 1; j < dayRows.length && !isSec(dayRows[j]); j++) stops.push(dayRows[j]);
+  const times = stops.map(r => r.time).filter(Boolean).sort();
+  const n = stops.filter(r => r.activity || r.time || r.notes).length;
+  const range = times.length ? (times.length > 1 && times[0] !== times[times.length-1] ? `${times[0]}\u2013${times[times.length-1]}` : times[0]) : '';
+  return [range, n ? `${n} stop${n===1?'':'s'}` : 'no stops yet'].filter(Boolean).join(' \u00b7 ');
+}
+function refreshTlMeta(){
+  const {byDate} = tlGroupByDate();
+  document.querySelectorAll('.tl-section').forEach(el => {
+    const date = el.closest('.day-card').dataset.date;
+    const m = el.querySelector('.tl-sec-meta');
+    if(m) m.textContent = tlSectionMeta(byDate[date] || [], el.dataset.id);
+  });
+}
+function renderTimeline(){
+  const c = document.getElementById('timeline-container');
+  c.innerHTML = '';
+  const {dateOrder, byDate} = tlGroupByDate();
   dateOrder.forEach(date => {
+    const rows = byDate[date];
+    let secNo = 0, hidden = false, prevWasSec = false;
+    const htmlRows = rows.map((r, i) => {
+      if(isSec(r)){
+        secNo++; hidden = tlCollapsed.has(r.id); prevWasSec = true;
+        const secs = rows.filter(isSec);
+        const sIdx = secs.findIndex(x => x.id === r.id);
+        return `<div class="tl-section ${hidden?'collapsed':''}" data-id="${r.id}">
+          <button class="tl-sec-toggle" data-action="tl-sec-toggle" title="${hidden?'Expand':'Collapse'} section" aria-expanded="${!hidden}">\u25be</button>
+          <span class="tl-sec-badge">${secNo}</span>
+          <div class="tl-sec-main">
+            <input class="tl-sec-title" placeholder="Section heading, e.g. Preparation &amp; ceremony" value="${escapeHtml(r.title||'')}" data-f="title">
+            <textarea class="tl-sec-note" rows="1" placeholder="Optional note (e.g. golden hour, transport)" data-f="note">${escapeHtml(r.note||'')}</textarea>
+          </div>
+          <span class="tl-sec-meta">${escapeHtml(tlSectionMeta(rows, r.id))}</span>
+          ${tlOrganise ? `<div class="tl-sec-ctrls">
+            <button data-action="tl-sec-up" ${sIdx===0?'disabled':''} title="Move whole section up">\u25b2</button>
+            <button data-action="tl-sec-down" ${sIdx===secs.length-1?'disabled':''} title="Move whole section down">\u25bc</button>
+            <button class="tl-sec-del" data-action="tl-sec-del" title="Remove heading (stops are kept)">\u00d7</button>
+          </div>` : ''}
+        </div>`;
+      }
+      if(hidden){ prevWasSec = false; return ''; }
+      const bar = (tlOrganise && !prevWasSec)
+        ? `<button class="tl-insert-bar" data-insert-before="${r.id}">\uff0b Section heading starts here</button>` : '';
+      prevWasSec = false;
+      return bar + timelineRowHtml(r, i, rows.length);
+    }).join('');
     const wrap = document.createElement('div');
     wrap.className = 'day-block';
     wrap.innerHTML = `
@@ -4177,53 +4250,108 @@ function renderTimeline(){
         <span class="rule"></span>
       </div>
       <div class="day-card" data-date="${escapeHtml(date)}">
-        ${byDate[date].map((r, i) => timelineRowHtml(r, i, byDate[date].length)).join('')}
+        ${htmlRows}
         <div class="tl-add-row">
           <button class="ghost" data-add-day="${escapeHtml(date)}" style="padding:5px 10px;">+ Add stop</button>
+          <button class="ghost tl-add-sec" data-add-section="${escapeHtml(date)}" style="padding:5px 10px;">\u00a7 Add section</button>
         </div>
       </div>`;
     c.appendChild(wrap);
   });
-  // New day button
   const addDay = document.createElement('div');
   addDay.innerHTML = `<button class="ghost" data-action="add-new-day" style="margin-top:6px;">+ Add a day</button>`;
   c.appendChild(addDay);
+  tlAutosize();
+  if(tlFocusId){
+    const el = c.querySelector(`.tl-section[data-id="${tlFocusId}"] .tl-sec-title`);
+    tlFocusId = null;
+    if(el) el.focus({preventScroll:false});
+  }
 }
 function timelineRowHtml(r, posInDay, dayCount){
   return `<div class="tl-row" data-id="${r.id}">
     <div class="tl-time-cell">
-      <input class="tl-time" type="time" placeholder="—" value="${escapeHtml(r.time||'')}" data-f="time">
+      <input class="tl-time" type="time" placeholder="\u2014" value="${escapeHtml(r.time||'')}" data-f="time">
     </div>
     <div class="tl-main">
-      <input placeholder="What's happening" value="${escapeHtml(r.activity||'')}" data-f="activity">
-      <textarea placeholder="Notes…" data-f="notes" rows="1">${escapeHtml(r.notes||'')}</textarea>
+      <textarea class="tl-act" rows="1" placeholder="What's happening" data-f="activity">${escapeHtml(r.activity||'')}</textarea>
+      <textarea placeholder="Notes\u2026" data-f="notes" rows="1">${escapeHtml(r.notes||'')}</textarea>
     </div>
     <div class="tl-order-cell row-order">
-      <button data-action="tl-move-up" ${posInDay===0?'disabled':''} title="Move up">▲</button>
-      <button data-action="tl-move-down" ${posInDay===dayCount-1?'disabled':''} title="Move down">▼</button>
+      <button data-action="tl-move-up" ${posInDay===0?'disabled':''} title="Move up">\u25b2</button>
+      <button data-action="tl-move-down" ${posInDay===dayCount-1?'disabled':''} title="Move down">\u25bc</button>
     </div>
-    <div class="tl-del-cell"><button class="row-del" data-action="delete-tl">×</button></div>
+    <div class="tl-del-cell"><button class="row-del" data-action="delete-tl">\u00d7</button></div>
   </div>`;
+}
+function tlAutosize(root){
+  (root || document).querySelectorAll('#timeline-container textarea.tl-act, #timeline-container textarea.tl-sec-note').forEach(t => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; });
+}
+function tlNewSection(){ return {id:uid(), type:'section', title:'', note:''}; }
+function tlMoveSection(secId, dir){
+  const date = STATE.timeline.find(x => x.id === secId).date;
+  const slots = [], rows = [];
+  STATE.timeline.forEach((x, i) => { if(x.date === date){ slots.push(i); rows.push(x); } });
+  const blocks = [];
+  rows.forEach(r => {
+    if(isSec(r) || !blocks.length) blocks.push({sec:isSec(r), rows:[r]});
+    else blocks[blocks.length-1].rows.push(r);
+  });
+  const bi = blocks.findIndex(b => b.sec && b.rows[0].id === secId);
+  const oi = bi + dir;
+  if(oi < 0 || oi >= blocks.length || !blocks[oi].sec) return;
+  [blocks[bi], blocks[oi]] = [blocks[oi], blocks[bi]];
+  const flat = blocks.flatMap(b => b.rows);
+  slots.forEach((slot, k) => { STATE.timeline[slot] = flat[k]; });
 }
 document.getElementById('timeline-container').addEventListener('click', (e) => {
   const addBtn = e.target.closest('[data-add-day]');
   if(addBtn){
     STATE.timeline.push({id:uid(), date:addBtn.dataset.addDay, time:'', activity:'', notes:''});
-    scheduleSave('timeline'); renderTimeline();
-    return;
+    scheduleSave('timeline'); renderTimeline(); return;
+  }
+  const addSec = e.target.closest('[data-add-section]');
+  if(addSec){
+    const sec = tlNewSection(); sec.date = addSec.dataset.addSection;
+    STATE.timeline.push(sec); tlFocusId = sec.id;
+    scheduleSave('timeline'); renderTimeline(); return;
+  }
+  const insBtn = e.target.closest('[data-insert-before]');
+  if(insBtn){
+    const idx = STATE.timeline.findIndex(x => x.id === insBtn.dataset.insertBefore);
+    if(idx < 0) return;
+    const sec = tlNewSection(); sec.date = STATE.timeline[idx].date;
+    STATE.timeline.splice(idx, 0, sec); tlFocusId = sec.id;
+    scheduleSave('timeline'); renderTimeline(); return;
+  }
+  const secEl = e.target.closest('.tl-section');
+  const act = e.target.closest('[data-action]');
+  if(secEl && act){
+    const id = secEl.dataset.id;
+    if(act.dataset.action === 'tl-sec-toggle'){
+      tlCollapsed.has(id) ? tlCollapsed.delete(id) : tlCollapsed.add(id);
+      renderTimeline(); return;
+    }
+    if(act.dataset.action === 'tl-sec-up' || act.dataset.action === 'tl-sec-down'){
+      tlMoveSection(id, act.dataset.action === 'tl-sec-up' ? -1 : 1);
+      scheduleSave('timeline'); renderTimeline(); return;
+    }
+    if(act.dataset.action === 'tl-sec-del'){
+      if(!confirm('Remove this section heading? The stops under it stay on the timeline.')) return;
+      STATE.timeline = STATE.timeline.filter(x => x.id !== id); tlCollapsed.delete(id);
+      scheduleSave('timeline'); renderTimeline(); return;
+    }
   }
   if(e.target.dataset.action === 'add-new-day'){
     const name = prompt('Date label for the new day (e.g. "6 Dec"):');
     if(!name || !name.trim()) return;
     STATE.timeline.push({id:uid(), date:name.trim(), time:'', activity:'', notes:''});
-    scheduleSave('timeline'); renderTimeline();
-    return;
+    scheduleSave('timeline'); renderTimeline(); return;
   }
   if(e.target.dataset.action === 'delete-tl'){
     const row = e.target.closest('.tl-row');
     STATE.timeline = STATE.timeline.filter(x => x.id !== row.dataset.id);
-    scheduleSave('timeline'); renderTimeline();
-    return;
+    scheduleSave('timeline'); renderTimeline(); return;
   }
   if(e.target.dataset.action === 'tl-move-up' || e.target.dataset.action === 'tl-move-down'){
     const row = e.target.closest('.tl-row'); if(!row) return;
@@ -4236,15 +4364,20 @@ document.getElementById('timeline-container').addEventListener('click', (e) => {
     const idxA = STATE.timeline.findIndex(x => x.id === r.id);
     const idxB = STATE.timeline.findIndex(x => x.id === other.id);
     [STATE.timeline[idxA], STATE.timeline[idxB]] = [STATE.timeline[idxB], STATE.timeline[idxA]];
-    scheduleSave('timeline'); renderTimeline();
-    return;
+    scheduleSave('timeline'); renderTimeline(); return;
   }
 });
+document.getElementById('timeline-container').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' && (e.target.classList.contains('tl-act') || e.target.classList.contains('tl-sec-note'))){ e.preventDefault(); e.target.blur(); }
+});
+window.addEventListener('resize', () => tlAutosize());
 document.getElementById('timeline-container').addEventListener('input', (e) => {
-  const row = e.target.closest('.tl-row'); if(!row) return;
+  const row = e.target.closest('.tl-row, .tl-section'); if(!row) return;
   const r = STATE.timeline.find(x => x.id === row.dataset.id); if(!r) return;
   r[e.target.dataset.f] = e.target.value;
+  if(e.target.classList.contains('tl-act') || e.target.classList.contains('tl-sec-note')) tlAutosize();
   scheduleSave('timeline');
+  refreshTlMeta();
 });
 
 /* ============================= DECISIONS ============================= */
