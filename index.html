@@ -1028,6 +1028,7 @@
   <div class="tiles" id="more-tiles"></div>
   <div class="more-tools">
     <button onclick="closeMoreSheet();openGithubSyncModal()">GitHub Sync</button>
+    <button onclick="closeMoreSheet();openFirestoreModal()">Firestore Backup</button>
     <button onclick="closeMoreSheet();openAutoBackupModal()">Auto-backups</button>
     <button onclick="closeMoreSheet();exportBackup()">Download backup</button>
   </div>
@@ -1037,6 +1038,7 @@
   <span style="display:flex; align-items:center; gap:10px;">
     <span id="sync-status" data-status="saved">All changes saved</span>
     <span id="github-sync-flag" class="sync-flag" hidden></span>
+    <span id="firestore-sync-flag" class="sync-flag" hidden></span>
   </span>
   <button id="sync-now-btn" onclick="syncNow()">Sync now</button>
 </div>
@@ -1254,6 +1256,7 @@
 
 <footer>
   <button class="footer-btn" onclick="openGithubSyncModal()">GitHub Sync</button>
+  <button class="footer-btn" onclick="openFirestoreModal()">Firestore Backup</button>
   <button class="footer-btn" onclick="openAutoBackupModal()">Auto-backups <span id="autobackup-count"></span></button>
   <button class="footer-btn" onclick="openStorageUsageModal()">Storage usage</button>
   <button class="footer-btn" onclick="exportSpreadsheet()" style="display:none;">Export .xlsx</button>
@@ -1273,13 +1276,24 @@
   </div>
 </div>
 
+
+<div class="modal-overlay" id="firestore-overlay" onclick="if(event.target===this) closeFirestoreModal()">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h3>Firestore cloud backup</h3>
+      <button class="modal-close" onclick="closeFirestoreModal()">×</button>
+    </div>
+    <p class="modal-sub">Saves the full board to your Firebase Firestore project so data is not lost if this browser is cleared. Create a free Firebase project, enable Firestore and Anonymous Auth, then paste the web app config below. Local IndexedDB backups still run either way.</p>
+    <div id="firestore-form"></div>
+  </div>
+</div>
 <div class="modal-overlay" id="autobackup-overlay" onclick="if(event.target===this) closeAutoBackupModal()">
   <div class="modal-panel">
     <div class="modal-head">
       <h3>Auto-backups</h3>
       <button class="modal-close" onclick="closeAutoBackupModal()">×</button>
     </div>
-    <p class="modal-sub">A snapshot is taken automatically every 20 minutes this board is open, plus one whenever the page loads. Restoring replaces everything currently on the board.</p>
+    <p class="modal-sub">Snapshots are stored in IndexedDB on this device (last 30). A snapshot is taken shortly after load, then every 10 minutes while the board is open. Restoring replaces everything currently on the board.</p>
     <div id="autobackup-list"></div>
   </div>
 </div>
@@ -1319,6 +1333,9 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 /* ============================= OFFLINE / STORAGE MODE ============================= */
 // Inside Claude.ai, window.storage is injected by the host and syncs to your
@@ -1328,22 +1345,134 @@
 // same get/set/delete interface. Everything else in this file is unaware of
 // which mode it's in.
 let STORAGE_MODE = 'cloud';
+const IDB_NAME = 'ceremony-dashboard-db';
+const IDB_STORE = 'kv';
+const IDB_VERSION = 1;
+let _idbPromise = null;
+
+function openCeremonyIDB(){
+  if(_idbPromise) return _idbPromise;
+  _idbPromise = new Promise((resolve, reject) => {
+    if(!window.indexedDB){ reject(new Error('IndexedDB not available')); return; }
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error('IndexedDB open failed'));
+  });
+  return _idbPromise;
+}
+
+async function idbGet(key){
+  const db = await openCeremonyIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(key);
+    req.onsuccess = () => resolve(req.result === undefined ? null : req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbSet(key, value){
+  const db = await openCeremonyIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function idbDelete(key){
+  const db = await openCeremonyIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(key);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function migrateLocalStorageToIDB(){
+  try{
+    const flag = await idbGet('__migrated_from_ls');
+    if(flag) return;
+    const keys = [];
+    for(let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if(k && k.startsWith('ceremony:')) keys.push(k);
+    }
+    for(const full of keys){
+      const key = full.slice('ceremony:'.length);
+      const raw = localStorage.getItem(full);
+      if(raw !== null){
+        const existing = await idbGet(key);
+        if(existing === null) await idbSet(key, raw);
+      }
+    }
+    await idbSet('__migrated_from_ls', '1');
+  }catch(e){ console.warn('IDB migration skipped:', e); }
+}
+
+async function mirrorToIDB(key, value){
+  try{ await idbSet(key, value); }catch(e){ console.warn('IDB mirror failed', key, e); }
+}
+
 if (typeof window.storage === 'undefined') {
   STORAGE_MODE = 'local';
   window.storage = {
     async get(key, shared){
-      const raw = localStorage.getItem('ceremony:' + key);
-      if (raw === null) throw new Error('Key not found: ' + key);
+      await migrateLocalStorageToIDB();
+      let raw = null;
+      try{ raw = await idbGet(key); }catch(e){ }
+      if(raw === null){
+        raw = localStorage.getItem('ceremony:' + key);
+        if(raw !== null){ try{ await idbSet(key, raw); }catch(e){} }
+      }
+      if(raw === null) throw new Error('Key not found: ' + key);
       return { key, value: raw, shared: !!shared };
     },
     async set(key, value, shared){
-      try{ localStorage.setItem('ceremony:' + key, value); }
-      catch(e){ return null; } // e.g. quota exceeded
-      return { key, value, shared: !!shared };
+      try{
+        await idbSet(key, value);
+        try{ localStorage.setItem('ceremony:' + key, value); }catch(e){ }
+        return { key, value, shared: !!shared };
+      }catch(e){
+        try{
+          localStorage.setItem('ceremony:' + key, value);
+          return { key, value, shared: !!shared };
+        }catch(e2){ return null; }
+      }
     },
     async delete(key, shared){
+      try{ await idbDelete(key); }catch(e){}
       localStorage.removeItem('ceremony:' + key);
       return { key, deleted:true, shared: !!shared };
+    }
+  };
+} else {
+  const _hostStorage = window.storage;
+  STORAGE_MODE = 'cloud+idb';
+  window.storage = {
+    async get(key, shared){
+      try{
+        return await _hostStorage.get(key, shared);
+      }catch(e){
+        await migrateLocalStorageToIDB();
+        const raw = await idbGet(key);
+        if(raw === null) throw e;
+        return { key, value: raw, shared: !!shared };
+      }
+    },
+    async set(key, value, shared){
+      const res = await _hostStorage.set(key, value, shared);
+      await mirrorToIDB(key, value);
+      return res;
+    },
+    async delete(key, shared){
+      const res = await _hostStorage.delete(key, shared);
+      try{ await idbDelete(key); }catch(e){}
+      return res;
     }
   };
 }
@@ -1533,8 +1662,13 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v35';
+const APP_VERSION = 'v36';
 const CHANGELOG = [
+  { version:'v36', date:'2026-11-06', notes:[
+    'IndexedDB local storage: board data and auto-backups persist in IndexedDB with migration from localStorage',
+    'Firestore cloud backup: optional Firebase sync so changes survive across browsers and devices',
+    'Auto-backups: IndexedDB, every 10 minutes, keep last 30 snapshots'
+  ]},
   { version:'v35', date:'2026-11-06', notes:[
     'Notes & Actions: each entry is now check-offable (checkbox) so actions and follow-ups can be marked done',
     'Notes & Actions: attach PDFs, text files, images and emails on any entry — same upload/drag-drop system as Checklist and Budget; files open in the in-page viewer'
@@ -1672,7 +1806,8 @@ let STATE = {
   plTagOptions: seedPlTagOptions(),
   photoIdeas: seedPhotoIdeas(),
   photoIdeaCategoryOrder: seedPhotoIdeaCategoryOrder(),
-  githubSettings: {enabled:true, token:'', owner:'Ello2003', repo:'ceremony-dashboard', path:'ceremony-data.json', branch:'main', sha:null, lastSyncAt:null}
+  githubSettings: {enabled:true, token:'', owner:'Ello2003', repo:'ceremony-dashboard', path:'ceremony-data.json', branch:'main', sha:null, lastSyncAt:null},
+  firestoreSettings: {enabled:false, apiKey:'', authDomain:'', projectId:'', appId:'', collection:'ceremonyBoards', docId:'main', lastSyncAt:null}
 };
 
 /* ============================= STORAGE ============================= */
@@ -1704,7 +1839,7 @@ async function persist(key, value){
     retryCounts[key] = 0;
     if(retryTimers[key]){ clearTimeout(retryTimers[key]); delete retryTimers[key]; }
     setSyncStatus(dirtyKeys.size ? 'saving' : 'saved');
-    if(key !== 'githubSettings') scheduleGithubSync();
+    if(key !== 'githubSettings' && key !== 'firestoreSettings'){ scheduleGithubSync(); scheduleFirestoreSync(); }
   }catch(e){
     console.error('Storage error —', key, e);
     setSyncStatus('error', key);
@@ -2005,7 +2140,7 @@ function applyModeCopy(){
 }
 
 async function loadAll(){
-  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoLocationsMap','plTagOptions','photoIdeas','photoIdeaCategoryOrder','githubSettings'];
+  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoLocationsMap','plTagOptions','photoIdeas','photoIdeaCategoryOrder','githubSettings','firestoreSettings'];
   for(const k of keys){
     try{
       const res = await window.storage.get(k, false);
@@ -2109,6 +2244,165 @@ function exportSpreadsheet(){
   saveBlob('xlsx', blob, 'ceremony-dashboard.xlsx', 'Excel workbook', '.xlsx');
 }
 
+/* ============================= FIRESTORE CLOUD BACKUP ============================= */
+let _fsApp = null;
+let _fsDb = null;
+let firestoreSyncTimer = null;
+
+function firestoreConfigured(){
+  const s = STATE.firestoreSettings || {};
+  return !!(s.enabled && s.apiKey && s.projectId && s.appId);
+}
+function firestoreSyncableData(){
+  const { githubSettings, firestoreSettings, ...rest } = STATE;
+  return rest;
+}
+function setFirestoreSyncStatus(kind, text){
+  const el = document.getElementById('firestore-sync-flag');
+  if(!el) return;
+  if(!text){ el.hidden = true; return; }
+  el.hidden = false;
+  el.textContent = text;
+  el.className = 'sync-flag' + (kind ? ' ' + kind : '');
+}
+async function ensureFirestore(){
+  if(typeof firebase === 'undefined') throw new Error('Firebase SDK not loaded');
+  const s = STATE.firestoreSettings;
+  if(!_fsApp){
+    try{ _fsApp = firebase.app(); }
+    catch(e){
+      _fsApp = firebase.initializeApp({
+        apiKey: s.apiKey,
+        authDomain: s.authDomain || (s.projectId + '.firebaseapp.com'),
+        projectId: s.projectId,
+        appId: s.appId
+      });
+    }
+    _fsDb = firebase.firestore();
+    try{
+      await firebase.auth().signInAnonymously();
+    }catch(authErr){
+      console.warn('Anonymous auth failed', authErr);
+      throw new Error('Firestore auth failed. Enable Anonymous Authentication in your Firebase console.');
+    }
+  }
+  return _fsDb;
+}
+function scheduleFirestoreSync(){
+  if(!firestoreConfigured()) return;
+  clearTimeout(firestoreSyncTimer);
+  firestoreSyncTimer = setTimeout(() => { pushFirestore().catch(e => console.error(e)); }, 4000);
+}
+async function pushFirestore(){
+  if(!firestoreConfigured()) return;
+  setFirestoreSyncStatus('saving', 'Cloud Firestore saving...');
+  try{
+    const db = await ensureFirestore();
+    const s = STATE.firestoreSettings;
+    const col = s.collection || 'ceremonyBoards';
+    const docId = s.docId || 'main';
+    const payload = {
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      clientUpdatedAt: Date.now(),
+      data: firestoreSyncableData()
+    };
+    await db.collection(col).doc(docId).set(payload, { merge: true });
+    STATE.firestoreSettings.lastSyncAt = Date.now();
+    await persist('firestoreSettings', STATE.firestoreSettings);
+    setFirestoreSyncStatus('', 'Cloud Firestore ' + formatSyncTime(STATE.firestoreSettings.lastSyncAt));
+  }catch(e){
+    console.error('Firestore push failed', e);
+    setFirestoreSyncStatus('error', 'Cloud Firestore error');
+  }
+}
+async function pullFirestoreOnLoad(){
+  if(!firestoreConfigured()) return;
+  try{
+    const db = await ensureFirestore();
+    const s = STATE.firestoreSettings;
+    const col = s.collection || 'ceremonyBoards';
+    const docId = s.docId || 'main';
+    const snap = await db.collection(col).doc(docId).get();
+    if(!snap.exists) return;
+    const remote = snap.data();
+    if(!remote || !remote.data) return;
+    const remoteTs = remote.clientUpdatedAt || 0;
+    const localTs = s.lastSyncAt || 0;
+    if(remoteTs >= localTs){
+      Object.keys(remote.data).forEach(k => {
+        if(k !== 'githubSettings' && k !== 'firestoreSettings' && remote.data[k] !== undefined) STATE[k] = remote.data[k];
+      });
+      for(const k of Object.keys(remote.data)){
+        if(k === 'githubSettings' || k === 'firestoreSettings') continue;
+        try{ await persist(k, STATE[k]); }catch(e){}
+      }
+      STATE.firestoreSettings.lastSyncAt = Date.now();
+      await persist('firestoreSettings', STATE.firestoreSettings);
+      setFirestoreSyncStatus('', 'Cloud Firestore restored ' + formatSyncTime(STATE.firestoreSettings.lastSyncAt));
+    }
+  }catch(e){
+    console.error('Firestore pull failed', e);
+    setFirestoreSyncStatus('error', 'Cloud Firestore pull error');
+  }
+}
+function openFirestoreModal(){
+  document.getElementById('firestore-overlay').classList.add('open');
+  renderFirestoreForm();
+}
+function closeFirestoreModal(){
+  document.getElementById('firestore-overlay').classList.remove('open');
+}
+function renderFirestoreForm(){
+  const s = STATE.firestoreSettings || {};
+  const statusLine = !s.enabled ? 'Backup is off.'
+    : !s.apiKey || !s.projectId ? 'Enabled, but Firebase config is incomplete.'
+    : 'Last synced: ' + formatSyncTime(s.lastSyncAt);
+  const c = document.getElementById('firestore-form');
+  c.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin:12px 0 4px;">
+      <input type="checkbox" id="fs-enabled" style="width:auto;" ${s.enabled?'checked':''}>
+      <label style="margin:0;font-size:13px;" for="fs-enabled">Enable Firestore cloud backup</label>
+    </div>
+    <label class="field-label">API Key</label>
+    <input class="field-input" id="fs-apiKey" type="password" value="${escapeHtml(s.apiKey||'')}" placeholder="AIza..." autocomplete="off">
+    <label class="field-label">Project ID</label>
+    <input class="field-input" id="fs-projectId" type="text" value="${escapeHtml(s.projectId||'')}" placeholder="my-project-id">
+    <label class="field-label">App ID</label>
+    <input class="field-input" id="fs-appId" type="text" value="${escapeHtml(s.appId||'')}" placeholder="1:123456:web:abc">
+    <label class="field-label">Auth Domain (optional)</label>
+    <input class="field-input" id="fs-authDomain" type="text" value="${escapeHtml(s.authDomain||'')}" placeholder="my-project-id.firebaseapp.com">
+    <div style="display:flex;gap:10px;">
+      <div style="flex:1;"><label class="field-label">Collection</label><input class="field-input" id="fs-collection" type="text" value="${escapeHtml(s.collection||'ceremonyBoards')}"></div>
+      <div style="flex:1;"><label class="field-label">Document ID</label><input class="field-input" id="fs-docId" type="text" value="${escapeHtml(s.docId||'main')}"></div>
+    </div>
+    <p style="font-size:12px;color:rgba(43,42,40,.55);margin:10px 0;">${statusLine}</p>
+    <p style="font-size:11.5px;color:rgba(43,42,40,.45);margin:0 0 12px;line-height:1.45;">In Firebase Console: create a web app, copy config values, enable <b>Anonymous</b> sign-in under Authentication, and create a Firestore database.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="modal-btn" onclick="saveFirestoreSettings()">Save settings</button>
+      <button class="modal-btn" onclick="pushFirestore().then(()=>renderFirestoreForm())">Sync now</button>
+      <button class="modal-btn" onclick="pullFirestoreOnLoad().then(()=>{renderAll();renderFirestoreForm();})">Pull from cloud</button>
+    </div>
+  `;
+}
+async function saveFirestoreSettings(){
+  const s = STATE.firestoreSettings || {};
+  s.enabled = document.getElementById('fs-enabled').checked;
+  s.apiKey = document.getElementById('fs-apiKey').value.trim();
+  s.projectId = document.getElementById('fs-projectId').value.trim();
+  s.appId = document.getElementById('fs-appId').value.trim();
+  s.authDomain = document.getElementById('fs-authDomain').value.trim();
+  s.collection = document.getElementById('fs-collection').value.trim() || 'ceremonyBoards';
+  s.docId = document.getElementById('fs-docId').value.trim() || 'main';
+  STATE.firestoreSettings = s;
+  _fsApp = null; _fsDb = null;
+  await persist('firestoreSettings', s);
+  renderFirestoreForm();
+  if(firestoreConfigured()){
+    try{ await pushFirestore(); renderFirestoreForm(); }
+    catch(e){ alert(e.message || 'Could not sync'); }
+  }
+}
+
 /* ============================= AUTO-BACKUP ============================= */
 // A lightweight rolling snapshot, separate from the manual JSON/xlsx export.
 // It captures the board's data (not attachment bytes — those already live
@@ -2118,8 +2412,8 @@ function exportSpreadsheet(){
 // folder and browsers often block repeated auto-downloads anyway. Instead
 // these snapshots live quietly in storage and you can browse/restore them
 // from the "Auto-backups" button whenever you want.
-const AUTO_BACKUP_INTERVAL_MS = 20 * 60 * 1000;
-const AUTO_BACKUP_MAX = 10;
+const AUTO_BACKUP_INTERVAL_MS = 10 * 60 * 1000;
+const AUTO_BACKUP_MAX = 30;
 
 async function takeAutoBackup(){
   try{
@@ -4867,16 +5161,19 @@ function renderAll(){
 
 (async function init(){
   applyModeCopy();
+  try{ await migrateLocalStorageToIDB(); }catch(e){}
   try{
     await loadAll();
   }catch(e){ console.error(e); }
   try{
     await githubPullOnLoad();
   }catch(e){ console.error(e); }
+  try{
+    await pullFirestoreOnLoad();
+  }catch(e){ console.error(e); }
   renderAll();
 
-  // First snapshot shortly after load (once things have settled), then
-  // every 20 minutes for as long as the board stays open.
+  // IndexedDB snapshots: shortly after load, then every 10 minutes while open.
   setTimeout(takeAutoBackup, 15000);
   setInterval(takeAutoBackup, AUTO_BACKUP_INTERVAL_MS);
   try{
