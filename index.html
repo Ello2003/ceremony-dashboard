@@ -412,12 +412,12 @@
   .tl-main input::placeholder{ font-weight:400; color:rgba(43,42,40,0.35); }
   .tl-main textarea{
     width:100%; font-size:12.5px; color:rgba(43,42,40,0.6); font-style:italic;
-    border:none; background:transparent; resize:vertical; padding:0;
-    font-family:'Source Serif 4', serif; min-height:0;
+    border:none; background:transparent; resize:none; overflow:hidden; padding:0;
+    font-family:'Source Serif 4', serif; min-height:22px; line-height:1.4;
   }
   .tl-main textarea.tl-act{
     font-size:15px; font-weight:600; font-style:normal; color:var(--ink);
-    line-height:1.35; letter-spacing:-0.01em;
+    line-height:1.4; letter-spacing:-0.01em; min-height:28px;
   }
   .tl-main textarea.tl-act::placeholder{ font-weight:400; font-style:normal; color:rgba(43,42,40,0.35); }
   .tl-main textarea[data-f="notes"]{ font-size:12.5px; font-weight:400; font-style:italic; color:rgba(43,42,40,0.6); }
@@ -444,8 +444,8 @@
 
   /* ---------- TIMELINE SECTIONS (v35) ---------- */
   .tl-section{
-    display:grid; grid-template-columns:22px 28px 28px 1fr auto auto; align-items:center; gap:4px 8px;
-    padding:11px 10px 11px 6px; background:linear-gradient(90deg, rgba(46,99,103,.11), rgba(46,99,103,.03));
+    display:grid; grid-template-columns:22px 28px 28px 1fr auto auto; align-items:center; gap:6px 8px;
+    padding:12px 10px 12px 6px; min-height:52px; background:linear-gradient(90deg, rgba(46,99,103,.11), rgba(46,99,103,.03));
     border-top:1px solid var(--line); border-bottom:1px solid var(--line); border-left:3px solid var(--gold);
   }
   .tl-section:first-child{ border-top:none; }
@@ -455,13 +455,19 @@
     font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:600; color:var(--parchment);
     background:var(--holyrood); width:26px; height:22px; border-radius:3px; display:flex; align-items:center; justify-content:center;
   }
-  .tl-sec-main{ display:flex; flex-direction:column; gap:2px; min-width:0; }
-  .tl-sec-main input{ border:none; background:transparent; width:100%; padding:0; color:var(--ink); }
-  .tl-sec-main textarea{ border:none; background:transparent; width:100%; padding:0; resize:none; overflow:hidden; line-height:1.35; }
+  .tl-sec-main{ display:flex; flex-direction:column; gap:4px; min-width:0; align-self:center; }
+  .tl-sec-main input{ border:none; background:transparent; width:100%; padding:0; color:var(--ink); box-sizing:border-box; }
+  .tl-sec-main textarea{ border:none; background:transparent; width:100%; padding:0; resize:none; overflow:hidden; line-height:1.4; box-sizing:border-box; }
   .tl-sec-main input:focus, .tl-sec-main textarea:focus{ outline:none; }
-  .tl-sec-title{ font-family:'Fraunces', serif; font-weight:600; font-size:16px; letter-spacing:.01em; }
+  .tl-sec-title{
+    font-family:'Fraunces', serif; font-weight:600; font-size:16px; letter-spacing:.01em;
+    line-height:1.35; min-height:28px; height:28px;
+  }
   .tl-sec-title::placeholder{ font-weight:400; font-style:italic; color:rgba(43,42,40,.35); }
-  .tl-sec-note{ font-family:'Source Serif 4', serif; font-style:italic; font-size:12.5px; color:rgba(43,42,40,.6); }
+  .tl-sec-note{
+    font-family:'Source Serif 4', serif; font-style:italic; font-size:12.5px; color:rgba(43,42,40,.6);
+    min-height:22px; line-height:1.4;
+  }
   .tl-sec-note::placeholder{ color:rgba(43,42,40,.28); }
   .tl-sec-meta{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:rgba(43,42,40,.5); white-space:nowrap; text-align:right; }
   .tl-sec-ctrls{ display:flex; gap:4px; align-items:center; }
@@ -1810,6 +1816,9 @@ function uid(){ return Math.random().toString(36).slice(2,10); }
 /* ============================= VERSION HISTORY ============================= */
 const APP_VERSION = 'v37';
 const CHANGELOG = [
+  { version:'v36.3', date:'2026-11-06', notes:[
+    'Trip timeline: fix clipped titles — section headings and stop names get proper min-height so text shows immediately'
+  ]},
   { version:'v36.2', date:'2026-11-06', notes:[
     'Trip timeline: bold stop names; drag handles to reorder sections/stops; section delete always visible'
   ]},
@@ -4613,6 +4622,7 @@ function renderTimeline(){
   addDay.innerHTML = `<button class="ghost" data-action="add-new-day" style="margin-top:6px;">+ Add a day</button>`;
   c.appendChild(addDay);
   tlAutosize();
+  requestAnimationFrame(() => tlAutosize());
   if(tlFocusId){
     const el = c.querySelector(`.tl-section[data-id="${tlFocusId}"] .tl-sec-title`);
     tlFocusId = null;
@@ -4637,7 +4647,15 @@ function timelineRowHtml(r, posInDay, dayCount){
   </div>`;
 }
 function tlAutosize(root){
-  (root || document).querySelectorAll('#timeline-container textarea.tl-act, #timeline-container textarea.tl-sec-note').forEach(t => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; });
+  const scope = root || document;
+  scope.querySelectorAll('#timeline-container textarea.tl-act, #timeline-container textarea.tl-sec-note, #timeline-container textarea[data-f="notes"]').forEach(t => {
+    t.style.height = '0px';
+    const min = t.classList.contains('tl-act') ? 28 : 22;
+    t.style.height = Math.max(min, t.scrollHeight) + 'px';
+  });
+  scope.querySelectorAll('#timeline-container input.tl-sec-title').forEach(inp => {
+    inp.style.height = '28px';
+  });
 }
 function tlNewSection(){ return {id:uid(), type:'section', title:'', note:''}; }
 function tlMoveSection(secId, dir){
