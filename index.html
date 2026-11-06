@@ -416,14 +416,11 @@
     font-family:'Source Serif 4', serif; min-height:0;
   }
   .tl-main textarea:focus{ outline:none; color:var(--ink); font-style:normal; }
-  .tl-main textarea.tl-act{ font-size:14px; font-family:'Source Serif 4', serif; font-weight:600; font-style:normal; color:var(--ink); resize:none; overflow:hidden; line-height:1.35; }
-  .tl-main textarea.tl-act::placeholder{ font-weight:400; color:rgba(43,42,40,0.35); }
   .tl-del-cell{ display:flex; align-items:center; justify-content:center; padding:0 8px; }
   .tl-add-row{
     border-top:1px dashed var(--line); padding:10px 14px;
     display:flex; align-items:center; gap:10px;
   }
-
 
   /* ---------- TIMELINE SECTIONS (v35) ---------- */
   .tl-section{
@@ -461,12 +458,53 @@
   .tl-add-row .tl-add-sec{ border-style:dashed; color:var(--holyrood); }
   #tl-organise-btn.on{ background:var(--ink); color:var(--parchment); border-color:var(--ink); }
 
+
+  /* ---------- FILES LIBRARY (v37) ---------- */
+  .files-upload{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:16px; }
+  .files-upload-top{ display:flex; justify-content:flex-end; margin-bottom:10px; }
+  .files-cat-label{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:rgba(43,42,40,.6); display:flex; align-items:center; gap:8px; }
+  .files-cat-label select{ font-size:12.5px; padding:6px 8px; border:1px solid var(--line); border-radius:4px; background:var(--parchment); color:var(--ink); }
+  .files-drop{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; text-align:center; padding:26px 16px; cursor:pointer;
+    border:2px dashed var(--gold); border-radius:10px; background:rgba(198,151,90,.07); transition:background .15s, border-color .15s; }
+  .files-drop:hover, .files-drop.drag-over{ background:rgba(198,151,90,.18); border-color:var(--holyrood); }
+  .files-drop-icon{ font-size:22px; color:var(--holyrood); }
+  .files-drop-main{ font-family:'Fraunces', serif; font-size:17px; color:var(--ink); }
+  .files-drop-sub{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:rgba(43,42,40,.55); }
+  .files-busy{ margin-top:10px; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--holyrood); }
+  .files-controls{ display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .files-controls input{ flex:1; min-width:200px; padding:9px 12px; border:1px solid var(--line); border-radius:6px; background:var(--card); font-size:14px; }
+  .files-controls select{ padding:9px 10px; border:1px solid var(--line); border-radius:6px; background:var(--card); font-size:13px; }
+  .files-summary{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:rgba(43,42,40,.55); margin:6px 0 10px; }
+  .file-row{ display:grid; grid-template-columns:44px 1fr auto; gap:4px 12px; align-items:center; padding:12px 14px; background:var(--card); border:1px solid var(--line); border-radius:10px; margin-bottom:8px; }
+  .file-ico{ width:44px; height:44px; border-radius:8px; background:var(--parchment-dim); display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .file-main{ min-width:0; }
+  .file-name{ background:none; border:none; padding:0; text-align:left; cursor:pointer; font-family:'Fraunces', serif; font-size:15.5px; font-weight:600; color:var(--ink); max-width:100%; overflow-wrap:anywhere; }
+  .file-name:hover{ color:var(--holyrood); text-decoration:underline; }
+  .file-meta{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:rgba(43,42,40,.55); margin-top:3px; display:flex; flex-wrap:wrap; gap:2px 10px; }
+  .file-src{ display:inline-block; padding:1px 8px; border-radius:99px; background:rgba(46,99,103,.1); color:var(--holyrood); }
+  .file-src.elsewhere{ background:rgba(198,151,90,.18); color:#8a6428; }
+  .file-actions{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+  .file-actions select{ font-size:12px; padding:5px 6px; border:1px solid var(--line); border-radius:4px; background:var(--parchment); max-width:150px; }
+  .file-actions button{ background:none; border:1px solid var(--line); border-radius:4px; cursor:pointer; font-family:'IBM Plex Mono', monospace; font-size:10.5px; padding:5px 9px; color:rgba(43,42,40,.7); }
+  .file-actions button:hover{ border-color:var(--holyrood); color:var(--holyrood); }
+  .file-actions .file-del:hover{ border-color:var(--rose); color:var(--rose); }
+  .files-empty{ text-align:center; padding:30px 10px; color:rgba(43,42,40,.5); font-size:14px; }
+
   /* ---------- NOTES & ACTIONS ---------- */
   .decision-item{
-    display:grid; grid-template-columns:80px 100px 1fr 34px; gap:0; align-items:stretch;
+    display:grid; grid-template-columns:40px 80px 100px 1fr 34px; gap:0; align-items:stretch;
     border-bottom:1px solid var(--line);
   }
   .decision-item:last-child{ border-bottom:none; }
+  .decision-item.done .decision-body textarea{ text-decoration:line-through; color:rgba(43,42,40,.45); }
+  .decision-item.done{ opacity:0.78; }
+  .decision-check-cell{
+    display:flex; align-items:flex-start; justify-content:center; padding:14px 0 14px 8px;
+    background:var(--parchment-dim); border-right:1px solid var(--line);
+  }
+  .decision-check-cell input[type="checkbox"]{
+    width:18px; height:18px; margin-top:2px; cursor:pointer; accent-color:var(--holyrood);
+  }
   .decision-date-cell{
     display:flex; align-items:flex-start; justify-content:flex-end; padding:14px 14px 14px 12px;
     background:var(--parchment-dim); border-right:1px solid var(--line);
@@ -487,14 +525,18 @@
     border:none; background:transparent; resize:vertical; padding:0; color:var(--ink); min-height:36px;
   }
   .decision-body textarea:focus{ outline:none; }
+  .decision-attach{ margin-top:10px; }
   .decision-del-cell{ display:flex; align-items:center; justify-content:center; padding:0 8px; }
   /* type row tints */
   .decision-item[data-type="action"] .decision-date-cell,
-  .decision-item[data-type="action"] .decision-type-cell{ background:rgba(198,151,90,0.12); }
+  .decision-item[data-type="action"] .decision-type-cell,
+  .decision-item[data-type="action"] .decision-check-cell{ background:rgba(198,151,90,0.12); }
   .decision-item[data-type="followup"] .decision-date-cell,
-  .decision-item[data-type="followup"] .decision-type-cell{ background:rgba(135,120,158,0.12); }
+  .decision-item[data-type="followup"] .decision-type-cell,
+  .decision-item[data-type="followup"] .decision-check-cell{ background:rgba(135,120,158,0.12); }
   .decision-item[data-type="decision"] .decision-date-cell,
-  .decision-item[data-type="decision"] .decision-type-cell{ background:rgba(46,99,103,0.10); }
+  .decision-item[data-type="decision"] .decision-type-cell,
+  .decision-item[data-type="decision"] .decision-check-cell{ background:rgba(46,99,103,0.10); }
 
   /* ---------- NAV REORDER ---------- */
   .nav-reorder-btn{
@@ -903,7 +945,7 @@
 
     /* ---- Tap targets & iOS no-zoom inputs ---- */
     button, select, input[type="date"], input[type="time"]{ min-height:44px; }
-    input:not([type]), input[type="text"], input[type="search"], input[type="number"], input[type="url"],
+    input[type="text"], input[type="search"], input[type="number"], input[type="url"],
     input[type="date"], input[type="time"], select, textarea, [contenteditable]{ font-size:16px !important; }
     .row-del{ min-width:44px; min-height:44px; font-size:22px; }
     .filter-chips{ overflow-x:auto; flex-wrap:nowrap; padding-bottom:4px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
@@ -946,10 +988,8 @@
     .tl-del-cell{ grid-area:del; }
     .tl-order-cell{ grid-area:ord; display:flex; }
     .tl-order-cell button{ width:36px; height:30px; min-height:0; font-size:11px; }
+    .tl-main input{ min-height:44px; font-weight:600; }
     .tl-main textarea{ min-height:40px; }
-    .tl-main textarea.tl-act{ min-height:30px; padding:8px 0 2px; font-weight:600; }
-    input[type="time"]::-webkit-calendar-picker-indicator{ display:none; }
-
 
     /* ---- Timeline sections ---- */
     .tl-section{ grid-template-columns:32px 28px 1fr; padding:12px 12px 12px 4px; }
@@ -960,6 +1000,17 @@
     .tl-sec-ctrls{ grid-column:2 / -1; gap:8px; }
     .tl-sec-ctrls button{ width:44px; height:40px; font-size:13px; }
     .tl-insert-bar{ min-height:44px; font-size:11px; }
+
+
+    /* ---- Files library ---- */
+    .files-drop{ padding:30px 14px; min-height:120px; }
+    .files-cat-label select{ font-size:16px; min-height:44px; }
+    .files-controls input, .files-controls select{ min-height:44px; font-size:16px; }
+    .files-controls input{ min-width:0; flex:1 1 100%; }
+    .file-row{ grid-template-columns:44px 1fr; padding:12px; }
+    .file-actions{ grid-column:1 / -1; justify-content:flex-start; margin-top:6px; }
+    .file-actions button{ min-height:40px; padding:0 14px; font-size:11px; }
+    .file-actions select{ min-height:40px; font-size:16px; max-width:none; flex:1 1 150px; }
 
     /* ---- Photos / locations ---- */
     .photo-location-card{ padding:14px; }
@@ -1043,7 +1094,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v35</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v37</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1066,6 +1117,7 @@
   <div class="tiles" id="more-tiles"></div>
   <div class="more-tools">
     <button onclick="closeMoreSheet();openGithubSyncModal()">GitHub Sync</button>
+    <button onclick="closeMoreSheet();openFirestoreModal()">Firestore Backup</button>
     <button onclick="closeMoreSheet();openAutoBackupModal()">Auto-backups</button>
     <button onclick="closeMoreSheet();exportBackup()">Download backup</button>
   </div>
@@ -1075,6 +1127,7 @@
   <span style="display:flex; align-items:center; gap:10px;">
     <span id="sync-status" data-status="saved">All changes saved</span>
     <span id="github-sync-flag" class="sync-flag" hidden></span>
+    <span id="firestore-sync-flag" class="sync-flag" hidden></span>
   </span>
   <button id="sync-now-btn" onclick="syncNow()">Sync now</button>
 </div>
@@ -1203,12 +1256,9 @@
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
       <div>
         <h2 class="section-title">Trip timeline</h2>
-        <p class="section-sub">4–5 December, Edinburgh. Add stops, times and notes — and group a busy day into sections with “Organise sections”.</p>
+        <p class="section-sub">4–5 December, Edinburgh. Add stops, times and notes as the day takes shape.</p>
       </div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap; flex:none;">
-        <button class="ghost" id="tl-organise-btn" onclick="toggleTlOrganise()">§ Organise sections</button>
-        <button class="ghost" onclick="exportTimelinePDF()">📄 Export as PDF</button>
-      </div>
+      <button class="ghost" onclick="exportTimelinePDF()" style="flex:none;">📄 Export as PDF</button>
     </div>
     <div id="timeline-container"></div>
   </section>
@@ -1256,11 +1306,42 @@
     <div class="toolbar">
       <div>
         <h2 class="section-title">Notes &amp; Actions</h2>
-        <p class="section-sub" style="margin-bottom:0;">A running log of notes, things to follow up, decisions made, and anything you don't want to lose track of.</p>
+        <p class="section-sub" style="margin-bottom:0;">Check off actions, keep notes, and attach PDFs or text files (viewable in the browser).</p>
       </div>
       <button class="ghost" onclick="addDecision()">+ Add entry</button>
     </div>
     <div id="decisions-container"></div>
+  </section>
+
+  <!-- FILES LIBRARY -->
+  <section class="panel" id="panel-files">
+    <h2 class="section-title">Files</h2>
+    <p class="section-sub">One place for every document. Upload here, or see everything you've attached across the board.</p>
+    <div class="files-upload" id="files-upload">
+      <div class="files-upload-top">
+        <label class="files-cat-label">Add to
+          <select id="files-upload-cat"></select>
+        </label>
+      </div>
+      <label class="files-drop attach-drop-target" id="files-drop" title="Tap to choose files, or drag them here">
+        <span class="files-drop-icon">⬆</span>
+        <span class="files-drop-main">Drop files here or tap to upload</span>
+        <span class="files-drop-sub">PDFs, images, emails, Word / Excel &middot; several at once is fine</span>
+        <input type="file" id="files-input" hidden multiple accept=".pdf,.png,.jpg,.jpeg,.heic,.webp,.gif,.eml,.msg,.txt,.md,.doc,.docx,.xls,.xlsx,.csv,.pages,.numbers">
+      </label>
+      <div class="files-busy" id="files-busy" hidden>Uploading…</div>
+    </div>
+    <div class="files-controls">
+      <input type="search" id="files-search" placeholder="Search files, tasks, suppliers…">
+      <select id="files-sort" aria-label="Sort files">
+        <option value="new">Newest first</option>
+        <option value="name">Name A–Z</option>
+        <option value="size">Largest first</option>
+      </select>
+    </div>
+    <div class="filter-chips" id="files-chips"></div>
+    <div id="files-summary" class="files-summary"></div>
+    <div id="files-list"></div>
   </section>
 
   <!-- PHOTO LOCATIONS -->
@@ -1295,6 +1376,7 @@
 
 <footer>
   <button class="footer-btn" onclick="openGithubSyncModal()">GitHub Sync</button>
+  <button class="footer-btn" onclick="openFirestoreModal()">Firestore Backup</button>
   <button class="footer-btn" onclick="openAutoBackupModal()">Auto-backups <span id="autobackup-count"></span></button>
   <button class="footer-btn" onclick="openStorageUsageModal()">Storage usage</button>
   <button class="footer-btn" onclick="exportSpreadsheet()" style="display:none;">Export .xlsx</button>
@@ -1314,13 +1396,24 @@
   </div>
 </div>
 
+
+<div class="modal-overlay" id="firestore-overlay" onclick="if(event.target===this) closeFirestoreModal()">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h3>Firestore cloud backup</h3>
+      <button class="modal-close" onclick="closeFirestoreModal()">×</button>
+    </div>
+    <p class="modal-sub">Saves the full board to your Firebase Firestore project so data is not lost if this browser is cleared. Create a free Firebase project, enable Firestore and Anonymous Auth, then paste the web app config below. Local IndexedDB backups still run either way.</p>
+    <div id="firestore-form"></div>
+  </div>
+</div>
 <div class="modal-overlay" id="autobackup-overlay" onclick="if(event.target===this) closeAutoBackupModal()">
   <div class="modal-panel">
     <div class="modal-head">
       <h3>Auto-backups</h3>
       <button class="modal-close" onclick="closeAutoBackupModal()">×</button>
     </div>
-    <p class="modal-sub">A snapshot is taken automatically every 20 minutes this board is open, plus one whenever the page loads. Restoring replaces everything currently on the board.</p>
+    <p class="modal-sub">Snapshots are stored in IndexedDB on this device (last 30). A snapshot is taken shortly after load, then every 10 minutes while the board is open. Restoring replaces everything currently on the board.</p>
     <div id="autobackup-list"></div>
   </div>
 </div>
@@ -1360,6 +1453,9 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 /* ============================= OFFLINE / STORAGE MODE ============================= */
 // Inside Claude.ai, window.storage is injected by the host and syncs to your
@@ -1369,22 +1465,134 @@
 // same get/set/delete interface. Everything else in this file is unaware of
 // which mode it's in.
 let STORAGE_MODE = 'cloud';
+const IDB_NAME = 'ceremony-dashboard-db';
+const IDB_STORE = 'kv';
+const IDB_VERSION = 1;
+let _idbPromise = null;
+
+function openCeremonyIDB(){
+  if(_idbPromise) return _idbPromise;
+  _idbPromise = new Promise((resolve, reject) => {
+    if(!window.indexedDB){ reject(new Error('IndexedDB not available')); return; }
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error('IndexedDB open failed'));
+  });
+  return _idbPromise;
+}
+
+async function idbGet(key){
+  const db = await openCeremonyIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(key);
+    req.onsuccess = () => resolve(req.result === undefined ? null : req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbSet(key, value){
+  const db = await openCeremonyIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function idbDelete(key){
+  const db = await openCeremonyIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(key);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function migrateLocalStorageToIDB(){
+  try{
+    const flag = await idbGet('__migrated_from_ls');
+    if(flag) return;
+    const keys = [];
+    for(let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if(k && k.startsWith('ceremony:')) keys.push(k);
+    }
+    for(const full of keys){
+      const key = full.slice('ceremony:'.length);
+      const raw = localStorage.getItem(full);
+      if(raw !== null){
+        const existing = await idbGet(key);
+        if(existing === null) await idbSet(key, raw);
+      }
+    }
+    await idbSet('__migrated_from_ls', '1');
+  }catch(e){ console.warn('IDB migration skipped:', e); }
+}
+
+async function mirrorToIDB(key, value){
+  try{ await idbSet(key, value); }catch(e){ console.warn('IDB mirror failed', key, e); }
+}
+
 if (typeof window.storage === 'undefined') {
   STORAGE_MODE = 'local';
   window.storage = {
     async get(key, shared){
-      const raw = localStorage.getItem('ceremony:' + key);
-      if (raw === null) throw new Error('Key not found: ' + key);
+      await migrateLocalStorageToIDB();
+      let raw = null;
+      try{ raw = await idbGet(key); }catch(e){ }
+      if(raw === null){
+        raw = localStorage.getItem('ceremony:' + key);
+        if(raw !== null){ try{ await idbSet(key, raw); }catch(e){} }
+      }
+      if(raw === null) throw new Error('Key not found: ' + key);
       return { key, value: raw, shared: !!shared };
     },
     async set(key, value, shared){
-      try{ localStorage.setItem('ceremony:' + key, value); }
-      catch(e){ return null; } // e.g. quota exceeded
-      return { key, value, shared: !!shared };
+      try{
+        await idbSet(key, value);
+        try{ localStorage.setItem('ceremony:' + key, value); }catch(e){ }
+        return { key, value, shared: !!shared };
+      }catch(e){
+        try{
+          localStorage.setItem('ceremony:' + key, value);
+          return { key, value, shared: !!shared };
+        }catch(e2){ return null; }
+      }
     },
     async delete(key, shared){
+      try{ await idbDelete(key); }catch(e){}
       localStorage.removeItem('ceremony:' + key);
       return { key, deleted:true, shared: !!shared };
+    }
+  };
+} else {
+  const _hostStorage = window.storage;
+  STORAGE_MODE = 'cloud+idb';
+  window.storage = {
+    async get(key, shared){
+      try{
+        return await _hostStorage.get(key, shared);
+      }catch(e){
+        await migrateLocalStorageToIDB();
+        const raw = await idbGet(key);
+        if(raw === null) throw e;
+        return { key, value: raw, shared: !!shared };
+      }
+    },
+    async set(key, value, shared){
+      const res = await _hostStorage.set(key, value, shared);
+      await mirrorToIDB(key, value);
+      return res;
+    },
+    async delete(key, shared){
+      const res = await _hostStorage.delete(key, shared);
+      try{ await idbDelete(key); }catch(e){}
+      return res;
     }
   };
 }
@@ -1555,6 +1763,7 @@ const ALL_TABS = [
   {id:'photos',     label:'Photos'},
   {id:'guests',     label:'Guests & Sharing'},
   {id:'decisions',  label:'Notes & Actions'},
+  {id:'files',      label:'Files'},
 ];
 function seedNavOrder(){ return ALL_TABS.map(t => t.id); }
 function seedPhotoLocations(){ return []; }
@@ -1574,12 +1783,22 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v35';
+const APP_VERSION = 'v37';
 const CHANGELOG = [
+  { version:'v37', date:'2026-11-06', notes:[
+    'New Files tab: one place to upload and keep documents (contracts, invoices, tickets, ID & legal, inspiration) — drag-and-drop or tap to upload, tag each file with a category, rename it, search and sort',
+    'The Files tab also lists every file already attached elsewhere (Checklist, Budget, Research suppliers, Notes & Actions) with a link back to where it lives, so nothing is hidden',
+    'Library files use the same storage as other attachments (GitHub repo when Sync is on), and are included in backups, restore and the Migrate tool. Notes & Actions attachments are now included in backups and Migrate too'
+  ]},
+  { version:'v36', date:'2026-11-06', notes:[
+    'IndexedDB local storage: board data and auto-backups persist in IndexedDB with migration from localStorage',
+    'Firestore cloud backup: optional Firebase sync so changes survive across browsers and devices',
+    'Auto-backups: IndexedDB, every 10 minutes, keep last 30 snapshots',
+    'Consolidated third-party Trip timeline “Organise sections” (numbered headings, collapse, PDF)'
+  ]},
   { version:'v35', date:'2026-11-06', notes:[
-    'Trip timeline: days can now be broken into numbered section headings (e.g. Preparation & ceremony → Stockbridge → Old Town → Twilight), each with an optional note, an automatic time range and stop count, and a collapse toggle',
-    'New “Organise sections” mode: tap a dashed bar to start a section at any stop, move whole sections up/down, or remove a heading (stops are kept). Sections carry through to the PDF and spreadsheet exports',
-    'Fixed untyped text inputs (timeline activity, photo location names) still triggering iOS zoom on focus'
+    'Notes & Actions: each entry is now check-offable (checkbox) so actions and follow-ups can be marked done',
+    'Notes & Actions: attach PDFs, text files, images and emails on any entry — same upload/drag-drop system as Checklist and Budget; files open in the in-page viewer'
   ]},
   { version:'v34', date:'2026-11-05', notes:[
     'Full mobile redesign (phones only — desktop layout unchanged): bottom navigation bar with a More sheet, compact hero with a 4-up stat strip, and the Overview stats/Gantt reflowed for narrow screens',
@@ -1702,6 +1921,7 @@ let STATE = {
     {id:uid(), date:'5 Dec', time:'', activity:'', notes:''},
   ],
   decisions: [],
+  library: {attachments: []},
   script: seedScript(),
   vows: seedVows(),
   readings: [],
@@ -1714,7 +1934,8 @@ let STATE = {
   plTagOptions: seedPlTagOptions(),
   photoIdeas: seedPhotoIdeas(),
   photoIdeaCategoryOrder: seedPhotoIdeaCategoryOrder(),
-  githubSettings: {enabled:true, token:'', owner:'Ello2003', repo:'ceremony-dashboard', path:'ceremony-data.json', branch:'main', sha:null, lastSyncAt:null}
+  githubSettings: {enabled:true, token:'', owner:'Ello2003', repo:'ceremony-dashboard', path:'ceremony-data.json', branch:'main', sha:null, lastSyncAt:null},
+  firestoreSettings: {enabled:false, apiKey:'', authDomain:'', projectId:'', appId:'', collection:'ceremonyBoards', docId:'main', lastSyncAt:null}
 };
 
 /* ============================= STORAGE ============================= */
@@ -1746,7 +1967,7 @@ async function persist(key, value){
     retryCounts[key] = 0;
     if(retryTimers[key]){ clearTimeout(retryTimers[key]); delete retryTimers[key]; }
     setSyncStatus(dirtyKeys.size ? 'saving' : 'saved');
-    if(key !== 'githubSettings') scheduleGithubSync();
+    if(key !== 'githubSettings' && key !== 'firestoreSettings'){ scheduleGithubSync(); scheduleFirestoreSync(); }
   }catch(e){
     console.error('Storage error —', key, e);
     setSyncStatus('error', key);
@@ -1922,6 +2143,8 @@ async function migrateAttachmentsToGithub(statusEl){
   STATE.budget.forEach(r => targets.push({record:r, saveKey:'budget'}));
   Object.values(STATE.suppliers).forEach(arr => arr.forEach(o => targets.push({record:o, saveKey:'suppliers'})));
   STATE.checklist.forEach(t => targets.push({record:t, saveKey:'checklist'}));
+  STATE.decisions.forEach(d => targets.push({record:d, saveKey:'decisions'}));
+  if(STATE.library) targets.push({record:STATE.library, saveKey:'library'});
   const legacy = [];
   targets.forEach(({record}) => (record.attachments||[]).forEach(a => { if(!a.url) legacy.push(a); }));
   if(!legacy.length){ if(statusEl) statusEl.textContent = 'Nothing to migrate — everything is already on GitHub.'; return; }
@@ -2047,7 +2270,7 @@ function applyModeCopy(){
 }
 
 async function loadAll(){
-  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoLocationsMap','plTagOptions','photoIdeas','photoIdeaCategoryOrder','githubSettings'];
+  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','library','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoLocationsMap','plTagOptions','photoIdeas','photoIdeaCategoryOrder','githubSettings','firestoreSettings'];
   for(const k of keys){
     try{
       const res = await window.storage.get(k, false);
@@ -2137,12 +2360,7 @@ function exportSpreadsheet(){
   }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(supplierRows), 'Suppliers');
 
-  const _curSec = {};
-  const timelineRows = [];
-  STATE.timeline.forEach(t => {
-    if(t.type === 'section'){ _curSec[t.date] = t.title || ''; return; }
-    timelineRows.push({ Date: t.date, Section: _curSec[t.date] || '', Time: t.time, Activity: t.activity, Notes: t.notes });
-  });
+  const timelineRows = STATE.timeline.map(t => ({ Date: t.date, Time: t.time, Activity: t.activity, Notes: t.notes }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(timelineRows), 'Trip timeline');
 
   const guestRows = STATE.guests.map(g => ({ Name: g.name, Notes: g.notes, Dietary: g.dietary, RSVP: g.rsvp }));
@@ -2156,6 +2374,165 @@ function exportSpreadsheet(){
   saveBlob('xlsx', blob, 'ceremony-dashboard.xlsx', 'Excel workbook', '.xlsx');
 }
 
+/* ============================= FIRESTORE CLOUD BACKUP ============================= */
+let _fsApp = null;
+let _fsDb = null;
+let firestoreSyncTimer = null;
+
+function firestoreConfigured(){
+  const s = STATE.firestoreSettings || {};
+  return !!(s.enabled && s.apiKey && s.projectId && s.appId);
+}
+function firestoreSyncableData(){
+  const { githubSettings, firestoreSettings, ...rest } = STATE;
+  return rest;
+}
+function setFirestoreSyncStatus(kind, text){
+  const el = document.getElementById('firestore-sync-flag');
+  if(!el) return;
+  if(!text){ el.hidden = true; return; }
+  el.hidden = false;
+  el.textContent = text;
+  el.className = 'sync-flag' + (kind ? ' ' + kind : '');
+}
+async function ensureFirestore(){
+  if(typeof firebase === 'undefined') throw new Error('Firebase SDK not loaded');
+  const s = STATE.firestoreSettings;
+  if(!_fsApp){
+    try{ _fsApp = firebase.app(); }
+    catch(e){
+      _fsApp = firebase.initializeApp({
+        apiKey: s.apiKey,
+        authDomain: s.authDomain || (s.projectId + '.firebaseapp.com'),
+        projectId: s.projectId,
+        appId: s.appId
+      });
+    }
+    _fsDb = firebase.firestore();
+    try{
+      await firebase.auth().signInAnonymously();
+    }catch(authErr){
+      console.warn('Anonymous auth failed', authErr);
+      throw new Error('Firestore auth failed. Enable Anonymous Authentication in your Firebase console.');
+    }
+  }
+  return _fsDb;
+}
+function scheduleFirestoreSync(){
+  if(!firestoreConfigured()) return;
+  clearTimeout(firestoreSyncTimer);
+  firestoreSyncTimer = setTimeout(() => { pushFirestore().catch(e => console.error(e)); }, 4000);
+}
+async function pushFirestore(){
+  if(!firestoreConfigured()) return;
+  setFirestoreSyncStatus('saving', 'Cloud Firestore saving...');
+  try{
+    const db = await ensureFirestore();
+    const s = STATE.firestoreSettings;
+    const col = s.collection || 'ceremonyBoards';
+    const docId = s.docId || 'main';
+    const payload = {
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      clientUpdatedAt: Date.now(),
+      data: firestoreSyncableData()
+    };
+    await db.collection(col).doc(docId).set(payload, { merge: true });
+    STATE.firestoreSettings.lastSyncAt = Date.now();
+    await persist('firestoreSettings', STATE.firestoreSettings);
+    setFirestoreSyncStatus('', 'Cloud Firestore ' + formatSyncTime(STATE.firestoreSettings.lastSyncAt));
+  }catch(e){
+    console.error('Firestore push failed', e);
+    setFirestoreSyncStatus('error', 'Cloud Firestore error');
+  }
+}
+async function pullFirestoreOnLoad(){
+  if(!firestoreConfigured()) return;
+  try{
+    const db = await ensureFirestore();
+    const s = STATE.firestoreSettings;
+    const col = s.collection || 'ceremonyBoards';
+    const docId = s.docId || 'main';
+    const snap = await db.collection(col).doc(docId).get();
+    if(!snap.exists) return;
+    const remote = snap.data();
+    if(!remote || !remote.data) return;
+    const remoteTs = remote.clientUpdatedAt || 0;
+    const localTs = s.lastSyncAt || 0;
+    if(remoteTs >= localTs){
+      Object.keys(remote.data).forEach(k => {
+        if(k !== 'githubSettings' && k !== 'firestoreSettings' && remote.data[k] !== undefined) STATE[k] = remote.data[k];
+      });
+      for(const k of Object.keys(remote.data)){
+        if(k === 'githubSettings' || k === 'firestoreSettings') continue;
+        try{ await persist(k, STATE[k]); }catch(e){}
+      }
+      STATE.firestoreSettings.lastSyncAt = Date.now();
+      await persist('firestoreSettings', STATE.firestoreSettings);
+      setFirestoreSyncStatus('', 'Cloud Firestore restored ' + formatSyncTime(STATE.firestoreSettings.lastSyncAt));
+    }
+  }catch(e){
+    console.error('Firestore pull failed', e);
+    setFirestoreSyncStatus('error', 'Cloud Firestore pull error');
+  }
+}
+function openFirestoreModal(){
+  document.getElementById('firestore-overlay').classList.add('open');
+  renderFirestoreForm();
+}
+function closeFirestoreModal(){
+  document.getElementById('firestore-overlay').classList.remove('open');
+}
+function renderFirestoreForm(){
+  const s = STATE.firestoreSettings || {};
+  const statusLine = !s.enabled ? 'Backup is off.'
+    : !s.apiKey || !s.projectId ? 'Enabled, but Firebase config is incomplete.'
+    : 'Last synced: ' + formatSyncTime(s.lastSyncAt);
+  const c = document.getElementById('firestore-form');
+  c.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin:12px 0 4px;">
+      <input type="checkbox" id="fs-enabled" style="width:auto;" ${s.enabled?'checked':''}>
+      <label style="margin:0;font-size:13px;" for="fs-enabled">Enable Firestore cloud backup</label>
+    </div>
+    <label class="field-label">API Key</label>
+    <input class="field-input" id="fs-apiKey" type="password" value="${escapeHtml(s.apiKey||'')}" placeholder="AIza..." autocomplete="off">
+    <label class="field-label">Project ID</label>
+    <input class="field-input" id="fs-projectId" type="text" value="${escapeHtml(s.projectId||'')}" placeholder="my-project-id">
+    <label class="field-label">App ID</label>
+    <input class="field-input" id="fs-appId" type="text" value="${escapeHtml(s.appId||'')}" placeholder="1:123456:web:abc">
+    <label class="field-label">Auth Domain (optional)</label>
+    <input class="field-input" id="fs-authDomain" type="text" value="${escapeHtml(s.authDomain||'')}" placeholder="my-project-id.firebaseapp.com">
+    <div style="display:flex;gap:10px;">
+      <div style="flex:1;"><label class="field-label">Collection</label><input class="field-input" id="fs-collection" type="text" value="${escapeHtml(s.collection||'ceremonyBoards')}"></div>
+      <div style="flex:1;"><label class="field-label">Document ID</label><input class="field-input" id="fs-docId" type="text" value="${escapeHtml(s.docId||'main')}"></div>
+    </div>
+    <p style="font-size:12px;color:rgba(43,42,40,.55);margin:10px 0;">${statusLine}</p>
+    <p style="font-size:11.5px;color:rgba(43,42,40,.45);margin:0 0 12px;line-height:1.45;">In Firebase Console: create a web app, copy config values, enable <b>Anonymous</b> sign-in under Authentication, and create a Firestore database.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="modal-btn" onclick="saveFirestoreSettings()">Save settings</button>
+      <button class="modal-btn" onclick="pushFirestore().then(()=>renderFirestoreForm())">Sync now</button>
+      <button class="modal-btn" onclick="pullFirestoreOnLoad().then(()=>{renderAll();renderFirestoreForm();})">Pull from cloud</button>
+    </div>
+  `;
+}
+async function saveFirestoreSettings(){
+  const s = STATE.firestoreSettings || {};
+  s.enabled = document.getElementById('fs-enabled').checked;
+  s.apiKey = document.getElementById('fs-apiKey').value.trim();
+  s.projectId = document.getElementById('fs-projectId').value.trim();
+  s.appId = document.getElementById('fs-appId').value.trim();
+  s.authDomain = document.getElementById('fs-authDomain').value.trim();
+  s.collection = document.getElementById('fs-collection').value.trim() || 'ceremonyBoards';
+  s.docId = document.getElementById('fs-docId').value.trim() || 'main';
+  STATE.firestoreSettings = s;
+  _fsApp = null; _fsDb = null;
+  await persist('firestoreSettings', s);
+  renderFirestoreForm();
+  if(firestoreConfigured()){
+    try{ await pushFirestore(); renderFirestoreForm(); }
+    catch(e){ alert(e.message || 'Could not sync'); }
+  }
+}
+
 /* ============================= AUTO-BACKUP ============================= */
 // A lightweight rolling snapshot, separate from the manual JSON/xlsx export.
 // It captures the board's data (not attachment bytes — those already live
@@ -2165,8 +2542,8 @@ function exportSpreadsheet(){
 // folder and browsers often block repeated auto-downloads anyway. Instead
 // these snapshots live quietly in storage and you can browse/restore them
 // from the "Auto-backups" button whenever you want.
-const AUTO_BACKUP_INTERVAL_MS = 20 * 60 * 1000;
-const AUTO_BACKUP_MAX = 10;
+const AUTO_BACKUP_INTERVAL_MS = 10 * 60 * 1000;
+const AUTO_BACKUP_MAX = 30;
 
 async function takeAutoBackup(){
   try{
@@ -2238,7 +2615,7 @@ document.getElementById('autobackup-list').addEventListener('click', async (e) =
   try{
     const res = await window.storage.get('autobackup:' + id, false);
     const snap = JSON.parse(res.value);
-    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoIdeas'];
+    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','library','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoIdeas'];
     required.forEach(k => { if(snap.data[k] !== undefined) STATE[k] = snap.data[k]; });
     for(const k of required) await persist(k, STATE[k]);
     renderAll();
@@ -2257,6 +2634,8 @@ async function exportBackup(){
   Object.values(STATE.suppliers).forEach(arr => arr.forEach(o => (o.attachments||[]).forEach(a => attachmentIds.push(a.id))));
   STATE.budget.forEach(r => (r.attachments||[]).forEach(a => attachmentIds.push(a.id)));
   STATE.checklist.forEach(t => (t.attachments||[]).forEach(a => attachmentIds.push(a.id)));
+  STATE.decisions.forEach(d => (d.attachments||[]).forEach(a => attachmentIds.push(a.id)));
+  ((STATE.library||{}).attachments||[]).forEach(a => attachmentIds.push(a.id));
   const attachmentFiles = {};
   for(const id of attachmentIds){
     try{
@@ -2282,7 +2661,7 @@ document.getElementById('restore-input').addEventListener('change', async (e) =>
     const text = await file.text();
     const parsed = JSON.parse(text);
     const incoming = parsed.data || parsed; // allow raw-state files too
-    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoIdeas'];
+    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','library','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoIdeas'];
     const hasShape = required.some(k => k in incoming);
     if(!hasShape){ alert('This file doesn\'t look like a ceremony dashboard backup.'); e.target.value=''; return; }
     if(!confirm('Restoring will replace everything currently on this board with the contents of the backup. Continue?')){ e.target.value=''; return; }
@@ -2310,7 +2689,163 @@ document.getElementById('restore-input').addEventListener('change', async (e) =>
 let navEditMode = false;
 let activePanel = 'overview';
 
+
+/* ============================= FILES LIBRARY (v37) ============================= */
+const FILE_CATS = ['Contracts & quotes','Invoices & receipts','Bookings & tickets','ID & legal','Photos & inspiration','Other'];
+const FILE_SRC = {
+  library:   {label:'Uploaded here',    tab:'files'},
+  checklist: {label:'Checklist',        tab:'checklist'},
+  budget:    {label:'Budget',           tab:'budget'},
+  suppliers: {label:'Research',         tab:'research'},
+  decisions: {label:'Notes & Actions',  tab:'decisions'}
+};
+let filesFilter = 'all', filesQuery = '', filesSort = 'new', filesUploadCat = 'Other';
+function ensureLibrary(){
+  if(!STATE.library || typeof STATE.library !== 'object') STATE.library = {attachments: []};
+  if(!Array.isArray(STATE.library.attachments)) STATE.library.attachments = [];
+  return STATE.library;
+}
+function collectAllFiles(){
+  const out = [];
+  ensureLibrary().attachments.forEach(a => out.push({a, src:'library', where:a.category || 'Other'}));
+  STATE.checklist.forEach(t => (t.attachments||[]).forEach(a => out.push({a, src:'checklist', where:t.text || 'Task'})));
+  STATE.budget.forEach(r => (r.attachments||[]).forEach(a => out.push({a, src:'budget', where:(r.item || r.category || 'Budget line')})));
+  Object.entries(STATE.suppliers||{}).forEach(([cat, arr]) => (arr||[]).forEach(o => (o.attachments||[]).forEach(a => out.push({a, src:'suppliers', where:`${o.name || 'Supplier'} (${cat})`}))));
+  STATE.decisions.forEach(d => (d.attachments||[]).forEach(a => out.push({a, src:'decisions', where:(d.text || 'Note').slice(0, 60)})));
+  return out;
+}
+function fileSizeLabel(n){
+  if(!n) return '';
+  return n >= 1048576 ? (n/1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n/1024)) + ' KB';
+}
+function fileDateLabel(ts){
+  if(!ts) return '';
+  return new Date(ts).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+}
+function renderFiles(){
+  const panel = document.getElementById('panel-files');
+  if(!panel) return;
+  ensureLibrary();
+  const sel = document.getElementById('files-upload-cat');
+  if(sel && sel.options.length !== FILE_CATS.length){
+    sel.innerHTML = FILE_CATS.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  }
+  if(sel) sel.value = filesUploadCat;
+  const all = collectAllFiles();
+  const counts = {all: all.length};
+  Object.keys(FILE_SRC).forEach(k => { counts[k] = all.filter(f => f.src === k).length; });
+  const chipDefs = [['all','All']].concat(Object.keys(FILE_SRC).map(k => [k, FILE_SRC[k].label]));
+  document.getElementById('files-chips').innerHTML = chipDefs
+    .filter(([k]) => k === 'all' || k === 'library' || counts[k] > 0)
+    .map(([k, label]) => `<button data-files-filter="${k}" class="chip ${filesFilter===k?'active':''}">${escapeHtml(label)} (${counts[k]})</button>`).join('');
+  if(filesFilter !== 'all' && !counts[filesFilter]) filesFilter = 'all';
+  const q = filesQuery.trim().toLowerCase();
+  let rows = all.filter(f => (filesFilter === 'all' || f.src === filesFilter) &&
+    (!q || (f.a.name||'').toLowerCase().includes(q) || (f.where||'').toLowerCase().includes(q) || FILE_SRC[f.src].label.toLowerCase().includes(q)));
+  if(filesSort === 'name') rows.sort((x, y) => (x.a.name||'').localeCompare(y.a.name||'', undefined, {sensitivity:'base'}));
+  else if(filesSort === 'size') rows.sort((x, y) => (y.a.size||0) - (x.a.size||0));
+  else rows.sort((x, y) => (y.a.added||0) - (x.a.added||0) || (x.src === 'library' ? -1 : 1));
+  const totalBytes = all.reduce((n, f) => n + (f.a.size||0), 0);
+  document.getElementById('files-summary').textContent =
+    `${all.length} file${all.length===1?'':'s'} in total${totalBytes ? ' \u00b7 ' + fileSizeLabel(totalBytes) : ''}` +
+    (rows.length !== all.length ? ` \u00b7 showing ${rows.length}` : '');
+  const list = document.getElementById('files-list');
+  if(!rows.length){
+    list.innerHTML = `<div class="files-empty">${all.length ? 'No files match that search.' : 'No files yet — drop your first one above.'}</div>`;
+    return;
+  }
+  list.innerHTML = rows.map(({a, src, where}) => {
+    const isLib = src === 'library';
+    const meta = [
+      `<span class="file-src ${isLib?'':'elsewhere'}">${escapeHtml(FILE_SRC[src].label)}</span>`,
+      isLib ? '' : `<span>${escapeHtml(truncateWhere(where))}</span>`,
+      fileSizeLabel(a.size), fileDateLabel(a.added)
+    ].filter(Boolean).map(x => x.startsWith('<') ? x : `<span>${escapeHtml(x)}</span>`).join('');
+    return `<div class="file-row" data-att-id="${a.id}" data-att-name="${escapeHtml(a.name||'file')}" data-att-url="${a.url?escapeHtml(a.url):''}" data-src="${src}">
+      <div class="file-ico">${fileIcon(a.type)}</div>
+      <div class="file-main">
+        <button class="file-name" data-fa="open">${escapeHtml(a.name||'file')}</button>
+        <div class="file-meta">${meta}</div>
+      </div>
+      <div class="file-actions">
+        ${isLib ? `<select data-fa="cat" aria-label="Category">${FILE_CATS.map(c => `<option value="${escapeHtml(c)}" ${(a.category||'Other')===c?'selected':''}>${escapeHtml(c)}</option>`).join('')}</select>
+          <button data-fa="rename">Rename</button>
+          <button class="file-del" data-fa="del">Delete</button>`
+        : `<button data-fa="goto">Go to ${escapeHtml(FILE_SRC[src].label)} \u2192</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+function truncateWhere(w){ w = String(w||''); return w.length > 48 ? w.slice(0, 46) + '\u2026' : w; }
+async function uploadToLibrary(files){
+  files = Array.from(files || []).filter(Boolean);
+  if(!files.length) return;
+  const lib = ensureLibrary();
+  const before = new Set(lib.attachments.map(a => a.id));
+  const busy = document.getElementById('files-busy');
+  busy.hidden = false; busy.textContent = `Uploading ${files.length} file${files.length===1?'':'s'}\u2026`;
+  try{
+    await handleAttachmentFiles(files, lib, 'library', () => {});
+  } finally { busy.hidden = true; }
+  const now = Date.now();
+  lib.attachments.forEach(a => { if(!before.has(a.id)){ a.added = now; a.category = filesUploadCat; } });
+  scheduleSave('library');
+  renderFiles();
+}
+(function(){
+  const drop = document.getElementById('files-drop');
+  const input = document.getElementById('files-input');
+  input.addEventListener('change', (e) => { uploadToLibrary(e.target.files); e.target.value = ''; });
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('drag-over'); }));
+  drop.addEventListener('dragleave', (e) => { if(!drop.contains(e.relatedTarget)) drop.classList.remove('drag-over'); });
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault(); drop.classList.remove('drag-over');
+    let files = Array.from(e.dataTransfer.files || []);
+    if(!files.length && e.dataTransfer.items) files = Array.from(e.dataTransfer.items).filter(i => i.kind === 'file').map(i => i.getAsFile()).filter(Boolean);
+    uploadToLibrary(files);
+  });
+  document.getElementById('files-upload-cat').addEventListener('change', (e) => { filesUploadCat = e.target.value; });
+  document.getElementById('files-search').addEventListener('input', (e) => { filesQuery = e.target.value; renderFiles(); });
+  document.getElementById('files-sort').addEventListener('change', (e) => { filesSort = e.target.value; renderFiles(); });
+  document.getElementById('files-chips').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-files-filter]'); if(!b) return;
+    filesFilter = b.dataset.filesFilter; renderFiles();
+  });
+  const list = document.getElementById('files-list');
+  list.addEventListener('click', (e) => {
+    const act = e.target.closest('[data-fa]'); if(!act) return;
+    const row = act.closest('.file-row'); if(!row) return;
+    const id = row.dataset.attId, src = row.dataset.src;
+    if(act.dataset.fa === 'open'){ openAttachmentChip(row); return; }
+    if(act.dataset.fa === 'goto'){ goToPanel(FILE_SRC[src].tab); return; }
+    const att = ensureLibrary().attachments.find(a => a.id === id); if(!att) return;
+    if(act.dataset.fa === 'rename'){
+      const name = prompt('Rename file:', att.name || '');
+      if(name && name.trim() && name.trim() !== att.name){
+        let nn = name.trim();
+        const oldExt = (att.name.match(/\.[A-Za-z0-9]{1,5}$/) || [''])[0];
+        if(oldExt && !/\.[A-Za-z0-9]{1,5}$/.test(nn)) nn += oldExt;
+        att.name = nn;
+        const cached = attachmentCache.get(id); if(cached) cached.name = nn;
+        scheduleSave('library'); renderFiles();
+      }
+      return;
+    }
+    if(act.dataset.fa === 'del'){
+      if(!confirm(`Delete "${att.name}"? This removes the file itself.`)) return;
+      deleteAttachmentRecord(STATE.library, id);
+      scheduleSave('library'); renderFiles();
+    }
+  });
+  list.addEventListener('change', (e) => {
+    const sel = e.target.closest('select[data-fa="cat"]'); if(!sel) return;
+    const att = ensureLibrary().attachments.find(a => a.id === sel.closest('.file-row').dataset.attId);
+    if(att){ att.category = sel.value; scheduleSave('library'); }
+  });
+})();
+
 function renderNav(){
+  if(typeof renderFiles === 'function' && activePanel === 'files') renderFiles();
   const nav = document.getElementById('tabs');
   // Backwards compat: drop any tab ids that no longer exist (e.g. old separate
   // Suppliers/Enquiries tabs, now merged into Research), then add any new ones.
@@ -2371,6 +2906,7 @@ const BN_ICONS = {
   research:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>',
   guests:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.5 3.2-5.5 6.5-5.5s5.9 2 6.5 5.5"/><path d="M16 5.2a3.3 3.3 0 010 6.2M18 14.8c2 .6 3.3 2.4 3.5 5.2"/></svg>',
   decisions:'<svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>',
+  files:'<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2.5h8a2 2 0 012 2V18a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>',
   more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>'
 };
 const BN_PRIMARY = [
@@ -2435,7 +2971,7 @@ function renderHero(){
   document.getElementById('stat-days').textContent = days;
   const done = STATE.checklist.filter(t => t.done).length;
   document.getElementById('stat-tasksdone').textContent = done + ' / ' + STATE.checklist.length;
-  document.getElementById('stat-open').textContent = STATE.decisions.filter(d => d.type === 'action' || d.type === 'followup').length;
+  document.getElementById('stat-open').textContent = STATE.decisions.filter(d => (d.type === 'action' || d.type === 'followup') && !d.done).length;
   const spend = STATE.budget.reduce((s,r) => s + (parseFloat(r.actual)||0), 0);
   document.getElementById('stat-spend').textContent = spend.toLocaleString('en-GB', {maximumFractionDigits:0});
 }
@@ -3476,15 +4012,17 @@ function computeStorageBreakdown(){
   // GitHub-hosted attachments (a.url set) live in the repo, not the browser — they
   // don't count against local quota at all.
   const attBytes = (list) => list.filter(a => !a.url).reduce((sum, a) => sum + Math.round((a.size||0) * 4/3), 0);
-  let budgetAtts = [], supplierAtts = [], checklistAtts = [];
+  let budgetAtts = [], supplierAtts = [], checklistAtts = [], decisionAtts = [];
   STATE.budget.forEach(r => budgetAtts.push(...(r.attachments||[])));
   Object.values(STATE.suppliers).forEach(arr => arr.forEach(o => supplierAtts.push(...(o.attachments||[]))));
   STATE.checklist.forEach(t => checklistAtts.push(...(t.attachments||[])));
-  const githubAttCount = [...budgetAtts, ...supplierAtts, ...checklistAtts].filter(a => a.url).length;
-  const localBudgetAtts = budgetAtts.filter(a => !a.url), localSupplierAtts = supplierAtts.filter(a => !a.url), localChecklistAtts = checklistAtts.filter(a => !a.url);
+  STATE.decisions.forEach(d => decisionAtts.push(...(d.attachments||[])));
+  const githubAttCount = [...budgetAtts, ...supplierAtts, ...checklistAtts, ...decisionAtts].filter(a => a.url).length;
+  const localBudgetAtts = budgetAtts.filter(a => !a.url), localSupplierAtts = supplierAtts.filter(a => !a.url), localChecklistAtts = checklistAtts.filter(a => !a.url), localDecisionAtts = decisionAtts.filter(a => !a.url);
   if(localBudgetAtts.length) rows.push({label:'Budget attachments', count:localBudgetAtts.length, bytes:attBytes(budgetAtts)});
   if(localSupplierAtts.length) rows.push({label:'Supplier attachments', count:localSupplierAtts.length, bytes:attBytes(supplierAtts)});
   if(localChecklistAtts.length) rows.push({label:'Checklist attachments', count:localChecklistAtts.length, bytes:attBytes(checklistAtts)});
+  if(localDecisionAtts.length) rows.push({label:'Notes & Actions attachments', count:localDecisionAtts.length, bytes:attBytes(decisionAtts)});
   if(githubAttCount) rows.push({label:'Attachments stored on GitHub (not counted here)', count:githubAttCount, bytes:0});
 
   // Inline images (data URLs) don't carry a stored size — estimate from the string itself.
@@ -3742,6 +4280,10 @@ async function preloadAttachments(){
   STATE.checklist.forEach(t =>
     (t.attachments||[]).forEach(a => { if(!a.url && !attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); })
   );
+  STATE.decisions.forEach(d =>
+    (d.attachments||[]).forEach(a => { if(!a.url && !attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); })
+  );
+  ((STATE.library||{}).attachments||[]).forEach(a => { if(!a.url && !attachmentCache.has(a.id)) ids.push({id:a.id, name:a.name}); });
   for(const {id, name} of ids){
     try{
       const res = await window.storage.get('file:' + id, false);
@@ -3830,109 +4372,50 @@ document.getElementById('budget-body').addEventListener('drop', (e) => {
 
 /* ============================= TIMELINE ============================= */
 function exportTimelinePDF(){
-  if(typeof window.jspdf === 'undefined'){
-    alert("PDF library didn't load — check your connection and try again.");
-    return;
-  }
+  if(typeof window.jspdf === 'undefined'){ alert("PDF library didn't load \u2014 check your connection and try again."); return; }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'pt', format:'a4' });
   const marginX = 48;
   const pageHeight = doc.internal.pageSize.getHeight();
   const pageWidth = doc.internal.pageSize.getWidth();
   let y = 56;
-
-  const checkPageBreak = (needed) => {
-    if(y + needed > pageHeight - 48){ doc.addPage(); y = 56; }
-  };
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.setTextColor(30);
-  doc.text('Trip Timeline', marginX, y);
-  y += 10;
-  doc.setDrawColor(180);
-  doc.setLineWidth(0.5);
-  doc.line(marginX, y+6, pageWidth-marginX, y+6);
-  y += 32;
-
-  const dateOrder = [];
-  const byDate = {};
-  STATE.timeline.forEach(row => {
-    if(!byDate[row.date]){ dateOrder.push(row.date); byDate[row.date] = []; }
-    byDate[row.date].push(row);
-  });
-
+  const checkPageBreak = (needed) => { if(y + needed > pageHeight - 48){ doc.addPage(); y = 56; } };
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(30);
+  doc.text('Trip Timeline', marginX, y); y += 10;
+  doc.setDrawColor(180); doc.setLineWidth(0.5); doc.line(marginX, y+6, pageWidth-marginX, y+6); y += 32;
+  const {dateOrder, byDate} = tlGroupByDate();
   dateOrder.forEach(date => {
     checkPageBreak(40);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(40);
-    doc.text(date, marginX, y);
-    y += 8;
-    doc.setDrawColor(210);
-    doc.line(marginX, y+4, pageWidth-marginX, y+4);
-    y += 22;
-
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(40);
+    doc.text(date, marginX, y); y += 8; doc.setDrawColor(210); doc.line(marginX, y+4, pageWidth-marginX, y+4); y += 22;
     let pdfSec = 0;
     byDate[date].forEach(r => {
       if(r.type === 'section'){
-        pdfSec++;
-        checkPageBreak(60);
-        y += 4;
-        doc.setFillColor(232, 240, 240);
-        doc.rect(marginX - 6, y - 14, pageWidth - marginX*2 + 12, 22, 'F');
-        doc.setFillColor(198, 151, 90);
-        doc.rect(marginX - 6, y - 14, 3, 22, 'F');
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11.5);
-        doc.setTextColor(46, 99, 103);
-        doc.text(`${pdfSec}   ${(r.title || 'Untitled section').toUpperCase()}`, marginX + 4, y);
-        y += 20;
+        pdfSec++; checkPageBreak(60); y += 4;
+        doc.setFillColor(232, 240, 240); doc.rect(marginX - 6, y - 14, pageWidth - marginX*2 + 12, 22, 'F');
+        doc.setFillColor(198, 151, 90); doc.rect(marginX - 6, y - 14, 3, 22, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(11.5); doc.setTextColor(46, 99, 103);
+        doc.text(`${pdfSec}   ${(r.title || 'Untitled section').toUpperCase()}`, marginX + 4, y); y += 20;
         if(r.note){
-          doc.setFont('helvetica', 'italic');
-          doc.setFontSize(9.5);
-          doc.setTextColor(100);
-          doc.splitTextToSize(r.note, pageWidth - marginX*2 - 10).forEach(line => {
-            checkPageBreak(13);
-            doc.text(line, marginX + 4, y);
-            y += 13;
-          });
+          doc.setFont('helvetica', 'italic'); doc.setFontSize(9.5); doc.setTextColor(100);
+          doc.splitTextToSize(r.note, pageWidth - marginX*2 - 10).forEach(line => { checkPageBreak(13); doc.text(line, marginX + 4, y); y += 13; });
         }
-        y += 6;
-        return;
+        y += 6; return;
       }
       checkPageBreak(36);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10.5);
-      doc.setTextColor(110, 90, 140);
-      doc.text(r.time || '—', marginX, y);
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11.5);
-      doc.setTextColor(30);
-      doc.text(r.activity || '(untitled)', marginX + 60, y);
-      y += 15;
-
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(110, 90, 140);
+      doc.text(r.time || '\u2014', marginX, y);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11.5); doc.setTextColor(30);
+      doc.text(r.activity || '(untitled)', marginX + 60, y); y += 15;
       if(r.notes){
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(9.5);
-        doc.setTextColor(100);
-        const lines = doc.splitTextToSize(r.notes, pageWidth - marginX*2 - 60);
-        lines.forEach(line => {
-          checkPageBreak(13);
-          doc.text(line, marginX + 60, y);
-          y += 13;
-        });
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(9.5); doc.setTextColor(100);
+        doc.splitTextToSize(r.notes, pageWidth - marginX*2 - 60).forEach(line => { checkPageBreak(13); doc.text(line, marginX + 60, y); y += 13; });
       }
       y += 10;
     });
     y += 10;
   });
-
-  // Open inline in the same PDF viewer used for attachments — window.open with
-  // a blob URL is unreliable on Safari (opens a blank tab), so avoid it here too.
-  const blobUrl = doc.output('bloburl');
-  openPdfViewer(blobUrl, 'Trip Timeline.pdf');
+  openPdfViewer(doc.output('bloburl'), 'Trip Timeline.pdf');
 }
 let tlOrganise = false;
 const tlCollapsed = new Set();
@@ -3941,8 +4424,7 @@ const isSec = r => r && r.type === 'section';
 function toggleTlOrganise(){
   tlOrganise = !tlOrganise;
   const btn = document.getElementById('tl-organise-btn');
-  btn.classList.toggle('on', tlOrganise);
-  btn.textContent = tlOrganise ? '✓ Done organising' : '§ Organise sections';
+  if(btn){ btn.classList.toggle('on', tlOrganise); btn.textContent = tlOrganise ? '\u2713 Done organising' : '\u00a7 Organise sections'; }
   renderTimeline();
 }
 function tlGroupByDate(){
@@ -3959,8 +4441,8 @@ function tlSectionMeta(dayRows, secId){
   for(let j = i + 1; j < dayRows.length && !isSec(dayRows[j]); j++) stops.push(dayRows[j]);
   const times = stops.map(r => r.time).filter(Boolean).sort();
   const n = stops.filter(r => r.activity || r.time || r.notes).length;
-  const range = times.length ? (times.length > 1 && times[0] !== times[times.length-1] ? `${times[0]}–${times[times.length-1]}` : times[0]) : '';
-  return [range, n ? `${n} stop${n===1?'':'s'}` : 'no stops yet'].filter(Boolean).join(' · ');
+  const range = times.length ? (times.length > 1 && times[0] !== times[times.length-1] ? `${times[0]}\u2013${times[times.length-1]}` : times[0]) : '';
+  return [range, n ? `${n} stop${n===1?'':'s'}` : 'no stops yet'].filter(Boolean).join(' \u00b7 ');
 }
 function refreshTlMeta(){
   const {byDate} = tlGroupByDate();
@@ -3977,15 +4459,13 @@ function renderTimeline(){
   dateOrder.forEach(date => {
     const rows = byDate[date];
     let secNo = 0, hidden = false, prevWasSec = false;
-    const html = rows.map((r, i) => {
+    const htmlRows = rows.map((r, i) => {
       if(isSec(r)){
-        secNo++;
-        hidden = tlCollapsed.has(r.id);
-        prevWasSec = true;
+        secNo++; hidden = tlCollapsed.has(r.id); prevWasSec = true;
         const secs = rows.filter(isSec);
         const sIdx = secs.findIndex(x => x.id === r.id);
         return `<div class="tl-section ${hidden?'collapsed':''}" data-id="${r.id}">
-          <button class="tl-sec-toggle" data-action="tl-sec-toggle" title="${hidden?'Expand':'Collapse'} section" aria-expanded="${!hidden}">▾</button>
+          <button class="tl-sec-toggle" data-action="tl-sec-toggle" title="${hidden?'Expand':'Collapse'} section" aria-expanded="${!hidden}">\u25be</button>
           <span class="tl-sec-badge">${secNo}</span>
           <div class="tl-sec-main">
             <input class="tl-sec-title" placeholder="Section heading, e.g. Preparation &amp; ceremony" value="${escapeHtml(r.title||'')}" data-f="title">
@@ -3993,15 +4473,15 @@ function renderTimeline(){
           </div>
           <span class="tl-sec-meta">${escapeHtml(tlSectionMeta(rows, r.id))}</span>
           ${tlOrganise ? `<div class="tl-sec-ctrls">
-            <button data-action="tl-sec-up" ${sIdx===0?'disabled':''} title="Move whole section up">▲</button>
-            <button data-action="tl-sec-down" ${sIdx===secs.length-1?'disabled':''} title="Move whole section down">▼</button>
-            <button class="tl-sec-del" data-action="tl-sec-del" title="Remove heading (stops are kept)">×</button>
+            <button data-action="tl-sec-up" ${sIdx===0?'disabled':''} title="Move whole section up">\u25b2</button>
+            <button data-action="tl-sec-down" ${sIdx===secs.length-1?'disabled':''} title="Move whole section down">\u25bc</button>
+            <button class="tl-sec-del" data-action="tl-sec-del" title="Remove heading (stops are kept)">\u00d7</button>
           </div>` : ''}
         </div>`;
       }
       if(hidden){ prevWasSec = false; return ''; }
       const bar = (tlOrganise && !prevWasSec)
-        ? `<button class="tl-insert-bar" data-insert-before="${r.id}">＋ Section heading starts here</button>` : '';
+        ? `<button class="tl-insert-bar" data-insert-before="${r.id}">\uff0b Section heading starts here</button>` : '';
       prevWasSec = false;
       return bar + timelineRowHtml(r, i, rows.length);
     }).join('');
@@ -4013,10 +4493,10 @@ function renderTimeline(){
         <span class="rule"></span>
       </div>
       <div class="day-card" data-date="${escapeHtml(date)}">
-        ${html}
+        ${htmlRows}
         <div class="tl-add-row">
           <button class="ghost" data-add-day="${escapeHtml(date)}" style="padding:5px 10px;">+ Add stop</button>
-          <button class="ghost tl-add-sec" data-add-section="${escapeHtml(date)}" style="padding:5px 10px;">§ Add section</button>
+          <button class="ghost tl-add-sec" data-add-section="${escapeHtml(date)}" style="padding:5px 10px;">\u00a7 Add section</button>
         </div>
       </div>`;
     c.appendChild(wrap);
@@ -4028,30 +4508,29 @@ function renderTimeline(){
   if(tlFocusId){
     const el = c.querySelector(`.tl-section[data-id="${tlFocusId}"] .tl-sec-title`);
     tlFocusId = null;
-    if(el){ el.focus({preventScroll:false}); }
+    if(el) el.focus({preventScroll:false});
   }
 }
 function timelineRowHtml(r, posInDay, dayCount){
   return `<div class="tl-row" data-id="${r.id}">
     <div class="tl-time-cell">
-      <input class="tl-time" type="time" placeholder="—" value="${escapeHtml(r.time||'')}" data-f="time">
+      <input class="tl-time" type="time" placeholder="\u2014" value="${escapeHtml(r.time||'')}" data-f="time">
     </div>
     <div class="tl-main">
       <textarea class="tl-act" rows="1" placeholder="What's happening" data-f="activity">${escapeHtml(r.activity||'')}</textarea>
-      <textarea placeholder="Notes…" data-f="notes" rows="1">${escapeHtml(r.notes||'')}</textarea>
+      <textarea placeholder="Notes\u2026" data-f="notes" rows="1">${escapeHtml(r.notes||'')}</textarea>
     </div>
     <div class="tl-order-cell row-order">
-      <button data-action="tl-move-up" ${posInDay===0?'disabled':''} title="Move up">▲</button>
-      <button data-action="tl-move-down" ${posInDay===dayCount-1?'disabled':''} title="Move down">▼</button>
+      <button data-action="tl-move-up" ${posInDay===0?'disabled':''} title="Move up">\u25b2</button>
+      <button data-action="tl-move-down" ${posInDay===dayCount-1?'disabled':''} title="Move down">\u25bc</button>
     </div>
-    <div class="tl-del-cell"><button class="row-del" data-action="delete-tl">×</button></div>
+    <div class="tl-del-cell"><button class="row-del" data-action="delete-tl">\u00d7</button></div>
   </div>`;
 }
 function tlAutosize(root){
   (root || document).querySelectorAll('#timeline-container textarea.tl-act, #timeline-container textarea.tl-sec-note').forEach(t => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; });
 }
 function tlNewSection(){ return {id:uid(), type:'section', title:'', note:''}; }
-// Move a whole section (heading + the stops under it) past its neighbouring section
 function tlMoveSection(secId, dir){
   const date = STATE.timeline.find(x => x.id === secId).date;
   const slots = [], rows = [];
@@ -4072,15 +4551,13 @@ document.getElementById('timeline-container').addEventListener('click', (e) => {
   const addBtn = e.target.closest('[data-add-day]');
   if(addBtn){
     STATE.timeline.push({id:uid(), date:addBtn.dataset.addDay, time:'', activity:'', notes:''});
-    scheduleSave('timeline'); renderTimeline();
-    return;
+    scheduleSave('timeline'); renderTimeline(); return;
   }
   const addSec = e.target.closest('[data-add-section]');
   if(addSec){
     const sec = tlNewSection(); sec.date = addSec.dataset.addSection;
     STATE.timeline.push(sec); tlFocusId = sec.id;
-    scheduleSave('timeline'); renderTimeline();
-    return;
+    scheduleSave('timeline'); renderTimeline(); return;
   }
   const insBtn = e.target.closest('[data-insert-before]');
   if(insBtn){
@@ -4088,8 +4565,7 @@ document.getElementById('timeline-container').addEventListener('click', (e) => {
     if(idx < 0) return;
     const sec = tlNewSection(); sec.date = STATE.timeline[idx].date;
     STATE.timeline.splice(idx, 0, sec); tlFocusId = sec.id;
-    scheduleSave('timeline'); renderTimeline();
-    return;
+    scheduleSave('timeline'); renderTimeline(); return;
   }
   const secEl = e.target.closest('.tl-section');
   const act = e.target.closest('[data-action]');
@@ -4113,14 +4589,12 @@ document.getElementById('timeline-container').addEventListener('click', (e) => {
     const name = prompt('Date label for the new day (e.g. "6 Dec"):');
     if(!name || !name.trim()) return;
     STATE.timeline.push({id:uid(), date:name.trim(), time:'', activity:'', notes:''});
-    scheduleSave('timeline'); renderTimeline();
-    return;
+    scheduleSave('timeline'); renderTimeline(); return;
   }
   if(e.target.dataset.action === 'delete-tl'){
     const row = e.target.closest('.tl-row');
     STATE.timeline = STATE.timeline.filter(x => x.id !== row.dataset.id);
-    scheduleSave('timeline'); renderTimeline();
-    return;
+    scheduleSave('timeline'); renderTimeline(); return;
   }
   if(e.target.dataset.action === 'tl-move-up' || e.target.dataset.action === 'tl-move-down'){
     const row = e.target.closest('.tl-row'); if(!row) return;
@@ -4133,8 +4607,7 @@ document.getElementById('timeline-container').addEventListener('click', (e) => {
     const idxA = STATE.timeline.findIndex(x => x.id === r.id);
     const idxB = STATE.timeline.findIndex(x => x.id === other.id);
     [STATE.timeline[idxA], STATE.timeline[idxB]] = [STATE.timeline[idxB], STATE.timeline[idxA]];
-    scheduleSave('timeline'); renderTimeline();
-    return;
+    scheduleSave('timeline'); renderTimeline(); return;
   }
 });
 document.getElementById('timeline-container').addEventListener('keydown', (e) => {
@@ -4161,45 +4634,127 @@ function renderDecisions(){
   const c = document.getElementById('decisions-container');
   c.innerHTML = '';
   if(STATE.decisions.length === 0){
-    c.innerHTML = '<p style="font-size:13px;color:rgba(43,42,40,.5)">Nothing here yet — use this for notes, things to follow up, decisions made, or anything you want to track.</p>';
+    c.innerHTML = '<p style="font-size:13px;color:rgba(43,42,40,.5)">Nothing here yet \u2014 use this for notes, things to follow up, decisions made, or anything you want to track. Check items off and attach PDFs or text files when needed.</p>';
     return;
   }
   const card = document.createElement('div');
   card.className = 'day-card';
   STATE.decisions.slice().reverse().forEach(d => {
+    const atts = d.attachments || [];
     const row = document.createElement('div');
-    row.className = 'decision-item';
+    row.className = 'decision-item' + (d.done ? ' done' : '');
     row.dataset.id = d.id;
     row.dataset.type = d.type || 'note';
     row.innerHTML = `
+      <div class="decision-check-cell"><input type="checkbox" data-action="toggle-decision-done" ${d.done?'checked':''} title="Mark done"></div>
       <div class="decision-date-cell">${fmtDate(d.date)}</div>
       <div class="decision-type-cell"><select data-f="type">
         ${NOTE_TYPES.map(t => `<option value="${t.value}" ${(d.type||'note')===t.value?'selected':''}>${t.label}</option>`).join('')}
       </select></div>
-      <div class="decision-body"><textarea data-f="text" placeholder="Add your note, action, or follow-up here…">${escapeHtml(d.text||'')}</textarea></div>
-      <div class="decision-del-cell"><button class="row-del" data-action="delete-decision">×</button></div>`;
+      <div class="decision-body">
+        <textarea data-f="text" placeholder="Add your note, action, or follow-up here\u2026">${escapeHtml(d.text||'')}</textarea>
+        <div class="decision-attach attach-zone" data-row-id="${d.id}">
+          <div class="attach-chips">${atts.map(a => attachmentChipHtml(a)).join('')}</div>
+          <label class="attach-drop-target" title="Tap to pick a file, or drag one here">
+            <span class="drop-label">\U0001F4CE Drop a file here or tap to attach (PDF, text, images\u2026)</span>
+            <input type="file" class="attach-input" accept=".pdf,.png,.jpg,.jpeg,.eml,.msg,.txt,.md,.doc,.docx" hidden multiple>
+          </label>
+        </div>
+      </div>
+      <div class="decision-del-cell"><button class="row-del" data-action="delete-decision">\u00d7</button></div>`;
     card.appendChild(row);
   });
   c.appendChild(card);
 }
 function addDecision(){
-  STATE.decisions.push({id:uid(), date:new Date().toISOString().slice(0,10), text:'', type:'note'});
+  STATE.decisions.push({id:uid(), date:new Date().toISOString().slice(0,10), text:'', type:'note', done:false, attachments:[]});
   scheduleSave('decisions'); renderDecisions(); renderHero();
 }
 document.getElementById('decisions-container').addEventListener('input', (e) => {
+  if(e.target.classList.contains('attach-input')) return;
+  if(e.target.type === 'checkbox') return;
   const row = e.target.closest('.decision-item'); if(!row) return;
   const d = STATE.decisions.find(x => x.id === row.dataset.id); if(!d) return;
-  d[e.target.dataset.f || 'text'] = e.target.value;
-  if(e.target.dataset.f === 'type') row.dataset.type = e.target.value;
+  const field = e.target.dataset.f || (e.target.tagName === 'TEXTAREA' ? 'text' : null);
+  if(!field) return;
+  d[field] = e.target.value;
+  if(field === 'type') row.dataset.type = e.target.value;
   scheduleSave('decisions');
+});
+document.getElementById('decisions-container').addEventListener('change', (e) => {
+  if(e.target.classList.contains('attach-input')){
+    const zone = e.target.closest('.attach-zone');
+    const d = STATE.decisions.find(x => x.id === zone.dataset.rowId);
+    handleAttachmentFiles(Array.from(e.target.files||[]), d, 'decisions', renderDecisions);
+    e.target.value = '';
+    return;
+  }
+  if(e.target.dataset.action === 'toggle-decision-done'){
+    const row = e.target.closest('.decision-item');
+    const d = STATE.decisions.find(x => x.id === row.dataset.id);
+    if(d){
+      d.done = e.target.checked;
+      scheduleSave('decisions');
+      renderDecisions();
+      renderHero();
+    }
+  }
 });
 document.getElementById('decisions-container').addEventListener('click', (e) => {
   if(e.target.dataset.action === 'delete-decision'){
     const row = e.target.closest('.decision-item');
+    const removed = STATE.decisions.find(x => x.id === row.dataset.id);
+    (removed?.attachments||[]).forEach(a => { window.storage.delete('file:'+a.id, false).catch(()=>{}); });
     STATE.decisions = STATE.decisions.filter(x => x.id !== row.dataset.id);
     scheduleSave('decisions'); renderDecisions(); renderHero();
+    return;
+  }
+  if(e.target.closest('[data-action="open-att"]')){
+    openAttachmentChip(e.target.closest('.attach-chip'));
+    return;
+  }
+  if(e.target.closest('[data-action="del-att"]')){
+    const chip = e.target.closest('.attach-chip');
+    const attId = chip.dataset.attId;
+    const zone = e.target.closest('.attach-zone');
+    const d = STATE.decisions.find(x => x.id === zone.dataset.rowId);
+    if(d){
+      deleteAttachmentRecord(d, attId);
+      scheduleSave('decisions');
+      renderDecisions();
+    }
+    return;
   }
 });
+document.getElementById('decisions-container').addEventListener('dragenter', (e) => {
+  const zone = e.target.closest('.attach-drop-target');
+  if(zone){ e.preventDefault(); zone.classList.add('drag-over'); }
+}, false);
+document.getElementById('decisions-container').addEventListener('dragover', (e) => {
+  const zone = e.target.closest('.attach-drop-target');
+  if(zone){ e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }
+}, false);
+document.getElementById('decisions-container').addEventListener('dragleave', (e) => {
+  const zone = e.target.closest('.attach-drop-target');
+  if(zone && !zone.contains(e.relatedTarget)) zone.classList.remove('drag-over');
+}, false);
+document.getElementById('decisions-container').addEventListener('drop', (e) => {
+  const zone = e.target.closest('.attach-drop-target');
+  if(!zone) return;
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  const attachZone = zone.closest('.attach-zone');
+  const d = STATE.decisions.find(x => x.id === attachZone.dataset.rowId);
+  let files = Array.from(e.dataTransfer.files || []);
+  if(files.length === 0 && e.dataTransfer.items){
+    files = Array.from(e.dataTransfer.items).filter(item => item.kind === 'file').map(item => item.getAsFile()).filter(Boolean);
+  }
+  if(files.length > 0){
+    handleAttachmentFiles(files, d, 'decisions', renderDecisions);
+  } else {
+    alert("Couldn't read that drag \u2014 try dragging a file from Finder instead.");
+  }
+}, false);
 
 /* ============================= SCRIPT & VOWS ============================= */
 function renderScript(){
@@ -4974,6 +5529,7 @@ function renderAll(){
   renderTimeline();
   renderGuestsPage();
   renderDecisions();
+  renderFiles();
   renderPhotoLocations();
   renderPhotoLocationsMap();
   setPhotosSubTab(photosSubTab);
@@ -4982,16 +5538,19 @@ function renderAll(){
 
 (async function init(){
   applyModeCopy();
+  try{ await migrateLocalStorageToIDB(); }catch(e){}
   try{
     await loadAll();
   }catch(e){ console.error(e); }
   try{
     await githubPullOnLoad();
   }catch(e){ console.error(e); }
+  try{
+    await pullFirestoreOnLoad();
+  }catch(e){ console.error(e); }
   renderAll();
 
-  // First snapshot shortly after load (once things have settled), then
-  // every 20 minutes for as long as the board stays open.
+  // IndexedDB snapshots: shortly after load, then every 10 minutes while open.
   setTimeout(takeAutoBackup, 15000);
   setInterval(takeAutoBackup, AUTO_BACKUP_INTERVAL_MS);
   try{
