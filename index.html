@@ -813,6 +813,7 @@
   }
   .script-section .rich-box, .vow-card .rich-box, .reading-card .rich-box{
     resize:none; overflow:hidden; outline:none; white-space:pre-wrap; word-break:break-word;
+    height:auto; field-sizing:content;
   }
   .vow-card .rich-box{ min-height:160px; }
   .rich-box:empty:before{
@@ -1148,7 +1149,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v37.1</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v37.2</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1840,8 +1841,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v37.1';
+const APP_VERSION = 'v37.2';
 const CHANGELOG = [
+  { version:'v37.2', date:'2026-11-08', notes:[
+    'Script & vows: boxes size to full text as soon as the tab opens (no need to click first)'
+  ]},
   { version:'v37.1', date:'2026-11-08', notes:[
     'Script & vows: bold/italic/underline, boxes grow to fit text, content stays saved when you leave the tab'
   ]},
@@ -3037,6 +3041,7 @@ document.getElementById('tabs').addEventListener('click', (e) => {
   renderNav();
   document.querySelectorAll('section.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + activePanel).classList.add('active');
+  if(activePanel === 'script') scheduleRichAutosize(document.getElementById('panel-script'));
 });
 
 
@@ -3068,6 +3073,7 @@ function goToPanel(id){
   document.querySelectorAll('section.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
   window.scrollTo({top:0, behavior:'auto'});
+  if(id === 'script') scheduleRichAutosize(document.getElementById('panel-script'));
 }
 function renderBottomNav(){
   document.body.dataset.panel = activePanel;
@@ -5046,12 +5052,32 @@ function applyRichFormat(cmd){
 }
 function autosizeRichBox(el){
   if(!el) return;
-  el.style.height = 'auto';
+  // Skip if in a hidden panel — height would be wrong until the panel is shown
+  const panel = el.closest('section.panel');
+  if(panel && !panel.classList.contains('active')) return;
   const min = parseInt(getComputedStyle(el).minHeight, 10) || 72;
-  el.style.height = Math.max(min, el.scrollHeight) + 'px';
+  // Force a reflow-friendly measure
+  el.style.height = '0px';
+  const sh = el.scrollHeight;
+  el.style.height = Math.max(min, sh) + 'px';
 }
 function autosizeAllRich(root){
   (root || document).querySelectorAll('.rich-box').forEach(autosizeRichBox);
+}
+let _richAutosizeTimer = null;
+function scheduleRichAutosize(root){
+  const run = () => autosizeAllRich(root);
+  run();
+  requestAnimationFrame(() => {
+    run();
+    requestAnimationFrame(run);
+  });
+  clearTimeout(_richAutosizeTimer);
+  _richAutosizeTimer = setTimeout(run, 50);
+  setTimeout(run, 200);
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(run).catch(()=>{});
+  }
 }
 function bindRichBox(el, onChange){
   if(!el) return;
@@ -5063,6 +5089,7 @@ function bindRichBox(el, onChange){
   };
   el.addEventListener('input', save);
   el.addEventListener('blur', save);
+  el.addEventListener('focus', () => autosizeRichBox(el));
   el.addEventListener('keydown', (e) => {
     if((e.metaKey || e.ctrlKey) && !e.shiftKey){
       const k = e.key.toLowerCase();
@@ -5071,7 +5098,7 @@ function bindRichBox(el, onChange){
       else if(k === 'u'){ e.preventDefault(); applyRichFormat('underline'); save(); }
     }
   });
-  requestAnimationFrame(() => autosizeRichBox(el));
+  scheduleRichAutosize(el.parentElement || document);
 }
 function bindFmtBar(container){
   if(!container) return;
@@ -5113,7 +5140,7 @@ function renderScript(){
     });
   });
   bindFmtBar(c);
-  requestAnimationFrame(() => autosizeAllRich(c));
+  scheduleRichAutosize(c);
 }
 function addScriptSection(){
   STATE.script.push({id:uid(), title:'New section', content:''});
@@ -5165,7 +5192,7 @@ function renderVows(){
     scheduleSave('vows');
   });
   bindFmtBar(c);
-  requestAnimationFrame(() => autosizeAllRich(c));
+  scheduleRichAutosize(c);
 }
 
 function renderReadings(){
@@ -5193,7 +5220,7 @@ function renderReadings(){
     });
   });
   bindFmtBar(c);
-  requestAnimationFrame(() => autosizeAllRich(c));
+  scheduleRichAutosize(c);
 }
 function addReading(){
   STATE.readings.push({id:uid(), title:'', reader:'', text:''});
@@ -5889,6 +5916,7 @@ function renderAll(){
   renderScript();
   renderVows();
   renderReadings();
+  if(activePanel === 'script') scheduleRichAutosize(document.getElementById('panel-script'));
   renderEnquiries();
   renderTimeline();
   renderGuestsPage();
