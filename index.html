@@ -1163,7 +1163,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v38</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v38.1</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1859,8 +1859,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v38';
+const APP_VERSION = 'v38.1';
 const CHANGELOG = [
+  { version:'v38.1', date:'2026-11-09', notes:[
+    'Fix GitHub Sync token not saving (especially mobile): Save button was broken by a missing control; token field paste-friendly; clearer status'
+  ]},
   { version:'v38', date:'2026-11-09', notes:[
     'Inline-editable panel titles; long-press drag-and-drop reorder; up/down only in Organise mode'
   ]},
@@ -2029,7 +2032,7 @@ let STATE = {
   plTagOptions: seedPlTagOptions(),
   photoIdeas: seedPhotoIdeas(),
   photoIdeaCategoryOrder: seedPhotoIdeaCategoryOrder(),
-  githubSettings: {enabled:true, token:'', owner:'Ello2003', repo:'ceremony-dashboard', path:'ceremony-data.json', branch:'main', sha:null, lastSyncAt:null},
+  githubSettings: {enabled:false, token:'', owner:'Ello2003', repo:'ceremony-dashboard', path:'ceremony-data.json', branch:'main', sha:null, lastSyncAt:null},
   firestoreSettings: {enabled:false, apiKey:'', authDomain:'', projectId:'', appId:'', collection:'ceremonyBoards', docId:'main', lastSyncAt:null}
 };
 
@@ -2279,9 +2282,9 @@ function closeGithubSyncModal(){
 }
 function renderGithubSyncForm(){
   const s = STATE.githubSettings;
-  const statusLine = !s.enabled ? 'Sync is off.'
-    : !s.token ? 'Enabled, but no token saved yet.'
-    : `Last synced: ${formatSyncTime(s.lastSyncAt)}`;
+  const statusLine = !s.enabled ? 'Sync is off. Turn on, paste a token, then Save.'
+    : !s.token ? 'Enabled — paste a personal access token below, then tap Save.'
+    : `Token saved on this device. Last synced: ${formatSyncTime(s.lastSyncAt)}`;
   const c = document.getElementById('github-sync-form');
   c.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;margin:12px 0 4px;">
@@ -2289,7 +2292,7 @@ function renderGithubSyncForm(){
       <label style="margin:0;font-size:13px;" for="gh-enabled">Enable automatic sync to GitHub</label>
     </div>
     <label class="field-label">Personal Access Token</label>
-    <input class="field-input" id="gh-token" type="password" value="${escapeHtml(s.token||'')}" placeholder="ghp_… or github_pat_…" autocomplete="off">
+    <input class="field-input" id="gh-token" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" value="${escapeHtml(s.token||'')}" placeholder="ghp_… or github_pat_…" autocomplete="off">
     <div style="display:flex;gap:10px;">
       <div style="flex:1;"><label class="field-label">Repo Owner</label><input class="field-input" id="gh-owner" type="text" value="${escapeHtml(s.owner||'')}" placeholder="e.g. Ello2003"></div>
       <div style="flex:1;"><label class="field-label">Repo Name</label><input class="field-input" id="gh-repo" type="text" value="${escapeHtml(s.repo||'')}" placeholder="e.g. ceremony-dashboard"></div>
@@ -2317,38 +2320,117 @@ function renderGithubSyncForm(){
   document.getElementById('gh-cancel').addEventListener('click', closeGithubSyncModal);
   const migrateBtn = document.getElementById('gh-migrate');
   if(migrateBtn) migrateBtn.addEventListener('click', () => migrateAttachmentsToGithub(document.getElementById('gh-migrate-status')));
-  document.getElementById('gh-sync-now').addEventListener('click', async () => {
+
+  const bind = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener('click', fn); };
+
+  bind('gh-push', async () => {
     const statusEl = document.getElementById('gh-status');
-    statusEl.textContent = 'Syncing…';
+    // Apply form values first so Push uses what is on screen
+    applyGithubFormToState();
+    if(!githubConfigured()){
+      statusEl.textContent = 'Save a token, owner and repo first.';
+      return;
+    }
+    statusEl.textContent = 'Pushing\u2026';
     try{
-      if(!githubConfigured()){ statusEl.textContent = 'Fill in and save the fields above first.'; return; }
+      await flushLocalState();
       await githubPushRemote(false);
       await persist('githubSettings', STATE.githubSettings);
-      statusEl.textContent = `Synced just now (${formatSyncTime(STATE.githubSettings.lastSyncAt)})`;
-      setGithubSyncStatus('', `☁ synced ${formatSyncTime(STATE.githubSettings.lastSyncAt)}`);
+      statusEl.textContent = `Pushed just now (${formatSyncTime(STATE.githubSettings.lastSyncAt)})`;
+      setGithubSyncStatus('', `\u2601 pushed ${formatSyncTime(STATE.githubSettings.lastSyncAt)}`);
     }catch(err){
-      statusEl.textContent = err.message === 'github-auth-failed' ? 'Sync failed: check your token and permissions.' : 'Sync failed — check repo/path/branch are correct.';
+      console.error(err);
+      statusEl.textContent = err.message === 'github-auth-failed'
+        ? 'Push failed: check your token and permissions.'
+        : 'Push failed \u2014 check repo/path/branch are correct.';
     }
   });
-  document.getElementById('gh-save').addEventListener('click', async () => {
-    s.enabled = document.getElementById('gh-enabled').checked;
-    s.token = document.getElementById('gh-token').value.trim();
-    s.owner = document.getElementById('gh-owner').value.trim();
-    s.repo = document.getElementById('gh-repo').value.trim();
-    s.path = document.getElementById('gh-path').value.trim() || 'ceremony-data.json';
-    s.branch = document.getElementById('gh-branch').value.trim() || 'main';
-    await persist('githubSettings', s);
-    closeGithubSyncModal();
-    if(githubConfigured()){
-      showToast('Saved — syncing now…', [], 4000);
-      scheduleGithubSync();
-    } else if(s.enabled){
-      showToast('Saved — fill in token, owner and repo to start syncing', [], 5000);
-    } else {
-      showToast('Saved', [], 3000);
-      setGithubSyncStatus('', '');
+
+  bind('gh-pull', async () => {
+    const statusEl = document.getElementById('gh-status');
+    applyGithubFormToState();
+    if(!githubConfigured()){
+      statusEl.textContent = 'Save a token, owner and repo first.';
+      return;
+    }
+    statusEl.textContent = 'Pulling\u2026';
+    try{
+      await githubPullOnLoad();
+      renderAll();
+      statusEl.textContent = `Pulled just now (${formatSyncTime(STATE.githubSettings.lastSyncAt)})`;
+    }catch(err){
+      console.error(err);
+      statusEl.textContent = err.message === 'github-auth-failed'
+        ? 'Pull failed: check your token and permissions.'
+        : 'Pull failed \u2014 check repo/path/branch are correct.';
     }
   });
+
+  bind('gh-save', async () => {
+    const statusEl = document.getElementById('gh-status');
+    const ok = applyGithubFormToState();
+    if(!ok){
+      if(statusEl) statusEl.textContent = 'Could not read the form. Try again.';
+      return;
+    }
+    try{
+      const res = await persist('githubSettings', STATE.githubSettings);
+      // Re-read to confirm token stuck
+      try{
+        const check = await window.storage.get('githubSettings', false);
+        if(check && check.value){
+          const parsed = JSON.parse(check.value);
+          if(STATE.githubSettings.token && !parsed.token){
+            // Retry once
+            await window.storage.set('githubSettings', JSON.stringify(STATE.githubSettings), false);
+          }
+        }
+      }catch(e){ console.warn('token verify', e); }
+
+      if(githubConfigured()){
+        if(statusEl) statusEl.textContent = 'Saved. Token stored in this browser.';
+        showToast('GitHub Sync saved \u2014 token stored on this device', [], 4000);
+        scheduleGithubSync();
+        setTimeout(closeGithubSyncModal, 600);
+      } else if(STATE.githubSettings.enabled && !STATE.githubSettings.token){
+        if(statusEl) statusEl.textContent = 'Enabled, but no token yet \u2014 paste your PAT above and Save again.';
+        showToast('Turned on \u2014 still need a token', [], 5000);
+      } else if(STATE.githubSettings.enabled){
+        if(statusEl) statusEl.textContent = 'Saved \u2014 fill owner and repo too.';
+        showToast('Saved \u2014 need owner and repo', [], 4000);
+      } else {
+        if(statusEl) statusEl.textContent = 'Saved. Sync is off.';
+        showToast('Saved', [], 3000);
+        setGithubSyncStatus('', '');
+        setTimeout(closeGithubSyncModal, 400);
+      }
+    }catch(err){
+      console.error(err);
+      if(statusEl) statusEl.textContent = 'Save failed \u2014 storage may be full or blocked.';
+      showToast('Could not save settings', [], 5000);
+    }
+  });
+}
+
+function applyGithubFormToState(){
+  const s = STATE.githubSettings || (STATE.githubSettings = {});
+  const enabledEl = document.getElementById('gh-enabled');
+  const tokenEl = document.getElementById('gh-token');
+  const ownerEl = document.getElementById('gh-owner');
+  const repoEl = document.getElementById('gh-repo');
+  const pathEl = document.getElementById('gh-path');
+  const branchEl = document.getElementById('gh-branch');
+  if(!enabledEl || !tokenEl) return false;
+  s.enabled = !!enabledEl.checked;
+  // Prefer live value; never wipe an existing token with empty if field was blanked by the browser
+  const typed = (tokenEl.value || '').trim();
+  if(typed) s.token = typed;
+  else if(!s.token) s.token = '';
+  s.owner = (ownerEl && ownerEl.value || '').trim() || s.owner || '';
+  s.repo = (repoEl && repoEl.value || '').trim() || s.repo || '';
+  s.path = (pathEl && pathEl.value || '').trim() || s.path || 'ceremony-data.json';
+  s.branch = (branchEl && branchEl.value || '').trim() || s.branch || 'main';
+  return true;
 }
 
 async function flushLocalState(){
