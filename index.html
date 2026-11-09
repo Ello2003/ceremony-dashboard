@@ -442,6 +442,20 @@
     display:flex; align-items:center; gap:10px;
   }
 
+
+  /* ---- Long-press drag & organise mode ---- */
+  .organise-mode .order-only{ display:inline-flex !important; }
+  .order-only{ display:none !important; }
+  .dnd-item{ position:relative; touch-action:pan-y; }
+  .dnd-item.dnd-dragging{ opacity:.45; z-index:5; }
+  .dnd-item.dnd-over-before{ box-shadow: inset 0 3px 0 0 var(--gold); }
+  .dnd-item.dnd-over-after{ box-shadow: inset 0 -3px 0 0 var(--gold); }
+  .dnd-item.dnd-armed{ outline:2px dashed var(--gold); outline-offset:2px; }
+  .section-title[contenteditable="true"]{ outline:none; border-radius:4px; cursor:text; }
+  .section-title[contenteditable="true"]:hover{ box-shadow: inset 0 -1px 0 var(--line); }
+  .section-title[contenteditable="true"]:focus{ box-shadow: inset 0 -2px 0 var(--gold); }
+  .organise-toggle.on{ border-color:var(--holyrood); color:var(--holyrood); background:rgba(46,99,103,.08); }
+
   /* ---------- TIMELINE SECTIONS (v35) ---------- */
   .tl-section{
     display:grid; grid-template-columns:22px 28px 28px 1fr auto auto; align-items:center; gap:6px 8px;
@@ -1149,7 +1163,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v37.2</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v38</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1194,7 +1208,7 @@
 
   <!-- OVERVIEW -->
   <section class="panel active" id="panel-overview">
-    <h2 class="section-title">Overview</h2>
+    <h2 class="section-title" data-title-key="overview">Overview</h2>
     <p class="section-sub">Where the plan stands right now, at a glance.</p>
     <div class="grid cols-3" style="margin-bottom:16px;">
       <div class="card stat-card"><div class="num" id="ov-checklist-pct">0%</div><div class="lbl">Checklist complete</div></div>
@@ -1229,9 +1243,10 @@
   <section class="panel" id="panel-checklist">
     <div class="toolbar">
       <div>
-        <h2 class="section-title">Master checklist</h2>
-        <p class="section-sub" style="margin-bottom:0;">Organised by the nine planning phases. Click a task to edit it, or add your own.</p>
+        <h2 class="section-title" data-title-key="checklist">Master checklist</h2>
+        <p class="section-sub" style="margin-bottom:0;">Long-press a section or task to drag-reorder. Titles are editable inline.</p>
       </div>
+      <button type="button" class="ghost organise-toggle" id="cl-organise-btn" onclick="toggleOrganise('checklist', this)">§ Organise</button>
     </div>
     <div class="checklist-controls">
       <input id="checklist-search" placeholder="Search tasks…" type="search">
@@ -1247,7 +1262,7 @@
 
   <!-- BUDGET -->
   <section class="panel" id="panel-budget">
-    <h2 class="section-title">Budget</h2>
+    <h2 class="section-title" data-title-key="budget">Budget</h2>
     <p class="section-sub">Estimate vs. agreed cost, and what's been paid so far. Edit any cell directly — set status to "Paid in full" and the paid amount locks to match the total automatically, so balance due is never ambiguous.</p>
     <div class="toolbar">
       <button class="ghost" onclick="addBudgetRow()">+ Add line item</button>
@@ -1270,7 +1285,7 @@
 
   <!-- SUPPLIERS -->
   <section class="panel" id="panel-research">
-    <h2 class="section-title">Research</h2>
+    <h2 class="section-title" data-title-key="research">Research</h2>
     <div class="photos-subtabs" id="research-subtabs">
       <button class="photos-subtab" data-subtab="suppliers" onclick="setResearchSubTab('suppliers')">Suppliers</button>
       <button class="photos-subtab" data-subtab="enquiries" onclick="setResearchSubTab('enquiries')">Enquiries</button>
@@ -1291,10 +1306,13 @@
   <section class="panel" id="panel-script">
     <div class="toolbar">
       <div>
-        <h2 class="section-title">Ceremony script &amp; vows</h2>
+        <h2 class="section-title" data-title-key="script">Ceremony script &amp; vows</h2>
         <p class="section-sub" style="margin-bottom:0;">Build the running order, draft each of your vows, and gather any readings. Everything here can be copied out as one script.</p>
       </div>
-      <button class="ghost" onclick="copyFullScript()">Copy full script</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="ghost organise-toggle" id="script-organise-btn" onclick="toggleOrganise('script', this)">§ Organise</button>
+        <button class="ghost" onclick="copyFullScript()">Copy full script</button>
+      </div>
     </div>
 
     <h3 class="sub-head">Running order</h3>
@@ -1313,7 +1331,7 @@
   <section class="panel" id="panel-timeline">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
       <div>
-        <h2 class="section-title">Trip timeline</h2>
+        <h2 class="section-title" data-title-key="timeline">Trip timeline</h2>
         <p class="section-sub">4–5 December, Edinburgh. Add stops, times and notes as the day takes shape.</p>
       </div>
       <button class="ghost" onclick="exportTimelinePDF()" style="flex:none;">📄 Export as PDF</button>
@@ -1325,7 +1343,7 @@
   <section class="panel" id="panel-guests">
     <div class="toolbar">
       <div>
-        <h2 class="section-title">Guests &amp; sharing</h2>
+        <h2 class="section-title" data-title-key="guests">Guests &amp; sharing</h2>
         <p class="section-sub" style="margin-bottom:0;">Keep track of your four guests, and put together the summary you'll send them.</p>
       </div>
       <button class="ghost" onclick="copyGuestSummary()">Copy shareable summary</button>
@@ -1363,7 +1381,7 @@
   <section class="panel" id="panel-decisions">
     <div class="toolbar">
       <div>
-        <h2 class="section-title">Notes &amp; Actions</h2>
+        <h2 class="section-title" data-title-key="decisions">Notes &amp; Actions</h2>
         <p class="section-sub" style="margin-bottom:0;">Check off actions, keep notes, and attach PDFs or text files (viewable in the browser).</p>
       </div>
       <button class="ghost" onclick="addDecision()">+ Add entry</button>
@@ -1373,7 +1391,7 @@
 
   <!-- FILES LIBRARY -->
   <section class="panel" id="panel-files">
-    <h2 class="section-title">Files</h2>
+    <h2 class="section-title" data-title-key="files">Files</h2>
     <p class="section-sub">One place for every document. Upload here, or see everything you've attached across the board.</p>
     <div class="files-upload" id="files-upload">
       <div class="files-upload-top">
@@ -1404,7 +1422,7 @@
 
   <!-- PHOTO LOCATIONS -->
   <section class="panel" id="panel-photos">
-    <h2 class="section-title">Photos</h2>
+    <h2 class="section-title" data-title-key="photos">Photos</h2>
     <div class="photos-subtabs" id="photos-subtabs">
       <button class="photos-subtab" data-subtab="locations" onclick="setPhotosSubTab('locations')">Locations</button>
       <button class="photos-subtab" data-subtab="ideas" onclick="setPhotosSubTab('ideas')">Shot list</button>
@@ -1841,8 +1859,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v37.2';
+const APP_VERSION = 'v38';
 const CHANGELOG = [
+  { version:'v38', date:'2026-11-09', notes:[
+    'Inline-editable panel titles; long-press drag-and-drop reorder; up/down only in Organise mode'
+  ]},
   { version:'v37.2', date:'2026-11-08', notes:[
     'Script & vows: boxes size to full text as soon as the tab opens (no need to click first)'
   ]},
@@ -2002,6 +2023,7 @@ let STATE = {
   guests: seedGuests(),
   share: seedShare(),
   navOrder: seedNavOrder(),
+  panelTitles: {},
   photoLocations: seedPhotoLocations(),
   photoLocationsMap: '',
   plTagOptions: seedPlTagOptions(),
@@ -2419,7 +2441,7 @@ function applyModeCopy(){
 }
 
 async function loadAll(){
-  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','library','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoLocationsMap','plTagOptions','photoIdeas','photoIdeaCategoryOrder','githubSettings','firestoreSettings'];
+  const keys = ['checklist','phases','budget','suppliers','categories','timeline','decisions','library','script','vows','readings','emails','guests','share','navOrder','panelTitles','photoLocations','photoLocationsMap','plTagOptions','photoIdeas','photoIdeaCategoryOrder','githubSettings','firestoreSettings'];
   for(const k of keys){
     try{
       const res = await window.storage.get(k, false);
@@ -2764,7 +2786,7 @@ document.getElementById('autobackup-list').addEventListener('click', async (e) =
   try{
     const res = await window.storage.get('autobackup:' + id, false);
     const snap = JSON.parse(res.value);
-    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','library','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoIdeas'];
+    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','library','script','vows','readings','emails','guests','share','navOrder','panelTitles','photoLocations','photoIdeas'];
     required.forEach(k => { if(snap.data[k] !== undefined) STATE[k] = snap.data[k]; });
     for(const k of required) await persist(k, STATE[k]);
     renderAll();
@@ -2810,7 +2832,7 @@ document.getElementById('restore-input').addEventListener('change', async (e) =>
     const text = await file.text();
     const parsed = JSON.parse(text);
     const incoming = parsed.data || parsed; // allow raw-state files too
-    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','library','script','vows','readings','emails','guests','share','navOrder','photoLocations','photoIdeas'];
+    const required = ['checklist','phases','budget','suppliers','categories','timeline','decisions','library','script','vows','readings','emails','guests','share','navOrder','panelTitles','photoLocations','photoIdeas'];
     const hasShape = required.some(k => k in incoming);
     if(!hasShape){ alert('This file doesn\'t look like a ceremony dashboard backup.'); e.target.value=''; return; }
     if(!confirm('Restoring will replace everything currently on this board with the contents of the backup. Continue?')){ e.target.value=''; return; }
@@ -3356,15 +3378,17 @@ function renderChecklist(){
     const doneCt = tasks.filter(t=>t.done).length;
     const block = document.createElement('div');
     block.className = 'phase-block' + (collapsedPhases.has(p.id) ? ' collapsed' : '');
+    block.classList.add('dnd-item');
     block.dataset.phaseId = p.id;
+    block.dataset.dndId = p.id;
     block.innerHTML = `
       <div class="phase-head" data-phase="${p.id}">
         <span class="badge">${String(idx+1).padStart(2,'0')}</span>
         <input class="phase-name-input" value="${escapeHtml(p.name)}" data-action="rename-phase" data-phase-id="${p.id}" title="Click to rename">
         <span class="count">${isFiltering ? visibleTasks.length + ' shown' : doneCt+'/'+tasks.length}</span>
         <div class="phase-controls">
-          <button class="phase-ctrl" data-action="phase-up" data-phase-id="${p.id}" ${idx===0?'disabled':''} title="Move up">↑</button>
-          <button class="phase-ctrl" data-action="phase-down" data-phase-id="${p.id}" ${idx===STATE.phases.length-1?'disabled':''} title="Move down">↓</button>
+          <button class="phase-ctrl order-only" data-action="phase-up" data-phase-id="${p.id}" ${idx===0?'disabled':''} title="Move up">↑</button>
+          <button class="phase-ctrl order-only" data-action="phase-down" data-phase-id="${p.id}" ${idx===STATE.phases.length-1?'disabled':''} title="Move down">↓</button>
           <button class="phase-ctrl phase-del" data-action="phase-del" data-phase-id="${p.id}" title="Delete section">×</button>
         </div>
         <span class="chev">▾</span>
@@ -3388,6 +3412,33 @@ function renderChecklist(){
     c.appendChild(addRow);
   }
   preloadAttachments();
+  const clRoot = document.getElementById('checklist-container');
+  if(clRoot){
+    clRoot.classList.toggle('organise-mode', isOrganise('checklist'));
+    clRoot._dndBound = false;
+    bindLongPressDnd(clRoot, {
+      itemSelector: '.phase-block.dnd-item',
+      onReorder: (dragId, overId, before) => {
+        STATE.phases = arrayMoveId(STATE.phases, dragId, overId, before);
+        scheduleSave('phases'); renderChecklist(); renderOverview();
+      }
+    });
+    clRoot.querySelectorAll('.phase-body').forEach(body => {
+      body._dndBound = false;
+      bindLongPressDnd(body, {
+        itemSelector: '.task-row-wrap.dnd-item',
+        onReorder: (dragId, overId, before) => {
+          STATE.checklist = arrayMoveId(STATE.checklist, dragId, overId, before);
+          const overTask = STATE.checklist.find(t => t.id === overId);
+          const dragTask = STATE.checklist.find(t => t.id === dragId);
+          if(overTask && dragTask) dragTask.phase = overTask.phase;
+          scheduleSave('checklist'); renderChecklist(); renderOverview();
+        }
+      });
+    });
+  }
+  const orgBtn = document.getElementById('cl-organise-btn');
+  if(orgBtn) orgBtn.classList.toggle('on', isOrganise('checklist'));
 }
 
 document.getElementById('checklist-search').addEventListener('input', (e) => {
@@ -3411,7 +3462,7 @@ function taskRowHtml(t){
   const tatts = t.attachments || [];
   const tlinks = t.links || (t.link ? [{id:uid(), name:'', url:t.link}] : []); // migrate legacy single link
   const hasExtra = tlinks.length || tatts.length;
-  return `<div class="task-row-wrap" data-id="${t.id}">
+  return `<div class="task-row-wrap dnd-item" data-id="${t.id}" data-dnd-id="${t.id}">
     <div class="task-row ${t.done?'done':''} ${isOverdue(t)?'overdue':''}">
       <input type="checkbox" ${t.done?'checked':''} data-action="toggle">
       <span class="task-text" contenteditable="true" data-action="edit-text">${escapeHtml(t.text)}</span>
@@ -3851,7 +3902,8 @@ function renderSuppliers(){
   STATE.categories.forEach(cat => {
     const options = STATE.suppliers[cat] || [];
     const block = document.createElement('div');
-    block.className = 'supplier-cat';
+    block.className = 'supplier-cat dnd-item';
+    block.dataset.dndId = cat;
     block.innerHTML = `
       <div class="supplier-cat-head">
         <input class="cat-name-input" value="${escapeHtml(cat)}" data-cat="${escapeHtml(cat)}" data-action="rename-cat">
@@ -3872,6 +3924,17 @@ function renderSuppliers(){
   c.appendChild(addRow);
   // Pre-load attachment data URLs in the background so taps are instant and synchronous
   preloadAttachments();
+  const sc = document.getElementById('suppliers-container');
+  if(sc){
+    sc._dndBound = false;
+    bindLongPressDnd(sc, {
+      itemSelector: '.supplier-cat.dnd-item',
+      onReorder: (dragId, overId, before) => {
+        STATE.categories = arrayMoveId(STATE.categories, dragId, overId, before, x => x);
+        scheduleSave('categories'); renderSuppliers();
+      }
+    });
+  }
 }
 function supplierCardHtml(cat, o){
   const atts = o.attachments || [];
@@ -4574,6 +4637,7 @@ let tlFocusId = null;
 const isSec = r => r && r.type === 'section';
 function toggleTlOrganise(){
   tlOrganise = !tlOrganise;
+  organiseFlags.timeline = tlOrganise;
   const btn = document.getElementById('tl-organise-btn');
   if(btn){ btn.classList.toggle('on', tlOrganise); btn.textContent = tlOrganise ? '\u2713 Done organising' : '\u00a7 Organise sections'; }
   renderTimeline();
@@ -4606,6 +4670,7 @@ function refreshTlMeta(){
 function renderTimeline(){
   const c = document.getElementById('timeline-container');
   c.innerHTML = '';
+  c.classList.toggle('organise-mode', tlOrganise);
   const {dateOrder, byDate} = tlGroupByDate();
   dateOrder.forEach(date => {
     const rows = byDate[date];
@@ -4675,8 +4740,8 @@ function timelineRowHtml(r, posInDay, dayCount){
       <textarea placeholder="Notes…" data-f="notes" rows="1">${escapeHtml(r.notes||'')}</textarea>
     </div>
     <div class="tl-order-cell row-order">
-      <button data-action="tl-move-up" ${posInDay===0?'disabled':''} title="Move up">▲</button>
-      <button data-action="tl-move-down" ${posInDay===dayCount-1?'disabled':''} title="Move down">▼</button>
+      <button class="order-only" data-action="tl-move-up" ${posInDay===0?'disabled':''} title="Move up">▲</button>
+      <button class="order-only" data-action="tl-move-down" ${posInDay===dayCount-1?'disabled':''} title="Move down">▼</button>
     </div>
     <div class="tl-del-cell"><button class="row-del" data-action="delete-tl" title="Remove stop">×</button></div>
   </div>`;
@@ -4886,8 +4951,9 @@ function renderDecisions(){
   STATE.decisions.slice().reverse().forEach(d => {
     const atts = d.attachments || [];
     const row = document.createElement('div');
-    row.className = 'decision-item' + (d.done ? ' done' : '');
+    row.className = 'decision-item dnd-item' + (d.done ? ' done' : '');
     row.dataset.id = d.id;
+    row.dataset.dndId = d.id;
     row.dataset.type = d.type || 'note';
     row.innerHTML = `
       <div class="decision-check-cell"><input type="checkbox" data-action="toggle-decision-done" ${d.done?'checked':''} title="Mark done"></div>
@@ -4909,6 +4975,14 @@ function renderDecisions(){
     card.appendChild(row);
   });
   c.appendChild(card);
+  card._dndBound = false;
+  bindLongPressDnd(card, {
+    itemSelector: '.decision-item.dnd-item',
+    onReorder: (dragId, overId, before) => {
+      STATE.decisions = arrayMoveId(STATE.decisions, dragId, overId, before);
+      scheduleSave('decisions'); renderDecisions();
+    }
+  });
 }
 function addDecision(){
   STATE.decisions.push({id:uid(), date:new Date().toISOString().slice(0,10), text:'', type:'note', done:false, attachments:[]});
@@ -4999,6 +5073,102 @@ document.getElementById('decisions-container').addEventListener('drop', (e) => {
     alert("Couldn't read that drag \u2014 try dragging a file from Finder instead.");
   }
 }, false);
+
+
+/* ============================= LONG-PRESS DnD + ORGANISE ============================= */
+const organiseFlags = { checklist:false, script:false, readings:false, timeline:false, decisions:false, research:false, budget:false };
+function isOrganise(panel){ return !!organiseFlags[panel]; }
+function toggleOrganise(panel, btn){
+  organiseFlags[panel] = !organiseFlags[panel];
+  if(btn) btn.classList.toggle('on', organiseFlags[panel]);
+  if(panel === 'checklist') renderChecklist();
+  else if(panel === 'script'){ renderScript(); renderVows(); renderReadings(); }
+  else if(panel === 'timeline'){ tlOrganise = organiseFlags.timeline; renderTimeline(); const b=document.getElementById('tl-organise-btn'); if(b){ b.classList.toggle('on', tlOrganise); b.textContent = tlOrganise ? '\u2713 Done organising' : '\u00a7 Organise sections'; } }
+  else if(panel === 'decisions') renderDecisions();
+  else if(panel === 'research') renderSuppliers();
+  else if(panel === 'budget') renderBudget();
+}
+function applyPanelTitles(){
+  document.querySelectorAll('h2.section-title[data-title-key]').forEach(el => {
+    const key = el.dataset.titleKey;
+    const custom = STATE.panelTitles && STATE.panelTitles[key];
+    if(custom) el.textContent = custom;
+    if(el.getAttribute('contenteditable') === 'true') return;
+    el.setAttribute('contenteditable', 'true');
+    el.setAttribute('spellcheck', 'true');
+    el.title = 'Click to edit title';
+    el.addEventListener('blur', () => {
+      const v = el.textContent.trim();
+      if(!STATE.panelTitles) STATE.panelTitles = {};
+      if(v) STATE.panelTitles[key] = v; else delete STATE.panelTitles[key];
+      scheduleSave('panelTitles');
+    });
+    el.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); el.blur(); } });
+  });
+}
+function bindLongPressDnd(container, { itemSelector, onReorder }){
+  if(!container || container._dndBound) return;
+  container._dndBound = true;
+  let pressTimer = null, dragging = null, startY = 0, armed = false;
+  const clear = () => {
+    clearTimeout(pressTimer); pressTimer = null; armed = false;
+    if(dragging){ dragging.classList.remove('dnd-dragging', 'dnd-armed'); dragging = null; }
+    container.querySelectorAll('.dnd-over-before,.dnd-over-after').forEach(el => el.classList.remove('dnd-over-before', 'dnd-over-after'));
+  };
+  const targetFromPoint = (x, y) => { const el = document.elementFromPoint(x, y); return el ? el.closest(itemSelector) : null; };
+  container.addEventListener('pointerdown', (e) => {
+    if(e.button != null && e.button !== 0) return;
+    if(e.target.closest('input, textarea, select, button, a, .rich-box, [contenteditable="true"], .fmt-bar, .tl-time')) return;
+    const item = e.target.closest(itemSelector);
+    if(!item || !container.contains(item)) return;
+    startY = e.clientY;
+    pressTimer = setTimeout(() => {
+      armed = true; dragging = item;
+      item.classList.add('dnd-dragging', 'dnd-armed');
+      try{ item.setPointerCapture(e.pointerId); }catch(err){}
+    }, 420);
+  });
+  container.addEventListener('pointermove', (e) => {
+    if(!pressTimer && !armed) return;
+    if(pressTimer && !armed && Math.abs(e.clientY - startY) > 10){ clearTimeout(pressTimer); pressTimer = null; return; }
+    if(!armed || !dragging) return;
+    e.preventDefault();
+    container.querySelectorAll('.dnd-over-before,.dnd-over-after').forEach(el => el.classList.remove('dnd-over-before', 'dnd-over-after'));
+    const over = targetFromPoint(e.clientX, e.clientY);
+    if(over && over !== dragging){
+      const rect = over.getBoundingClientRect();
+      const before = e.clientY < rect.top + rect.height/2;
+      over.classList.add(before ? 'dnd-over-before' : 'dnd-over-after');
+      over._dndBefore = before;
+    }
+  });
+  const finish = (e) => {
+    if(!armed || !dragging){ clear(); return; }
+    const over = container.querySelector('.dnd-over-before, .dnd-over-after');
+    const dragId = dragging.dataset.dndId || dragging.dataset.id || dragging.dataset.phaseId;
+    if(over){
+      const overId = over.dataset.dndId || over.dataset.id || over.dataset.phaseId;
+      const before = !!over._dndBefore;
+      if(dragId && overId && dragId !== overId){ try{ onReorder(dragId, overId, before); }catch(err){ console.error(err); } }
+    }
+    clear();
+  };
+  container.addEventListener('pointerup', finish);
+  container.addEventListener('pointercancel', () => clear());
+}
+function arrayMoveId(arr, dragId, overId, before, idFn){
+  const getId = idFn || (x => x.id);
+  const from = arr.findIndex(x => getId(x) === dragId);
+  let to = arr.findIndex(x => getId(x) === overId);
+  if(from < 0 || to < 0 || from === to) return arr;
+  const copy = arr.slice();
+  const [item] = copy.splice(from, 1);
+  to = copy.findIndex(x => getId(x) === overId);
+  if(to < 0) to = copy.length;
+  if(!before) to += 1;
+  copy.splice(to, 0, item);
+  return copy;
+}
 
 /* ============================= SCRIPT & VOWS ============================= */
 function plainFromHtml(html){
@@ -5118,14 +5288,15 @@ function renderScript(){
   c.innerHTML = '';
   STATE.script.forEach((s, i) => {
     const div = document.createElement('div');
-    div.className = 'script-section';
+    div.className = 'script-section dnd-item';
     div.dataset.id = s.id;
+    div.dataset.dndId = s.id;
     div.innerHTML = `
       <div class="ss-head">
         <input class="ss-title" value="${escapeHtml(s.title || '')}" data-f="title">
         <div class="ss-order">
-          <button data-action="ss-up" ${i===0?'disabled':''}>\u2191</button>
-          <button data-action="ss-down" ${i===STATE.script.length-1?'disabled':''}>\u2193</button>
+          <button class="order-only" data-action="ss-up" ${i===0?'disabled':''}>\u2191</button>
+          <button class="order-only" data-action="ss-down" ${i===STATE.script.length-1?'disabled':''}>\u2193</button>
           <button class="row-del" data-action="ss-del" style="width:20px;height:20px;border:1px solid var(--line);border-radius:2px;">\u00d7</button>
         </div>
       </div>
@@ -5141,6 +5312,17 @@ function renderScript(){
   });
   bindFmtBar(c);
   scheduleRichAutosize(c);
+  c.classList.toggle('organise-mode', isOrganise('script'));
+  c._dndBound = false;
+  bindLongPressDnd(c, {
+    itemSelector: '.script-section.dnd-item',
+    onReorder: (dragId, overId, before) => {
+      STATE.script = arrayMoveId(STATE.script, dragId, overId, before);
+      scheduleSave('script'); renderScript();
+    }
+  });
+  const sob = document.getElementById('script-organise-btn');
+  if(sob) sob.classList.toggle('on', isOrganise('script'));
 }
 function addScriptSection(){
   STATE.script.push({id:uid(), title:'New section', content:''});
@@ -5201,8 +5383,9 @@ function renderReadings(){
   if(STATE.readings.length === 0){ c.innerHTML = '<p style="font-size:13px;color:rgba(43,42,40,.5)">No readings added yet.</p>'; }
   STATE.readings.forEach(r => {
     const div = document.createElement('div');
-    div.className = 'reading-card';
+    div.className = 'reading-card dnd-item';
     div.dataset.id = r.id;
+    div.dataset.dndId = r.id;
     div.innerHTML = `
       <div class="rc-head">
         <input class="rc-title" value="${escapeHtml(r.title || '')}" placeholder="Title / source" data-f="title">
@@ -5221,6 +5404,15 @@ function renderReadings(){
   });
   bindFmtBar(c);
   scheduleRichAutosize(c);
+  c.classList.toggle('organise-mode', isOrganise('script'));
+  c._dndBound = false;
+  bindLongPressDnd(c, {
+    itemSelector: '.reading-card.dnd-item',
+    onReorder: (dragId, overId, before) => {
+      STATE.readings = arrayMoveId(STATE.readings, dragId, overId, before);
+      scheduleSave('readings'); renderReadings();
+    }
+  });
 }
 function addReading(){
   STATE.readings.push({id:uid(), title:'', reader:'', text:''});
