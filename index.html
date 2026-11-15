@@ -1163,7 +1163,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v38.1</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v38.2</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1332,9 +1332,13 @@
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
       <div>
         <h2 class="section-title" data-title-key="timeline">Trip timeline</h2>
-        <p class="section-sub">4–5 December, Edinburgh. Add stops, times and notes as the day takes shape.</p>
+        <p class="section-sub">4–5 December, Edinburgh. Long-press or drag to reorder; use Sort by time to order stops within each day.</p>
       </div>
-      <button class="ghost" onclick="exportTimelinePDF()" style="flex:none;">📄 Export as PDF</button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; flex:none;">
+        <button type="button" class="ghost" id="tl-organise-btn" onclick="toggleTlOrganise()">§ Organise sections</button>
+        <button type="button" class="ghost" onclick="sortTimelineByTime()" title="Order stops by clock time within each day and section">⏱ Sort by time</button>
+        <button type="button" class="ghost" onclick="exportTimelinePDF()">📄 Export as PDF</button>
+      </div>
     </div>
     <div id="timeline-container"></div>
   </section>
@@ -1859,8 +1863,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v38.1';
+const APP_VERSION = 'v38.2';
 const CHANGELOG = [
+  { version:'v38.2', date:'2026-11-15', notes:[
+    'Trip timeline: Sort by time orders stops within each day and section (empty times last)'
+  ]},
   { version:'v38.1', date:'2026-11-09', notes:[
     'Fix GitHub Sync token not saving (especially mobile): Save button was broken by a missing control; token field paste-friendly; clearer status'
   ]},
@@ -4717,6 +4724,59 @@ let tlOrganise = false;
 const tlCollapsed = new Set();
 let tlFocusId = null;
 const isSec = r => r && r.type === 'section';
+
+function tlTimeKey(t){
+  // Sortable key: missing/blank times go last
+  const s = (t || '').trim();
+  if(!s) return '99:99';
+  // Accept HH:MM or H:MM
+  const m = s.match(/^(\d{1,2}):(\d{2})/);
+  if(!m) return '98:' + s;
+  return String(m[1]).padStart(2,'0') + ':' + m[2];
+}
+function sortTimelineByTime(){
+  if(!STATE.timeline || !STATE.timeline.length){
+    showToast('No timeline stops to sort', [], 3000);
+    return;
+  }
+  if(!confirm('Sort stops by time within each day?\n\n\u2022 Stops inside each section are ordered by clock time\n\u2022 Stops without a time go to the end of their group\n\u2022 Section headings stay with their stops')) return;
+
+  const {dateOrder, byDate} = tlGroupByDate();
+  const rebuilt = [];
+
+  dateOrder.forEach(date => {
+    const rows = byDate[date];
+    // Split into blocks: each section + following stops, plus a leading block of stops with no section
+    const blocks = [];
+    let cur = { sec: null, stops: [] };
+    rows.forEach(r => {
+      if(isSec(r)){
+        if(cur.sec || cur.stops.length) blocks.push(cur);
+        cur = { sec: r, stops: [] };
+      } else {
+        cur.stops.push(r);
+      }
+    });
+    if(cur.sec || cur.stops.length) blocks.push(cur);
+
+    blocks.forEach(b => {
+      b.stops.sort((a, c) => {
+        const ka = tlTimeKey(a.time), kc = tlTimeKey(c.time);
+        if(ka !== kc) return ka < kc ? -1 : 1;
+        // stable-ish: keep original relative order via activity name
+        return String(a.activity||'').localeCompare(String(c.activity||''));
+      });
+      if(b.sec) rebuilt.push(b.sec);
+      b.stops.forEach(s => rebuilt.push(s));
+    });
+  });
+
+  STATE.timeline = rebuilt;
+  scheduleSave('timeline');
+  renderTimeline();
+  showToast('Timeline sorted by time', [], 3500);
+}
+
 function toggleTlOrganise(){
   tlOrganise = !tlOrganise;
   organiseFlags.timeline = tlOrganise;
