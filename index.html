@@ -1172,7 +1172,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v39.4</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v39.5</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1875,10 +1875,10 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v39.4';
+const APP_VERSION = 'v39.5';
 const CHANGELOG = [
-  { version:'v39.4', date:'2026-11-15', notes:[
-    'Timeline: fix 12:30 sorting to noon/afternoon (robust time parse + normalize)'
+  { version:'v39.5', date:'2026-11-15', notes:[
+    'Timeline: 12:30 sorts as noon; fixed broken time parser so afternoon order is correct'
   ]},
   { version:'v39.3', date:'2026-11-15', notes:[
     'Timeline: moving a section heading only inserts/moves that heading — stop order is unchanged'
@@ -5062,43 +5062,27 @@ let tlFocusId = null;
 const isSec = r => r && r.type === 'section';
 
 function tlTimeMinutes(t){
-  // Minutes from midnight for sorting. Blank / unparseable times go last.
-  // Robust for: 12:30, 12:30:00, 9:05, 12.30, 12:30pm, unicode colons, RTL marks.
+  // Minutes from midnight. Blank/unparseable times sort last.
+  // 12:30 => noon (750). Supports 12:30:00, 9:05, 12.30, 1:00pm, 12:30am.
   let s = String(t == null ? '' : t).trim();
   if(!s) return 100000;
-  s = s.replace(/[\u200e\u200f\u202a-\u202e\u00a0]/g, '').toLowerCase();
-  s = s.replace(/[.\uFF0E]/g, ':').replace(/\uFF1A/g, ':');
+  s = s.replace(/[‎‏‪-‮ ]/g, '').toLowerCase();
+  s = s.replace(/[.．]/g, ':').replace(/：/g, ':');
 
-  // Fast path: pure 24h from <input type="time">
+  const apm = s.match(/(am|pm)\s*$/);
+  const mer = apm ? apm[1] : '';
+  if(apm) s = s.slice(0, apm.index).trim();
+
   let m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-  if(m){
-    const h = parseInt(m[1], 10), min = parseInt(m[2], 10);
-    if(!isNaN(h) && !isNaN(min) && h >= 0 && h <= 23 && min >= 0 && min <= 59) return h * 60 + min;
-  }
+  if(!m) m = s.match(/^(\d{1,2})$/);
+  if(!m) return 99999;
 
-  const ap = s.match(/\b(am|pm)\b/);
-  m = s.match(/(\d{1,2})\s*[:h]\s*(\d{2})/);
-  if(!m){
-    // bare hour e.g. "12" or "12pm"
-    m = s.match(/(\d{1,2})\s*(am|pm)?$/);
-    if(m){
-      let h = parseInt(m[1], 10);
-      if(isNaN(h) || h > 23) return 99999;
-      const mer = (m[2] || (ap && ap[1]) || '');
-      if(mer === 'pm' && h < 12) h += 12;
-      if(mer === 'am' && h === 12) h = 0;
-      return h * 60;
-    }
-    return 99999;
-  }
   let h = parseInt(m[1], 10);
-  let min = parseInt(m[2], 10);
-  if(isNaN(h) || isNaN(min) || min > 59 || h > 23) return 99999;
-  if(ap){
-    // 12-hour clock: 12:30pm -> 12:30, 12:30am -> 00:30, 1:00pm -> 13:00
-    if(ap[1] === 'pm' && h < 12) h += 12;
-    if(ap[1] === 'am' && h === 12) h = 0;
-  }
+  let min = m[2] != null ? parseInt(m[2], 10) : 0;
+  if(isNaN(h) || isNaN(min) || min < 0 || min > 59 || h < 0 || h > 23) return 99999;
+
+  if(mer === 'pm' && h < 12) h += 12;
+  if(mer === 'am' && h === 12) h = 0;
   return h * 60 + min;
 }
 function tlNormalizeTimeValue(t){
@@ -5369,7 +5353,7 @@ document.getElementById('timeline-container').addEventListener('input', (e) => {
   const row = e.target.closest('.tl-row, .tl-section'); if(!row) return;
   const r = STATE.timeline.find(x => x.id === row.dataset.id); if(!r) return;
   r[e.target.dataset.f] = e.target.value;
-    if(f === 'time'){ r.time = tlNormalizeTimeValue(r.time); e.target.value = r.time || ''; }
+  if(e.target.dataset.f === 'time'){ r.time = tlNormalizeTimeValue(r.time); e.target.value = r.time || ''; }
   if(e.target.classList.contains('tl-act') || e.target.classList.contains('tl-sec-note')) tlAutosize();
   scheduleSave('timeline');
   refreshTlMeta();
