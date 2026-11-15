@@ -1163,7 +1163,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v38.3</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v38.4</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1863,10 +1863,10 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v38.3';
+const APP_VERSION = 'v38.4';
 const CHANGELOG = [
-  { version:'v38.3', date:'2026-11-15', notes:[
-    'Timeline: moving a section heading no longer moves the stops under it'
+  { version:'v38.4', date:'2026-11-15', notes:[
+    'Timeline Sort by time: fix ordering (e.g. 12:30); sort all stops in the day by clock time, not only within each section'
   ]},
   { version:'v38.2', date:'2026-11-15', notes:[
     'Trip timeline: Sort by time orders stops within each day and section (empty times last)'
@@ -4728,49 +4728,75 @@ const tlCollapsed = new Set();
 let tlFocusId = null;
 const isSec = r => r && r.type === 'section';
 
-function tlTimeKey(t){
-  // Sortable key: missing/blank times go last
-  const s = (t || '').trim();
-  if(!s) return '99:99';
-  // Accept HH:MM or H:MM
-  const m = s.match(/^(\d{1,2}):(\d{2})/);
-  if(!m) return '98:' + s;
-  return String(m[1]).padStart(2,'0') + ':' + m[2];
+function tlTimeMinutes(t){
+  // Minutes from midnight for sorting. Blank times sort last.
+  // Handles HH:MM, HH:MM:SS, optional am/pm, and 12.30-style dots.
+  let s = String(t == null ? '' : t).trim().toLowerCase();
+  if(!s) return 100000;
+  s = s.replace(/\./g, ':');
+  const ap = s.match(/(am|pm)/);
+  const m = s.match(/(\d{1,2})\s*:\s*(\d{2})(?:\s*:\s*(\d{2}))?/);
+  if(!m) return 99999;
+  let h = parseInt(m[1], 10);
+  let min = parseInt(m[2], 10);
+  if(isNaN(h) || isNaN(min) || h > 23 || min > 59) return 99999;
+  if(ap){
+    if(ap[1] === 'pm' && h < 12) h += 12;
+    if(ap[1] === 'am' && h === 12) h = 0;
+  }
+  return h * 60 + min;
 }
 function sortTimelineByTime(){
   if(!STATE.timeline || !STATE.timeline.length){
     showToast('No timeline stops to sort', [], 3000);
     return;
   }
-  if(!confirm('Sort stops by time within each day?\n\n\u2022 Stops inside each section are ordered by clock time\n\u2022 Stops without a time go to the end of their group\n\u2022 Section headings stay with their stops')) return;
+  if(!confirm('Sort all stops by clock time within each day?
+
+• Every stop on the day is ordered by time (e.g. 09:00, 12:30, 14:00)
+• Section headings stay with their stops (placed before the first of those stops)
+• Stops with no time go to the end')) return;
 
   const {dateOrder, byDate} = tlGroupByDate();
   const rebuilt = [];
 
   dateOrder.forEach(date => {
     const rows = byDate[date];
-    // Split into blocks: each section + following stops, plus a leading block of stops with no section
-    const blocks = [];
-    let cur = { sec: null, stops: [] };
+    let currentSec = null;
+    const sectionsById = {};
+    const stopToSec = {};
+    const stops = [];
+    const sectionOrder = [];
+
     rows.forEach(r => {
       if(isSec(r)){
-        if(cur.sec || cur.stops.length) blocks.push(cur);
-        cur = { sec: r, stops: [] };
+        currentSec = r;
+        sectionsById[r.id] = r;
+        sectionOrder.push(r.id);
       } else {
-        cur.stops.push(r);
+        stops.push(r);
+        if(currentSec) stopToSec[r.id] = currentSec.id;
       }
     });
-    if(cur.sec || cur.stops.length) blocks.push(cur);
 
-    blocks.forEach(b => {
-      b.stops.sort((a, c) => {
-        const ka = tlTimeKey(a.time), kc = tlTimeKey(c.time);
-        if(ka !== kc) return ka < kc ? -1 : 1;
-        // stable-ish: keep original relative order via activity name
-        return String(a.activity||'').localeCompare(String(c.activity||''));
-      });
-      if(b.sec) rebuilt.push(b.sec);
-      b.stops.forEach(s => rebuilt.push(s));
+    stops.sort((a, b) => {
+      const da = tlTimeMinutes(a.time) - tlTimeMinutes(b.time);
+      if(da !== 0) return da;
+      return String(a.activity||'').localeCompare(String(b.activity||''));
+    });
+
+    const emittedSec = new Set();
+    stops.forEach(s => {
+      const sid = stopToSec[s.id];
+      if(sid && !emittedSec.has(sid) && sectionsById[sid]){
+        rebuilt.push(sectionsById[sid]);
+        emittedSec.add(sid);
+      }
+      rebuilt.push(s);
+    });
+    // Empty sections (no stops) keep their relative order at the end of the day
+    sectionOrder.forEach(sid => {
+      if(!emittedSec.has(sid) && sectionsById[sid]) rebuilt.push(sectionsById[sid]);
     });
   });
 
@@ -4826,7 +4852,7 @@ function renderTimeline(){
         const secs = rows.filter(isSec);
         const sIdx = secs.findIndex(x => x.id === r.id);
         return `<div class="tl-section ${hidden?'collapsed':''}" data-id="${r.id}" data-tl-kind="section">
-          <span class="tl-drag-handle" draggable="true" title="Drag heading only — stops stay put" aria-label="Drag section">⋮⋮</span>
+          <span class="tl-drag-handle" draggable="true" title="Drag to reorder section" aria-label="Drag section">⋮⋮</span>
           <button class="tl-sec-toggle" data-action="tl-sec-toggle" title="${hidden?'Expand':'Collapse'} section" aria-expanded="${!hidden}">▾</button>
           <span class="tl-sec-badge">${secNo}</span>
           <div class="tl-sec-main">
@@ -4835,8 +4861,8 @@ function renderTimeline(){
           </div>
           <span class="tl-sec-meta">${escapeHtml(tlSectionMeta(rows, r.id))}</span>
           <div class="tl-sec-ctrls">
-            ${tlOrganise ? `<button data-action="tl-sec-up" ${sIdx===0?'disabled':''} title="Move heading up (stops stay put)">▲</button>
-            <button data-action="tl-sec-down" ${sIdx===secs.length-1?'disabled':''} title="Move heading down (stops stay put)">▼</button>` : ''}
+            ${tlOrganise ? `<button data-action="tl-sec-up" ${sIdx===0?'disabled':''} title="Move whole section up">▲</button>
+            <button data-action="tl-sec-down" ${sIdx===secs.length-1?'disabled':''} title="Move whole section down">▼</button>` : ''}
             <button class="tl-sec-del" data-action="tl-sec-del" title="Remove heading (stops are kept)">×</button>
           </div>
         </div>`;
@@ -4904,14 +4930,20 @@ function tlAutosize(root){
 }
 function tlNewSection(){ return {id:uid(), type:'section', title:'', note:''}; }
 function tlMoveSection(secId, dir){
-  // Move the heading only — stops under it stay where they are
-  const idx = STATE.timeline.findIndex(x => x.id === secId);
-  if(idx < 0) return;
-  const target = idx + dir;
-  if(target < 0 || target >= STATE.timeline.length) return;
-  if(STATE.timeline[target].date !== STATE.timeline[idx].date) return;
-  const [item] = STATE.timeline.splice(idx, 1);
-  STATE.timeline.splice(target, 0, item);
+  const date = STATE.timeline.find(x => x.id === secId).date;
+  const slots = [], rows = [];
+  STATE.timeline.forEach((x, i) => { if(x.date === date){ slots.push(i); rows.push(x); } });
+  const blocks = [];
+  rows.forEach(r => {
+    if(isSec(r) || !blocks.length) blocks.push({sec:isSec(r), rows:[r]});
+    else blocks[blocks.length-1].rows.push(r);
+  });
+  const bi = blocks.findIndex(b => b.sec && b.rows[0].id === secId);
+  const oi = bi + dir;
+  if(oi < 0 || oi >= blocks.length || !blocks[oi].sec) return;
+  [blocks[bi], blocks[oi]] = [blocks[oi], blocks[bi]];
+  const flat = blocks.flatMap(b => b.rows);
+  slots.forEach((slot, k) => { STATE.timeline[slot] = flat[k]; });
 }
 document.getElementById('timeline-container').addEventListener('click', (e) => {
   const addBtn = e.target.closest('[data-add-day]');
@@ -5033,23 +5065,42 @@ document.getElementById('timeline-container').addEventListener('drop', (e) => {
   renderTimeline();
 });
 function tlSectionBlockIds(secId){
-  // Kept for any callers; section moves no longer use the block
-  return [secId];
+  const idx = STATE.timeline.findIndex(x => x.id === secId);
+  if(idx < 0) return [secId];
+  const ids = [secId];
+  for(let i = idx + 1; i < STATE.timeline.length; i++){
+    if(isSec(STATE.timeline[i])) break;
+    ids.push(STATE.timeline[i].id);
+  }
+  return ids;
 }
 function tlReorderByDrag(dragId, targetId, kind){
-  // Always move a single row (heading or stop). Section headings do not take their stops with them.
   const dragIdx = STATE.timeline.findIndex(x => x.id === dragId);
   const targetIdx = STATE.timeline.findIndex(x => x.id === targetId);
-  if(dragIdx < 0 || targetIdx < 0 || dragId === targetId) return;
+  if(dragIdx < 0 || targetIdx < 0) return;
   const dragItem = STATE.timeline[dragIdx];
   const targetItem = STATE.timeline[targetIdx];
   if(dragItem.date && targetItem.date && dragItem.date !== targetItem.date){
-    dragItem.date = targetItem.date;
+    if(kind === 'section' || isSec(dragItem)){
+      const blockIds = new Set(tlSectionBlockIds(dragId));
+      STATE.timeline.forEach(x => { if(blockIds.has(x.id)) x.date = targetItem.date; });
+    } else {
+      dragItem.date = targetItem.date;
+    }
   }
-  const [moved] = STATE.timeline.splice(dragIdx, 1);
-  let insertAt = STATE.timeline.findIndex(x => x.id === targetId);
-  if(insertAt < 0) insertAt = STATE.timeline.length;
-  STATE.timeline.splice(insertAt, 0, moved);
+  if(kind === 'section' || isSec(dragItem)){
+    const blockIds = tlSectionBlockIds(dragId);
+    const block = STATE.timeline.filter(x => blockIds.includes(x.id));
+    STATE.timeline = STATE.timeline.filter(x => !blockIds.includes(x.id));
+    let insertAt = STATE.timeline.findIndex(x => x.id === targetId);
+    if(insertAt < 0) insertAt = STATE.timeline.length;
+    STATE.timeline.splice(insertAt, 0, ...block);
+  } else {
+    const [moved] = STATE.timeline.splice(dragIdx, 1);
+    let insertAt = STATE.timeline.findIndex(x => x.id === targetId);
+    if(insertAt < 0) insertAt = STATE.timeline.length;
+    STATE.timeline.splice(insertAt, 0, moved);
+  }
 }
 
 /* ============================= DECISIONS ============================= */
