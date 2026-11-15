@@ -603,8 +603,17 @@
   .budget-notes-row td{ padding:0 8px 10px 8px; border-bottom:1px solid var(--line); }
   .budget-notes-row textarea{
     width:100%; font-family:'Source Serif 4', serif; font-size:13px; border:1px solid var(--line);
-    border-radius:2px; padding:8px; background:transparent; resize:vertical; min-height:52px; color:var(--ink);
-    overflow:hidden;
+    border-radius:2px; padding:8px; background:transparent; resize:none; min-height:52px; color:var(--ink);
+    overflow:hidden; line-height:1.45; field-sizing:content; box-sizing:border-box;
+  }
+  #budget-table textarea.budget-cell-text{
+    width:100%; min-width:0; min-height:28px; font-family:'Source Serif 4', serif; font-size:13.5px;
+    border:1px solid transparent; background:transparent; padding:4px 5px; border-radius:2px;
+    color:var(--ink); resize:none; overflow:hidden; line-height:1.35; field-sizing:content;
+    box-sizing:border-box; display:block;
+  }
+  #budget-table textarea.budget-cell-text:focus{
+    border-color:var(--line); background:#fff; outline:none;
   }
   .budget-notes-row textarea:focus{ outline:none; border-color:var(--holyrood); }
   .budget-link-row{ display:flex; gap:6px; align-items:center; margin:8px 0; }
@@ -1163,7 +1172,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v38.4</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v38.5</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1863,8 +1872,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v38.4';
+const APP_VERSION = 'v38.5';
 const CHANGELOG = [
+  { version:'v38.5', date:'2026-11-15', notes:[
+    'Budget: category, item and notes boxes auto-resize to fit text and keep that size when you reopen the tab'
+  ]},
   { version:'v38.4', date:'2026-11-15', notes:[
     'Timeline Sort by time: fix ordering (e.g. 12:30); sort all stops in the day by clock time, not only within each section'
   ]},
@@ -3156,6 +3168,7 @@ document.getElementById('tabs').addEventListener('click', (e) => {
   document.querySelectorAll('section.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + activePanel).classList.add('active');
   if(activePanel === 'script') scheduleRichAutosize(document.getElementById('panel-script'));
+  if(activePanel === 'budget') scheduleBudgetAutosize();
 });
 
 
@@ -3188,6 +3201,7 @@ function goToPanel(id){
   document.getElementById('panel-' + id).classList.add('active');
   window.scrollTo({top:0, behavior:'auto'});
   if(id === 'script') scheduleRichAutosize(document.getElementById('panel-script'));
+  if(id === 'budget') scheduleBudgetAutosize();
 }
 function renderBottomNav(){
   document.body.dataset.panel = activePanel;
@@ -3804,8 +3818,24 @@ function rowBalance(r){
 }
 function autoGrowTextarea(el){
   if(!el) return;
-  el.style.height = 'auto';
-  el.style.height = (el.scrollHeight + 2) + 'px';
+  // Skip measure while parent is display:none (collapsed notes / inactive panel)
+  const notesRow = el.closest('.budget-notes-row');
+  if(notesRow && !notesRow.classList.contains('open')) return;
+  const panel = el.closest('section.panel');
+  if(panel && !panel.classList.contains('active')) return;
+  const min = parseInt(getComputedStyle(el).minHeight, 10) || 28;
+  el.style.height = '0px';
+  el.style.height = Math.max(min, el.scrollHeight) + 'px';
+}
+function scheduleBudgetAutosize(){
+  const run = () => {
+    document.querySelectorAll('#budget-body textarea.budget-notes-textarea, #budget-body textarea.budget-cell-text').forEach(autoGrowTextarea);
+  };
+  run();
+  requestAnimationFrame(() => { run(); requestAnimationFrame(run); });
+  setTimeout(run, 50);
+  setTimeout(run, 200);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(run).catch(()=>{});
 }
 function renderBudget(){
   const body = document.getElementById('budget-body');
@@ -3823,8 +3853,8 @@ function renderBudget(){
     else if(bal <= 0){ balHtml = '£0 clear'; balClass = 'clear'; }
     else{ balHtml = '£'+bal.toLocaleString('en-GB',{maximumFractionDigits:0})+' due'; balClass = 'due'; }
     mainRow.innerHTML = `
-      <td><input value="${escapeHtml(r.category||'')}" data-f="category"></td>
-      <td><input value="${escapeHtml(r.item||'')}" data-f="item" style="min-width:0;"></td>
+      <td><textarea class="budget-cell-text" rows="1" data-f="category" placeholder="Category">${escapeHtml(r.category||'')}</textarea></td>
+      <td><textarea class="budget-cell-text" rows="1" data-f="item" placeholder="Item / description">${escapeHtml(r.item||'')}</textarea></td>
       <td><input class="num" type="number" value="${r.est||''}" data-f="est"></td>
       <td><input class="num" type="number" value="${r.actual||''}" data-f="actual"></td>
       <td><input class="num ${isPaid?'synced':''}" type="number" value="${r.deposit||''}" data-f="deposit" ${isPaid?'readonly title="Locked — matches total agreed while status is Paid in full"':''}></td>
@@ -3867,7 +3897,7 @@ function renderBudget(){
       </div>
     </td>`;
     body.appendChild(notesRow);
-    if(r.expanded) autoGrowTextarea(notesRow.querySelector('.budget-notes-textarea'));
+    if(r.expanded){ autoGrowTextarea(notesRow.querySelector('.budget-notes-textarea')); scheduleBudgetAutosize(); }
   });
   renderBudgetTotals();
   preloadAttachments();
@@ -3936,7 +3966,7 @@ document.getElementById('budget-body').addEventListener('input', (e) => {
     const anchor = notesRow ? notesRow.querySelector('a.link-open') : null;
     if(anchor){ const raw = e.target.value.trim(); anchor.href = raw ? (/^https?:\/\//i.test(raw)?raw:'https://'+raw) : '#'; }
   }
-  if(f === 'notes'){
+  if(f === 'notes' || f === 'category' || f === 'item'){
     autoGrowTextarea(e.target);
   }
 
