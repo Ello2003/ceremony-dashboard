@@ -1172,7 +1172,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v38.5</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v39</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1435,7 +1435,10 @@
 
   <!-- PHOTO LOCATIONS -->
   <section class="panel" id="panel-photos">
-    <h2 class="section-title" data-title-key="photos">Photos</h2>
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:4px;">
+      <h2 class="section-title" data-title-key="photos" style="margin-bottom:0;">Photos</h2>
+      <button type="button" class="ghost" onclick="exportPhotographerPDF()" title="PDF for the photographer: timeline, locations and shot list">📄 Photographer pack (PDF)</button>
+    </div>
     <div class="photos-subtabs" id="photos-subtabs">
       <button class="photos-subtab" data-subtab="locations" onclick="setPhotosSubTab('locations')">Locations</button>
       <button class="photos-subtab" data-subtab="ideas" onclick="setPhotosSubTab('ideas')">Shot list</button>
@@ -1872,8 +1875,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v38.5';
+const APP_VERSION = 'v39';
 const CHANGELOG = [
+  { version:'v39', date:'2026-11-15', notes:[
+    'Photos: Photographer pack PDF — styled brief with day timeline, locations (notes + inspiration images) and shot list'
+  ]},
   { version:'v38.5', date:'2026-11-15', notes:[
     'Budget: category, item and notes boxes auto-resize to fit text and keep that size when you reopen the tab'
   ]},
@@ -4753,6 +4759,355 @@ function exportTimelinePDF(){
   });
   openPdfViewer(doc.output('bloburl'), 'Trip Timeline.pdf');
 }
+
+async function exportPhotographerPDF(){
+  if(typeof window.jspdf === 'undefined'){
+    alert("PDF library didn\'t load \u2014 check your connection and try again.");
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'pt', format:'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const mx = 48;
+  const contentW = pageW - mx * 2;
+  // Brand colours matching the dashboard
+  const ink = [43, 42, 40];
+  const holyrood = [46, 99, 103];
+  const gold = [198, 151, 90];
+  const heather = [110, 90, 140];
+  const muted = [110, 108, 105];
+  const parchment = [246, 241, 233];
+  const card = [252, 249, 244];
+
+  let y = 0;
+  const ensure = (need) => {
+    if(y + need > pageH - 52){
+      doc.addPage();
+      drawPageChrome();
+      y = 64;
+    }
+  };
+  const drawPageChrome = () => {
+    doc.setFillColor(...parchment);
+    doc.rect(0, 0, pageW, pageH, 'F');
+    doc.setFillColor(...holyrood);
+    doc.rect(0, 0, pageW, 6, 'F');
+    doc.setFillColor(...gold);
+    doc.rect(0, 6, pageW, 2, 'F');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...muted);
+    doc.text('Graeme & Rebecca  \u00b7  Edinburgh  \u00b7  5 December 2026  \u00b7  Photographer reference', mx, pageH - 28);
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.6);
+    doc.line(mx, pageH - 38, pageW - mx, pageH - 38);
+  };
+  const h1 = (t) => {
+    ensure(36);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(...holyrood);
+    doc.text(t, mx, y);
+    y += 8;
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(1.2);
+    doc.line(mx, y, mx + Math.min(160, contentW * 0.4), y);
+    y += 18;
+  };
+  const body = (t, size=10, color=ink, style='normal') => {
+    doc.setFont('helvetica', style);
+    doc.setFontSize(size);
+    doc.setTextColor(...color);
+    const lines = doc.splitTextToSize(String(t || ''), contentW);
+    lines.forEach(line => { ensure(14); doc.text(line, mx, y); y += 13; });
+  };
+  const mutedLine = (t) => body(t, 9, muted, 'italic');
+
+  // Load image to JPEG data URL for jsPDF (handles data: and http(s))
+  const loadImg = (src) => new Promise((resolve) => {
+    if(!src){ resolve(null); return; }
+    const img = new Image();
+    try{ img.crossOrigin = 'anonymous'; }catch(e){}
+    const timer = setTimeout(() => resolve(null), 8000);
+    img.onload = () => {
+      clearTimeout(timer);
+      try{
+        const maxW = 900;
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        if(!w || !h){ resolve(null); return; }
+        if(w > maxW){ h = Math.round(h * maxW / w); w = maxW; }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve({ data: c.toDataURL('image/jpeg', 0.7), w, h });
+      }catch(err){ resolve(null); }
+    };
+    img.onerror = () => { clearTimeout(timer); resolve(null); };
+    img.src = src;
+  });
+
+  showToast('Building photographer pack\u2026', [], 4000);
+
+  // ===== COVER =====
+  drawPageChrome();
+  y = 120;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor(...gold);
+  doc.text('PHOTOGRAPHER REFERENCE PACK', mx, y); y += 28;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(28);
+  doc.setTextColor(...ink);
+  doc.text('Graeme & Rebecca', mx, y); y += 34;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(13);
+  doc.setTextColor(...holyrood);
+  doc.text('Edinburgh  \u00b7  Ceremony 5 December 2026', mx, y); y += 22;
+  doc.setDrawColor(...gold);
+  doc.setLineWidth(1.5);
+  doc.line(mx, y, mx + 120, y); y += 28;
+  doc.setFontSize(11);
+  doc.setTextColor(...muted);
+  const intro = 'This pack gathers the day timeline, preferred photo locations, and a shot list so you have one clear brief. Times and places may flex with December light and weather \u2014 treat this as the shared plan, not a rigid call sheet.';
+  doc.splitTextToSize(intro, contentW).forEach(line => { doc.text(line, mx, y); y += 15; });
+  y += 24;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(...holyrood);
+  doc.text('Contents', mx, y); y += 16;
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...ink);
+  ['1. Day timeline', '2. Photo locations', '3. Shot list'].forEach(item => {
+    doc.text(item, mx + 8, y); y += 14;
+  });
+
+  // ===== 1. TIMELINE =====
+  doc.addPage(); drawPageChrome(); y = 64;
+  h1('1. Day timeline');
+  mutedLine('Stops and sections from the Trip timeline board.');
+  y += 8;
+  const {dateOrder, byDate} = tlGroupByDate();
+  if(!dateOrder.length){
+    mutedLine('No timeline entries yet.');
+  }
+  dateOrder.forEach(date => {
+    ensure(40);
+    doc.setFillColor(...holyrood);
+    doc.roundedRect(mx - 4, y - 12, contentW + 8, 22, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(255, 255, 255);
+    doc.text(String(date), mx + 6, y + 2);
+    y += 28;
+    let secNo = 0;
+    (byDate[date] || []).forEach(r => {
+      if(r.type === 'section'){
+        secNo++;
+        ensure(36);
+        doc.setFillColor(232, 240, 240);
+        doc.rect(mx - 4, y - 12, contentW + 8, 20, 'F');
+        doc.setFillColor(...gold);
+        doc.rect(mx - 4, y - 12, 3, 20, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10.5);
+        doc.setTextColor(...holyrood);
+        doc.text(`${secNo}. ${(r.title || 'Section').toUpperCase()}`, mx + 8, y + 1);
+        y += 22;
+        if(r.note){
+          doc.setFont('helvetica', 'italic');
+          doc.setFontSize(9);
+          doc.setTextColor(...muted);
+          doc.splitTextToSize(r.note, contentW - 12).forEach(line => { ensure(12); doc.text(line, mx + 8, y); y += 12; });
+          y += 4;
+        }
+        return;
+      }
+      ensure(28);
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...heather);
+      doc.text(r.time || '\u2014', mx, y);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(...ink);
+      const actLines = doc.splitTextToSize(r.activity || '(untitled stop)', contentW - 56);
+      actLines.forEach((line, i) => { if(i) ensure(13); doc.text(line, mx + 56, y); if(i < actLines.length - 1) y += 13; });
+      y += 14;
+      if(r.notes){
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(9);
+        doc.setTextColor(...muted);
+        doc.splitTextToSize(r.notes, contentW - 56).forEach(line => { ensure(12); doc.text(line, mx + 56, y); y += 12; });
+        y += 4;
+      }
+      y += 6;
+    });
+    y += 10;
+  });
+
+  // ===== 2. LOCATIONS =====
+  doc.addPage(); drawPageChrome(); y = 64;
+  h1('2. Photo locations');
+  mutedLine('Preferred spots, practical notes, and inspiration images from the board.');
+  y += 10;
+  const locs = STATE.photoLocations || [];
+  if(!locs.length){
+    mutedLine('No locations added yet.');
+  }
+  for(const loc of locs){
+    ensure(70);
+    // Card background
+    const cardTop = y - 14;
+    doc.setFillColor(...card);
+    doc.setDrawColor(220, 214, 204);
+    doc.setLineWidth(0.8);
+    // height estimated later \u2014 draw title band first
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...ink);
+    doc.text(loc.name || 'Untitled location', mx, y);
+    y += 16;
+    const meta = [];
+    if(loc.status) meta.push(String(loc.status).replace(/_/g, ' '));
+    if(loc.distance) meta.push(loc.distance);
+    if((loc.tags || []).length) meta.push((loc.tags || []).join(', '));
+    if(loc.rating) meta.push('\u2605'.repeat(Math.min(5, loc.rating || 0)));
+    if(meta.length){
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...holyrood);
+      doc.text(meta.join('  \u00b7  '), mx, y);
+      y += 14;
+    }
+    if(loc.link){
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...heather);
+      const linkLines = doc.splitTextToSize(loc.link, contentW);
+      linkLines.forEach(line => { ensure(11); doc.text(line, mx, y); y += 11; });
+      y += 4;
+    }
+    if(loc.notes){
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(...ink);
+      doc.splitTextToSize(loc.notes, contentW).forEach(line => { ensure(13); doc.text(line, mx, y); y += 13; });
+      y += 6;
+    }
+    if((loc.shots || []).length){
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(...holyrood);
+      ensure(14); doc.text('Specific shots here', mx, y); y += 12;
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...ink);
+      (loc.shots || []).forEach(s => {
+        const label = typeof s === 'string' ? s : (s.text || s.name || '');
+        if(!label) return;
+        ensure(12);
+        doc.text('\u2022  ' + label, mx + 4, y);
+        y += 12;
+      });
+      y += 4;
+    }
+    // Images row (up to 3)
+    const imgs = (loc.images || []).slice(0, 3);
+    if(imgs.length){
+      ensure(120);
+      const gap = 10;
+      const thumbW = Math.min(150, (contentW - gap * (imgs.length - 1)) / imgs.length);
+      let x = mx;
+      let rowH = 0;
+      for(const im of imgs){
+        const loaded = await loadImg(im.src);
+        if(!loaded) continue;
+        const scale = thumbW / loaded.w;
+        const th = loaded.h * scale;
+        rowH = Math.max(rowH, th);
+        ensure(th + 8);
+        try{
+          doc.addImage(loaded.data, 'JPEG', x, y, thumbW, th);
+        }catch(e){}
+        x += thumbW + gap;
+      }
+      y += rowH + 12;
+    }
+    // separator
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.5);
+    ensure(16);
+    doc.line(mx, y, pageW - mx, y);
+    y += 18;
+  }
+
+  // ===== 3. SHOT LIST =====
+  doc.addPage(); drawPageChrome(); y = 64;
+  h1('3. Shot list');
+  mutedLine('Compositions and moments to aim for. Ticked items are priorities marked on the board.');
+  y += 10;
+  const ideas = STATE.photoIdeas || [];
+  const order = (STATE.photoIdeaCategoryOrder || []).slice();
+  const groups = {};
+  ideas.forEach(i => { (groups[i.category || 'Other'] = groups[i.category || 'Other'] || []).push(i); });
+  Object.keys(groups).forEach(cat => { if(!order.includes(cat)) order.push(cat); });
+  order.forEach(cat => {
+    const list = groups[cat];
+    if(!list || !list.length) return;
+    ensure(28);
+    doc.setFillColor(...holyrood);
+    doc.roundedRect(mx - 4, y - 11, contentW + 8, 18, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text(String(cat).toUpperCase(), mx + 6, y + 1);
+    y += 22;
+    list.forEach(idea => {
+      ensure(18);
+      const mark = idea.done ? '[x]' : '[ ]';
+      doc.setFont('courier', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(...holyrood);
+      doc.text(mark, mx, y);
+      doc.setFont('helvetica', idea.done ? 'normal' : 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(...ink);
+      const lines = doc.splitTextToSize(idea.text || '', contentW - 28);
+      lines.forEach((line, i) => {
+        if(i) ensure(13);
+        doc.text(line, mx + 28, y);
+        if(i < lines.length - 1) y += 13;
+      });
+      y += 15;
+      // optional first example image small
+      if((idea.images || []).length){
+        // skip embedding every idea image to keep file light \u2014 note count only
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(8);
+        doc.setTextColor(...muted);
+        ensure(11);
+        doc.text(`(${idea.images.length} reference image${idea.images.length===1?'':'s'} on the board)`, mx + 28, y);
+        y += 12;
+      }
+    });
+    y += 8;
+  });
+
+  // Footer note on last content
+  ensure(40);
+  y += 10;
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(9);
+  doc.setTextColor(...muted);
+  doc.splitTextToSize('Generated from the ceremony dashboard. Please check the latest version with Graeme & Rebecca before the day if anything changes.', contentW).forEach(line => {
+    ensure(12); doc.text(line, mx, y); y += 12;
+  });
+
+  openPdfViewer(doc.output('bloburl'), 'Photographer-Reference-Graeme-Rebecca.pdf');
+  showToast('Photographer pack ready', [], 3500);
+}
+
 let tlOrganise = false;
 const tlCollapsed = new Set();
 let tlFocusId = null;
