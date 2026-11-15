@@ -420,7 +420,10 @@
     line-height:1.4; letter-spacing:-0.01em; min-height:28px;
   }
   .tl-main textarea.tl-act::placeholder{ font-weight:400; font-style:normal; color:rgba(43,42,40,0.35); }
-  .tl-main textarea[data-f="notes"]{ font-size:12.5px; font-weight:400; font-style:italic; color:rgba(43,42,40,0.6); }
+  .tl-main textarea[data-f="notes"], .tl-main textarea.tl-notes{
+    font-size:12.5px; font-weight:400; font-style:italic; color:rgba(43,42,40,0.6);
+    min-height:22px; overflow:hidden; resize:none; field-sizing:content; box-sizing:border-box;
+  }
   .tl-main textarea:focus{ outline:none; color:var(--ink); font-style:normal; }
   .tl-del-cell{ display:flex; align-items:center; justify-content:center; padding:0 8px; }
   .tl-drag-handle{
@@ -1172,7 +1175,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v39.3</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v39.7</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1875,8 +1878,14 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v39.3';
+const APP_VERSION = 'v39.7';
 const CHANGELOG = [
+  { version:'v39.7', date:'2026-11-15', notes:[
+    'Timeline notes auto-resize to fit content; 12:30 time sort parser kept intact'
+  ]},
+  { version:'v39.6', date:'2026-11-15', notes:[
+    'Timeline notes (and activity) boxes auto-resize to fit text and keep that size when reopening the tab'
+  ]},
   { version:'v39.3', date:'2026-11-15', notes:[
     'Timeline: moving a section heading only inserts/moves that heading — stop order is unchanged'
   ]},
@@ -3184,6 +3193,7 @@ document.getElementById('tabs').addEventListener('click', (e) => {
   document.getElementById('panel-' + activePanel).classList.add('active');
   if(activePanel === 'script') scheduleRichAutosize(document.getElementById('panel-script'));
   if(activePanel === 'budget') scheduleBudgetAutosize();
+  if(activePanel === 'timeline') scheduleTlAutosize();
 });
 
 
@@ -3217,6 +3227,7 @@ function goToPanel(id){
   window.scrollTo({top:0, behavior:'auto'});
   if(id === 'script') scheduleRichAutosize(document.getElementById('panel-script'));
   if(id === 'budget') scheduleBudgetAutosize();
+  if(id === 'timeline') scheduleTlAutosize();
 }
 function renderBottomNav(){
   document.body.dataset.panel = activePanel;
@@ -5231,8 +5242,7 @@ function renderTimeline(){
   const addDay = document.createElement('div');
   addDay.innerHTML = `<button class="ghost" data-action="add-new-day" style="margin-top:6px;">+ Add a day</button>`;
   c.appendChild(addDay);
-  tlAutosize();
-  requestAnimationFrame(() => tlAutosize());
+  scheduleTlAutosize();
   if(tlFocusId){
     const el = c.querySelector(`.tl-section[data-id="${tlFocusId}"] .tl-sec-title`);
     tlFocusId = null;
@@ -5247,7 +5257,7 @@ function timelineRowHtml(r, posInDay, dayCount){
     </div>
     <div class="tl-main">
       <textarea class="tl-act" rows="1" placeholder="What's happening" data-f="activity">${escapeHtml(r.activity||'')}</textarea>
-      <textarea placeholder="Notes…" data-f="notes" rows="1">${escapeHtml(r.notes||'')}</textarea>
+      <textarea class="tl-notes" placeholder="Notes…" data-f="notes" rows="1">${escapeHtml(r.notes||'')}</textarea>
     </div>
     <div class="tl-order-cell row-order">
       <button class="order-only" data-action="tl-move-up" ${posInDay===0?'disabled':''} title="Move up">▲</button>
@@ -5258,14 +5268,26 @@ function timelineRowHtml(r, posInDay, dayCount){
 }
 function tlAutosize(root){
   const scope = root || document;
-  scope.querySelectorAll('#timeline-container textarea.tl-act, #timeline-container textarea.tl-sec-note, #timeline-container textarea[data-f="notes"]').forEach(t => {
+  const panel = document.getElementById('panel-timeline');
+  if(panel && !panel.classList.contains('active') && !root) return;
+  scope.querySelectorAll('#timeline-container textarea.tl-act, #timeline-container textarea.tl-sec-note, #timeline-container textarea.tl-notes, #timeline-container textarea[data-f="notes"]').forEach(t => {
+    t.style.height = 'auto';
     t.style.height = '0px';
+    void t.offsetHeight;
     const min = t.classList.contains('tl-act') ? 28 : 22;
     t.style.height = Math.max(min, t.scrollHeight) + 'px';
   });
   scope.querySelectorAll('#timeline-container input.tl-sec-title').forEach(inp => {
     inp.style.height = '28px';
   });
+}
+function scheduleTlAutosize(){
+  const run = () => tlAutosize();
+  run();
+  requestAnimationFrame(() => { run(); requestAnimationFrame(run); });
+  setTimeout(run, 40);
+  setTimeout(run, 160);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(run).catch(()=>{});
 }
 function tlNewSection(){ return {id:uid(), type:'section', title:'', note:''}; }
 function tlMoveSection(secId, dir){
@@ -5351,7 +5373,7 @@ document.getElementById('timeline-container').addEventListener('input', (e) => {
   const r = STATE.timeline.find(x => x.id === row.dataset.id); if(!r) return;
   r[e.target.dataset.f] = e.target.value;
   if(e.target.dataset.f === 'time'){ r.time = tlNormalizeTimeValue(r.time); e.target.value = r.time || ''; }
-  if(e.target.classList.contains('tl-act') || e.target.classList.contains('tl-sec-note')) tlAutosize();
+  if(e.target.classList.contains('tl-act') || e.target.classList.contains('tl-sec-note') || e.target.classList.contains('tl-notes') || e.target.dataset.f === 'notes' || e.target.dataset.f === 'activity' || e.target.dataset.f === 'note') tlAutosize(e.target.parentElement || document);
   scheduleSave('timeline');
   refreshTlMeta();
 });
