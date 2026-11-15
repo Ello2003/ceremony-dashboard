@@ -1172,7 +1172,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v39.1</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v39.2</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1875,8 +1875,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v39.1';
+const APP_VERSION = 'v39.2';
 const CHANGELOG = [
+  { version:'v39.2', date:'2026-11-15', notes:[
+    'Photographer pack PDF: no timeline; omit rejected photo locations'
+  ]},
   { version:'v39.1', date:'2026-11-15', notes:[
     'Fix site break: repaired a broken JavaScript string in Sort by time that stopped the whole board loading'
   ]},
@@ -4873,7 +4876,7 @@ async function exportPhotographerPDF(){
   doc.line(mx, y, mx + 120, y); y += 28;
   doc.setFontSize(11);
   doc.setTextColor(...muted);
-  const intro = 'This pack gathers the day timeline, preferred photo locations, and a shot list so you have one clear brief. Times and places may flex with December light and weather \u2014 treat this as the shared plan, not a rigid call sheet.';
+  const intro = 'This pack gathers preferred photo locations and a shot list so you have one clear brief. Places may flex with December light and weather — treat this as the shared plan, not a rigid call sheet.';
   doc.splitTextToSize(intro, contentW).forEach(line => { doc.text(line, mx, y); y += 15; });
   y += 24;
   doc.setFont('helvetica', 'bold');
@@ -4882,82 +4885,18 @@ async function exportPhotographerPDF(){
   doc.text('Contents', mx, y); y += 16;
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...ink);
-  ['1. Day timeline', '2. Photo locations', '3. Shot list'].forEach(item => {
+  ['1. Photo locations', '2. Shot list'].forEach(item => {
     doc.text(item, mx + 8, y); y += 14;
   });
 
-  // ===== 1. TIMELINE =====
+  // ===== 1. LOCATIONS =====
   doc.addPage(); drawPageChrome(); y = 64;
-  h1('1. Day timeline');
-  mutedLine('Stops and sections from the Trip timeline board.');
-  y += 8;
-  const {dateOrder, byDate} = tlGroupByDate();
-  if(!dateOrder.length){
-    mutedLine('No timeline entries yet.');
-  }
-  dateOrder.forEach(date => {
-    ensure(40);
-    doc.setFillColor(...holyrood);
-    doc.roundedRect(mx - 4, y - 12, contentW + 8, 22, 2, 2, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(255, 255, 255);
-    doc.text(String(date), mx + 6, y + 2);
-    y += 28;
-    let secNo = 0;
-    (byDate[date] || []).forEach(r => {
-      if(r.type === 'section'){
-        secNo++;
-        ensure(36);
-        doc.setFillColor(232, 240, 240);
-        doc.rect(mx - 4, y - 12, contentW + 8, 20, 'F');
-        doc.setFillColor(...gold);
-        doc.rect(mx - 4, y - 12, 3, 20, 'F');
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10.5);
-        doc.setTextColor(...holyrood);
-        doc.text(`${secNo}. ${(r.title || 'Section').toUpperCase()}`, mx + 8, y + 1);
-        y += 22;
-        if(r.note){
-          doc.setFont('helvetica', 'italic');
-          doc.setFontSize(9);
-          doc.setTextColor(...muted);
-          doc.splitTextToSize(r.note, contentW - 12).forEach(line => { ensure(12); doc.text(line, mx + 8, y); y += 12; });
-          y += 4;
-        }
-        return;
-      }
-      ensure(28);
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(...heather);
-      doc.text(r.time || '\u2014', mx, y);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.setTextColor(...ink);
-      const actLines = doc.splitTextToSize(r.activity || '(untitled stop)', contentW - 56);
-      actLines.forEach((line, i) => { if(i) ensure(13); doc.text(line, mx + 56, y); if(i < actLines.length - 1) y += 13; });
-      y += 14;
-      if(r.notes){
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(9);
-        doc.setTextColor(...muted);
-        doc.splitTextToSize(r.notes, contentW - 56).forEach(line => { ensure(12); doc.text(line, mx + 56, y); y += 12; });
-        y += 4;
-      }
-      y += 6;
-    });
-    y += 10;
-  });
-
-  // ===== 2. LOCATIONS =====
-  doc.addPage(); drawPageChrome(); y = 64;
-  h1('2. Photo locations');
+  h1('1. Photo locations');
   mutedLine('Preferred spots, practical notes, and inspiration images from the board.');
   y += 10;
-  const locs = STATE.photoLocations || [];
+  const locs = (STATE.photoLocations || []).filter(l => (l.status || '') !== 'rejected');
   if(!locs.length){
-    mutedLine('No locations added yet.');
+    mutedLine('No active locations yet (rejected locations are omitted).');
   }
   for(const loc of locs){
     ensure(70);
@@ -5047,7 +4986,7 @@ async function exportPhotographerPDF(){
 
   // ===== 3. SHOT LIST =====
   doc.addPage(); drawPageChrome(); y = 64;
-  h1('3. Shot list');
+  h1('2. Shot list');
   mutedLine('Compositions and moments to aim for. Ticked items are priorities marked on the board.');
   y += 10;
   const ideas = STATE.photoIdeas || [];
