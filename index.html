@@ -1175,7 +1175,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v39.7</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v39.8</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1878,8 +1878,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v39.7';
+const APP_VERSION = 'v39.8';
 const CHANGELOG = [
+  { version:'v39.8', date:'2026-11-15', notes:[
+    'Timeline sort: 12:30 is after noon; 00:30 is after midnight (explicit rule)'
+  ]},
   { version:'v39.7', date:'2026-11-15', notes:[
     'Timeline notes auto-resize to fit content; 12:30 time sort parser kept intact'
   ]},
@@ -5070,27 +5073,40 @@ let tlFocusId = null;
 const isSec = r => r && r.type === 'section';
 
 function tlTimeMinutes(t){
-  // Minutes from midnight. Blank/unparseable times sort last.
-  // 12:30 => noon (750). Supports 12:30:00, 9:05, 12.30, 1:00pm, 12:30am.
+  // Chronological minutes from midnight for sorting.
+  // Rules:
+  //   00:30  -> 30   (half past midnight)
+  //   12:00  -> 720  (noon)
+  //   12:30  -> 750  (half past noon / afternoon)
+  //   12:30am -> 30  (same as 00:30)
+  //   12:30pm -> 750 (same as 12:30)
+  //   1:00pm  -> 780
+  // Bare 12:xx is ALWAYS noon-hour, never midnight.
   let s = String(t == null ? '' : t).trim();
   if(!s) return 100000;
-  s = s.replace(/[‎‏‪-‮ ]/g, '').toLowerCase();
-  s = s.replace(/[.．]/g, ':').replace(/：/g, ':');
+  s = s.replace(/[\u200e\u200f\u202a-\u202e\u00a0]/g, '').toLowerCase();
+  s = s.replace(/[.\uFF0E]/g, ':').replace(/\uFF1A/g, ':');
 
+  let mer = '';
   const apm = s.match(/(am|pm)\s*$/);
-  const mer = apm ? apm[1] : '';
-  if(apm) s = s.slice(0, apm.index).trim();
+  if(apm){ mer = apm[1]; s = s.slice(0, apm.index).trim(); }
 
-  let m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-  if(!m) m = s.match(/^(\d{1,2})$/);
-  if(!m) return 99999;
+  let h = -1, min = 0;
+  let m = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if(m){ h = parseInt(m[1], 10); min = parseInt(m[2], 10); }
+  else {
+    m = s.match(/^(\d{1,2})$/);
+    if(m){ h = parseInt(m[1], 10); min = 0; }
+  }
+  if(h < 0 || isNaN(h) || isNaN(min) || min < 0 || min > 59 || h > 23) return 99999;
 
-  let h = parseInt(m[1], 10);
-  let min = m[2] != null ? parseInt(m[2], 10) : 0;
-  if(isNaN(h) || isNaN(min) || min < 0 || min > 59 || h < 0 || h > 23) return 99999;
-
-  if(mer === 'pm' && h < 12) h += 12;
-  if(mer === 'am' && h === 12) h = 0;
+  // Apply 12-hour clock only when am/pm is present
+  if(mer === 'am'){
+    if(h === 12) h = 0; // 12:30am -> 00:30 (after midnight)
+  } else if(mer === 'pm'){
+    if(h < 12) h += 12; // 1:00pm -> 13:00; 12:30pm stays 12:30 (after noon)
+  }
+  // No meridiem: 12:30 stays 12:30 (after noon); 00:30 stays 00:30 (after midnight)
   return h * 60 + min;
 }
 function tlNormalizeTimeValue(t){
@@ -5104,7 +5120,7 @@ function sortTimelineByTime(){
     showToast('No timeline stops to sort', [], 3000);
     return;
   }
-  if(!confirm('Sort all stops by clock time within each day?\n\n• Every stop on the day is ordered by time (e.g. 09:00, 12:30, 14:00)\n• Section headings stay with their stops (placed before the first of those stops)\n• Stops with no time go to the end')) return;
+  if(!confirm('Sort all stops by clock time within each day?\n\n• 00:30 = after midnight; 12:30 = after noon; then 13:00, 14:00…\n• Section headings stay with their stops\n• Stops with no time go to the end')) return;
 
   const {dateOrder, byDate} = tlGroupByDate();
   const rebuilt = [];
