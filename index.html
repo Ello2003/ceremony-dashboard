@@ -1172,7 +1172,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v39.3</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v39.4</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1875,8 +1875,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v39.3';
+const APP_VERSION = 'v39.4';
 const CHANGELOG = [
+  { version:'v39.4', date:'2026-11-15', notes:[
+    'Timeline: fix 12:30 sorting to noon/afternoon (robust time parse + normalize)'
+  ]},
   { version:'v39.3', date:'2026-11-15', notes:[
     'Timeline: moving a section heading only inserts/moves that heading — stop order is unchanged'
   ]},
@@ -5059,22 +5062,50 @@ let tlFocusId = null;
 const isSec = r => r && r.type === 'section';
 
 function tlTimeMinutes(t){
-  // Minutes from midnight for sorting. Blank times sort last.
-  // Handles HH:MM, HH:MM:SS, optional am/pm, and 12.30-style dots.
-  let s = String(t == null ? '' : t).trim().toLowerCase();
+  // Minutes from midnight for sorting. Blank / unparseable times go last.
+  // Robust for: 12:30, 12:30:00, 9:05, 12.30, 12:30pm, unicode colons, RTL marks.
+  let s = String(t == null ? '' : t).trim();
   if(!s) return 100000;
-  s = s.replace(/\./g, ':');
-  const ap = s.match(/(am|pm)/);
-  const m = s.match(/(\d{1,2})\s*:\s*(\d{2})(?:\s*:\s*(\d{2}))?/);
-  if(!m) return 99999;
+  s = s.replace(/[\u200e\u200f\u202a-\u202e\u00a0]/g, '').toLowerCase();
+  s = s.replace(/[.\uFF0E]/g, ':').replace(/\uFF1A/g, ':');
+
+  // Fast path: pure 24h from <input type="time">
+  let m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if(m){
+    const h = parseInt(m[1], 10), min = parseInt(m[2], 10);
+    if(!isNaN(h) && !isNaN(min) && h >= 0 && h <= 23 && min >= 0 && min <= 59) return h * 60 + min;
+  }
+
+  const ap = s.match(/\b(am|pm)\b/);
+  m = s.match(/(\d{1,2})\s*[:h]\s*(\d{2})/);
+  if(!m){
+    // bare hour e.g. "12" or "12pm"
+    m = s.match(/(\d{1,2})\s*(am|pm)?$/);
+    if(m){
+      let h = parseInt(m[1], 10);
+      if(isNaN(h) || h > 23) return 99999;
+      const mer = (m[2] || (ap && ap[1]) || '');
+      if(mer === 'pm' && h < 12) h += 12;
+      if(mer === 'am' && h === 12) h = 0;
+      return h * 60;
+    }
+    return 99999;
+  }
   let h = parseInt(m[1], 10);
   let min = parseInt(m[2], 10);
-  if(isNaN(h) || isNaN(min) || h > 23 || min > 59) return 99999;
+  if(isNaN(h) || isNaN(min) || min > 59 || h > 23) return 99999;
   if(ap){
+    // 12-hour clock: 12:30pm -> 12:30, 12:30am -> 00:30, 1:00pm -> 13:00
     if(ap[1] === 'pm' && h < 12) h += 12;
     if(ap[1] === 'am' && h === 12) h = 0;
   }
   return h * 60 + min;
+}
+function tlNormalizeTimeValue(t){
+  const mins = tlTimeMinutes(t);
+  if(mins >= 99999) return (t == null ? '' : String(t).trim());
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
 }
 function sortTimelineByTime(){
   if(!STATE.timeline || !STATE.timeline.length){
@@ -5105,6 +5136,7 @@ function sortTimelineByTime(){
       }
     });
 
+    stops.forEach(s => { if(s.time) s.time = tlNormalizeTimeValue(s.time); });
     stops.sort((a, b) => {
       const da = tlTimeMinutes(a.time) - tlTimeMinutes(b.time);
       if(da !== 0) return da;
@@ -5337,6 +5369,7 @@ document.getElementById('timeline-container').addEventListener('input', (e) => {
   const row = e.target.closest('.tl-row, .tl-section'); if(!row) return;
   const r = STATE.timeline.find(x => x.id === row.dataset.id); if(!r) return;
   r[e.target.dataset.f] = e.target.value;
+    if(f === 'time'){ r.time = tlNormalizeTimeValue(r.time); e.target.value = r.time || ''; }
   if(e.target.classList.contains('tl-act') || e.target.classList.contains('tl-sec-note')) tlAutosize();
   scheduleSave('timeline');
   refreshTlMeta();
