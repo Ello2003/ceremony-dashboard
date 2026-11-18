@@ -140,7 +140,7 @@
     .checklist-controls input{ max-width:100%; width:100%; }
     .filter-chips{ flex-wrap:wrap; }
     /* task row — collapse date below text on tiny screens */
-    .task-row{ grid-template-columns:24px 1fr 28px 32px; }
+    .task-row{ grid-template-columns:18px 24px 1fr 28px 32px; }
     .task-row .task-due{ display:none; }
     /* budget table — scroll horizontally */
     #budget-table{ display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; }
@@ -246,7 +246,7 @@
   .phase-block.collapsed .phase-body{ display:none; }
 
   .task-row{
-    display:grid; grid-template-columns:24px 1fr 118px 28px 32px; align-items:center; gap:10px;
+    display:grid; grid-template-columns:18px 24px 1fr 118px 28px 32px; align-items:center; gap:8px;
     padding:8px 4px; border-bottom:1px solid var(--line); font-size:13.5px;
     border-left:2px solid transparent; margin-left:-4px; padding-left:4px;
   }
@@ -976,7 +976,7 @@
     textarea, input, select{ border:none !important; background:transparent !important; color:var(--ink) !important; padding-left:0 !important; }
     textarea{ resize:none; overflow:visible; }
     .card, .script-section, .vow-card, .reading-card, .enquiry-card, .task-row, .supplier-card{ break-inside:avoid; border-color:#ddd; }
-    .task-row{ grid-template-columns:16px 1fr 90px; }
+    .task-row{ grid-template-columns:16px 16px 1fr 90px; }
   }
 
   /* =====================================================================
@@ -1058,9 +1058,13 @@
 
     /* ---- Checklist: two-line cards, date visible ---- */
     .task-row{
-      grid-template-columns:44px 1fr 44px 44px; grid-template-areas:"chk text att del" ". due due due";
+      grid-template-columns:28px 36px 1fr 40px;
+      grid-template-areas:
+        "drag chk text del"
+        ". due due due";
       gap:0 2px; padding:4px 0; margin-left:0; min-height:56px;
     }
+    .task-row .cl-drag-handle{ grid-area:drag; }
     .task-row input[type="checkbox"]{ grid-area:chk; width:26px; height:26px; margin:0 auto; }
     .task-row .task-text{ grid-area:text; padding:10px 6px; line-height:1.4; font-size:15px; }
     .task-row .task-attach-toggle{ grid-area:att; font-size:18px; min-height:44px; }
@@ -1186,7 +1190,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v40</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v40.1</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1889,8 +1893,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v40';
+const APP_VERSION = 'v40.1';
 const CHANGELOG = [
+  { version:'v40.1', date:'2026-11-18', notes:[
+    'Fix checklist layout after drag handles; safer drag handlers so the board loads and rows display correctly'
+  ]},
   { version:'v40', date:'2026-11-18', notes:[
     'Checklist: drag handles to reorder sections and tasks (including move task to another section)'
   ]},
@@ -5650,81 +5657,84 @@ function applyPanelTitles(){
 /* ---- Checklist HTML5 drag (sections + tasks) ---- */
 let clDragId = null;
 let clDragKind = null; // 'phase' | 'task'
-document.getElementById('checklist-container').addEventListener('dragstart', (e) => {
-  const handle = e.target.closest('.cl-drag-handle');
-  if(!handle){ e.preventDefault(); return; }
-  const kind = handle.dataset.clDrag;
-  let item = null;
-  if(kind === 'phase') item = handle.closest('.phase-block');
-  else item = handle.closest('.task-row-wrap');
-  if(!item){ e.preventDefault(); return; }
-  clDragId = item.dataset.dndId || item.dataset.phaseId || item.dataset.id;
-  clDragKind = kind;
-  item.classList.add('dnd-dragging');
-  try{ e.dataTransfer.setData('text/plain', clDragId); e.dataTransfer.effectAllowed = 'move'; }catch(err){}
-});
-document.getElementById('checklist-container').addEventListener('dragend', () => {
-  document.querySelectorAll('.phase-block.dnd-dragging, .task-row-wrap.dnd-dragging, .phase-block.drag-over, .task-row-wrap.drag-over').forEach(el => {
-    el.classList.remove('dnd-dragging', 'drag-over');
+(function bindChecklistHtml5Drag(){
+  const clRoot = document.getElementById('checklist-container');
+  if(!clRoot) return;
+  clRoot.addEventListener('dragstart', (e) => {
+    const el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+    const handle = el && el.closest ? el.closest('.cl-drag-handle') : null;
+    if(!handle) return;
+    const kind = handle.dataset.clDrag;
+    let item = null;
+    if(kind === 'phase') item = handle.closest('.phase-block');
+    else item = handle.closest('.task-row-wrap');
+    if(!item){ e.preventDefault(); return; }
+    clDragId = item.dataset.dndId || item.dataset.phaseId || item.dataset.id;
+    clDragKind = kind;
+    item.classList.add('dnd-dragging');
+    try{ e.dataTransfer.setData('text/plain', clDragId); e.dataTransfer.effectAllowed = 'move'; }catch(err){}
   });
-  clDragId = null; clDragKind = null;
-});
-document.getElementById('checklist-container').addEventListener('dragover', (e) => {
-  if(!clDragId) return;
-  const target = clDragKind === 'phase'
-    ? e.target.closest('.phase-block')
-    : e.target.closest('.task-row-wrap, .phase-block');
-  if(!target) return;
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  document.querySelectorAll('.phase-block.drag-over, .task-row-wrap.drag-over').forEach(el => el.classList.remove('drag-over'));
-  target.classList.add('drag-over');
-});
-document.getElementById('checklist-container').addEventListener('dragleave', (e) => {
-  const item = e.target.closest('.phase-block, .task-row-wrap');
-  if(item && !item.contains(e.relatedTarget)) item.classList.remove('drag-over');
-});
-document.getElementById('checklist-container').addEventListener('drop', (e) => {
-  if(!clDragId || !clDragKind) return;
-  e.preventDefault();
-  if(clDragKind === 'phase'){
-    const target = e.target.closest('.phase-block');
+  clRoot.addEventListener('dragend', () => {
+    document.querySelectorAll('.phase-block.dnd-dragging, .task-row-wrap.dnd-dragging, .phase-block.drag-over, .task-row-wrap.drag-over').forEach(el => {
+      el.classList.remove('dnd-dragging', 'drag-over');
+    });
+    clDragId = null; clDragKind = null;
+  });
+  clRoot.addEventListener('dragover', (e) => {
+    if(!clDragId) return;
+    const target = clDragKind === 'phase'
+      ? e.target.closest && e.target.closest('.phase-block')
+      : e.target.closest && e.target.closest('.task-row-wrap, .phase-block');
     if(!target) return;
-    const overId = target.dataset.dndId || target.dataset.phaseId;
-    if(!overId || overId === clDragId) return;
-    const rect = target.getBoundingClientRect();
-    const before = e.clientY < rect.top + rect.height / 2;
-    STATE.phases = arrayMoveId(STATE.phases, clDragId, overId, before);
-    scheduleSave('phases');
-  } else {
-    // task: drop on another task or onto a phase block
-    const taskTarget = e.target.closest('.task-row-wrap');
-    const phaseTarget = e.target.closest('.phase-block');
-    const dragTask = STATE.checklist.find(t => t.id === clDragId);
-    if(!dragTask) return;
-    if(taskTarget){
-      const overId = taskTarget.dataset.dndId || taskTarget.dataset.id;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.phase-block.drag-over, .task-row-wrap.drag-over').forEach(el => el.classList.remove('drag-over'));
+    target.classList.add('drag-over');
+  });
+  clRoot.addEventListener('dragleave', (e) => {
+    const item = e.target.closest && e.target.closest('.phase-block, .task-row-wrap');
+    if(item && !item.contains(e.relatedTarget)) item.classList.remove('drag-over');
+  });
+  clRoot.addEventListener('drop', (e) => {
+    if(!clDragId || !clDragKind) return;
+    e.preventDefault();
+    if(clDragKind === 'phase'){
+      const target = e.target.closest && e.target.closest('.phase-block');
+      if(!target) return;
+      const overId = target.dataset.dndId || target.dataset.phaseId;
       if(!overId || overId === clDragId) return;
-      const rect = taskTarget.getBoundingClientRect();
+      const rect = target.getBoundingClientRect();
       const before = e.clientY < rect.top + rect.height / 2;
-      const overTask = STATE.checklist.find(t => t.id === overId);
-      if(overTask) dragTask.phase = overTask.phase;
-      STATE.checklist = arrayMoveId(STATE.checklist, clDragId, overId, before);
-    } else if(phaseTarget){
-      const phaseId = phaseTarget.dataset.phaseId || phaseTarget.dataset.dndId;
-      if(!phaseId) return;
-      dragTask.phase = phaseId;
-      // move to end of that phase's tasks in checklist array
-      STATE.checklist = STATE.checklist.filter(t => t.id !== clDragId);
-      const lastInPhase = [...STATE.checklist].map((t,i)=>({t,i})).filter(x => x.t.phase === phaseId).pop();
-      const insertAt = lastInPhase ? lastInPhase.i + 1 : STATE.checklist.length;
-      STATE.checklist.splice(insertAt, 0, dragTask);
-    } else return;
-    scheduleSave('checklist');
-  }
-  clDragId = null; clDragKind = null;
-  renderChecklist(); renderOverview();
-});
+      STATE.phases = arrayMoveId(STATE.phases, clDragId, overId, before);
+      scheduleSave('phases');
+    } else {
+      const taskTarget = e.target.closest && e.target.closest('.task-row-wrap');
+      const phaseTarget = e.target.closest && e.target.closest('.phase-block');
+      const dragTask = STATE.checklist.find(t => t.id === clDragId);
+      if(!dragTask) return;
+      if(taskTarget){
+        const overId = taskTarget.dataset.dndId || taskTarget.dataset.id;
+        if(!overId || overId === clDragId) return;
+        const rect = taskTarget.getBoundingClientRect();
+        const before = e.clientY < rect.top + rect.height / 2;
+        const overTask = STATE.checklist.find(t => t.id === overId);
+        if(overTask) dragTask.phase = overTask.phase;
+        STATE.checklist = arrayMoveId(STATE.checklist, clDragId, overId, before);
+      } else if(phaseTarget){
+        const phaseId = phaseTarget.dataset.phaseId || phaseTarget.dataset.dndId;
+        if(!phaseId) return;
+        dragTask.phase = phaseId;
+        STATE.checklist = STATE.checklist.filter(t => t.id !== clDragId);
+        const lastInPhase = [...STATE.checklist].map((t,i)=>({t,i})).filter(x => x.t.phase === phaseId).pop();
+        const insertAt = lastInPhase ? lastInPhase.i + 1 : STATE.checklist.length;
+        STATE.checklist.splice(insertAt, 0, dragTask);
+      } else return;
+      scheduleSave('checklist');
+    }
+    clDragId = null; clDragKind = null;
+    renderChecklist(); renderOverview();
+  });
+})();
 
 function bindLongPressDnd(container, { itemSelector, onReorder }){
   if(!container || container._dndBound) return;
