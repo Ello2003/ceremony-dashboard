@@ -846,7 +846,16 @@
   }
 
   /* General composition sections — match location cards */
-  .idea-group.idea-comp-group{
+  
+  .idea-comp-group .idea-sec-del{
+    background:none; border:1px solid transparent; border-radius:3px;
+    color:rgba(43,42,40,0.35); cursor:pointer; font-size:16px; width:26px; height:26px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .idea-comp-group .idea-sec-del:hover{
+    color:var(--rose); border-color:var(--rose); background:rgba(176,107,69,.08);
+  }
+.idea-group.idea-comp-group{
     background:var(--card);
     border:1px solid var(--line);
     border-left:3px solid var(--heather);
@@ -1393,7 +1402,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.6</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.7</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -2096,8 +2105,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v41.6';
+const APP_VERSION = 'v41.7';
 const CHANGELOG = [
+  { version:'v41.7', date:'2026-11-23', notes:[
+    'Delete general composition sections inline with the section × control'
+  ]},
   { version:'v41.6', date:'2026-11-23', notes:[
     'General composition sections restyled as cards matching confirmed locations'
   ]},
@@ -6693,6 +6705,7 @@ function renderPhotoIdeas(){
         <input type="text" class="idea-group-title-input" value="${escapeHtml(cat)}" data-orig-cat="${escapeHtml(cat)}">
         <span class="idea-comp-badge">Composition</span>
         <span class="idea-group-count">${groups[cat].filter(i=>i.done).length}/${groups[cat].length}</span>
+        <button type="button" class="idea-sec-del" data-action="idea-cat-del" title="Delete this section and its ideas">×</button>
       </div>
       ${groups[cat].map(idea => {
         const imgs = idea.images || [];
@@ -6882,6 +6895,22 @@ document.getElementById('photo-ideas-container').addEventListener('keydown', (e)
 document.getElementById('photo-ideas-container').addEventListener('click', (e) => {
   const thumb = e.target.closest('[data-action="open-pl-lightbox"]');
   if(thumb){ openPlLightbox(thumb.dataset.src); return; }
+
+  if(e.target.closest('[data-action="idea-cat-del"]')){
+    const group = e.target.closest('.idea-group');
+    if(!group || group.classList.contains('idea-loc-group')) return;
+    const cat = group.dataset.cat;
+    if(!cat || cat === '__new') return;
+    const n = (STATE.photoIdeas||[]).filter(i => i.category === cat).length;
+    const msg = n ? ('Delete section "' + cat + '" and its ' + n + ' idea' + (n===1?'':'s') + '?') : ('Delete empty section "' + cat + '"?');
+    if(!confirm(msg)) return;
+    STATE.photoIdeas = (STATE.photoIdeas||[]).filter(i => i.category !== cat);
+    STATE.photoIdeaCategoryOrder = (STATE.photoIdeaCategoryOrder||[]).filter(c => c !== cat);
+    scheduleSave('photoIdeas');
+    scheduleSave('photoIdeaCategoryOrder');
+    renderPhotoIdeas();
+    return;
+  }
   if(e.target.dataset.action === 'idea-cat-up' || e.target.dataset.action === 'idea-cat-down'){
     const group = e.target.closest('.idea-group'); if(!group) return;
     const cat = group.dataset.cat;
