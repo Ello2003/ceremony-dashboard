@@ -1409,6 +1409,24 @@
   }
   .idea-shot-upload-row.attach-drop-target.drag-over .drop-label,
   .pl-gallery-add.attach-drop-target.drag-over .drop-label{ color:var(--holyrood); }
+
+  .idea-url-row{
+    display:flex; gap:6px; align-items:center; width:100%; margin-top:4px;
+  }
+  .idea-url-row input[type="text"]{
+    flex:1; min-width:0; font-family:'Source Serif 4',serif; font-size:12.5px;
+    border:1px solid var(--line); border-radius:2px; padding:6px 8px; background:transparent;
+    color:var(--ink);
+  }
+  .idea-url-row input[type="text"]:focus{
+    outline:none; border-color:var(--holyrood);
+  }
+  .idea-url-add{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.04em;
+    border:1px solid var(--line); border-radius:2px; padding:6px 10px;
+    background:transparent; color:rgba(43,42,40,.65); cursor:pointer; flex-shrink:0;
+  }
+  .idea-url-add:hover{ border-color:var(--holyrood); color:var(--holyrood); }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1420,7 +1438,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.9</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.10</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -2123,8 +2141,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v41.9';
+const APP_VERSION = 'v41.10';
 const CHANGELOG = [
+  { version:'v41.10', date:'2026-11-23', notes:[
+    'Photo zones: Image URL field with Add URL button (plus drag-and-drop and file upload)'
+  ]},
   { version:'v41.9', date:'2026-11-23', notes:[
     'Drag and drop photos onto shot-list and location upload zones'
   ]},
@@ -6545,10 +6566,13 @@ function renderPhotoLocations(){
             </div>`).join('')}
         </div>
         <div class="pl-gallery-add attach-drop-target" data-drop="pl-location" title="Drop photos here or tap to upload">
-          <span class="drop-label">Drop photos here or</span>
-          <label class="pl-upload-btn">+ Upload photo<input type="file" accept="image/*" multiple class="pl-image-file" hidden></label>
-          <input type="text" class="pl-image-url-input" placeholder="or paste an image URL, press Enter">
-        </div>
+              <span class="drop-label">Drop photos here or</span>
+              <label class="pl-upload-btn">+ Upload photo<input type="file" accept="image/*" multiple class="pl-image-file" hidden></label>
+              <div class="idea-url-row">
+                <input type="text" class="pl-image-url-input" placeholder="Image URL (https://…)">
+                <button type="button" class="idea-url-add" data-action="add-image-url">Add URL</button>
+              </div>
+            </div>
       </div>`;
     c.appendChild(card);
   });
@@ -6658,10 +6682,13 @@ function locationShotSectionHtml(loc){
           </div>`).join('')}
       </div>
       <div class="pl-gallery-add attach-drop-target" data-drop="loc-section" title="Drop photos here or tap to upload">
-        <span class="drop-label">Drop photos here or</span>
-        <label class="pl-upload-btn">+ Upload photo<input type="file" accept="image/*" multiple class="loc-section-image-file" hidden></label>
-        <input type="text" class="loc-section-image-url" placeholder="paste image URL, Enter">
-      </div>
+              <span class="drop-label">Drop photos here or</span>
+              <label class="pl-upload-btn">+ Upload photo<input type="file" accept="image/*" multiple class="loc-section-image-file" hidden></label>
+              <div class="idea-url-row">
+                <input type="text" class="loc-section-image-url" placeholder="Image URL (https://…)">
+                <button type="button" class="idea-url-add" data-action="add-image-url">Add URL</button>
+              </div>
+            </div>
     </div>
     <div class="pl-shots-block">
       <label class="pl-field-label">Shots for this location</label>
@@ -6685,7 +6712,10 @@ function locationShotSectionHtml(loc){
             <div class="idea-shot-upload-row attach-drop-target" data-drop="loc-shot" title="Drop photos here or tap to upload">
               <span class="drop-label">Drop photos here or</span>
               <label class="pl-upload-btn">+ Upload<input type="file" accept="image/*" multiple class="loc-shot-image-file" hidden></label>
-              <input type="text" class="loc-shot-image-url" placeholder="paste image URL, Enter">
+              <div class="idea-url-row">
+                <input type="text" class="loc-shot-image-url" placeholder="Image URL (https://…)">
+                <button type="button" class="idea-url-add" data-action="add-image-url">Add URL</button>
+              </div>
             </div>
           </div>
         </div>`;
@@ -6755,7 +6785,10 @@ function renderPhotoIdeas(){
             <div class="idea-shot-upload-row attach-drop-target" data-drop="idea" title="Drop photos here or tap to upload">
               <span class="drop-label">Drop photos here or</span>
               <label class="pl-upload-btn">+ Upload<input type="file" accept="image/*" multiple class="idea-image-file" hidden></label>
-              <input type="text" class="idea-image-url-input" placeholder="paste image URL, Enter">
+              <div class="idea-url-row">
+                <input type="text" class="idea-image-url-input" placeholder="Image URL (https://…)">
+                <button type="button" class="idea-url-add" data-action="add-image-url">Add URL</button>
+              </div>
             </div>
           </div>
         </div>`;
@@ -7154,6 +7187,65 @@ document.getElementById('photo-ideas-container').addEventListener('keydown', (e)
   }
 });
 
+
+
+function addImageFromUrlInput(input){
+  if(!input) return false;
+  const raw = (input.value || '').trim();
+  if(!raw) return false;
+  const url = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+  const zone = input.closest('.attach-drop-target, .pl-gallery-add, .idea-shot-upload-row');
+  const drop = zone && zone.dataset ? zone.dataset.drop : '';
+  if(input.classList.contains('idea-image-url-input') || drop === 'idea'){
+    const wrap = input.closest('.idea-row-wrap');
+    const idea = STATE.photoIdeas.find(i => i.id === (wrap && wrap.dataset.id));
+    if(!idea) return false;
+    idea.images = idea.images || [];
+    idea.images.push({id:uid(), src:url});
+    input.value = '';
+    scheduleSave('photoIdeas'); renderPhotoIdeas();
+    return true;
+  }
+  if(input.classList.contains('loc-shot-image-url') || drop === 'loc-shot'){
+    const wrap = input.closest('.idea-row-wrap');
+    const found = typeof findLocShot === 'function' ? findLocShot(wrap && wrap.dataset.locId, wrap && wrap.dataset.shotId) : {};
+    if(!found.shot) return false;
+    found.shot.images = found.shot.images || [];
+    found.shot.images.push({id:uid(), src:url});
+    input.value = '';
+    scheduleSave('photoLocations'); renderPhotoIdeas();
+    return true;
+  }
+  if(input.classList.contains('loc-section-image-url') || drop === 'loc-section'){
+    const group = input.closest('.idea-loc-group');
+    const loc = (STATE.photoLocations||[]).find(l => l.id === (group && group.dataset.locId));
+    if(!loc) return false;
+    loc.images = loc.images || [];
+    loc.images.push({id:uid(), src:url});
+    input.value = '';
+    scheduleSave('photoLocations'); renderPhotoIdeas();
+    return true;
+  }
+  if(input.classList.contains('pl-image-url-input') || drop === 'pl-location'){
+    const card = input.closest('.photo-location-card');
+    const loc = (STATE.photoLocations||[]).find(l => l.id === (card && card.dataset.id));
+    if(!loc) return false;
+    loc.images = loc.images || [];
+    loc.images.push({id:uid(), src:url});
+    input.value = '';
+    scheduleSave('photoLocations'); renderPhotoLocations();
+    return true;
+  }
+  return false;
+}
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('[data-action="add-image-url"]');
+  if(!btn) return;
+  e.preventDefault();
+  const row = btn.closest('.idea-url-row');
+  const input = row && row.querySelector('input[type="text"]');
+  if(!addImageFromUrlInput(input)) showToast('Paste an image URL first', [], 2500);
+});
 
 /* ---- Embedded map helper: accepts a raw link or a full <iframe> embed snippet ---- */
 function extractMapEmbedSrc(raw){
