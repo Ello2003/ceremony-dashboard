@@ -769,7 +769,42 @@
   .idea-loc-card .idea-shot-notes:focus{
     outline:none; border-color:var(--heather); color:var(--ink);
   }
-  .idea-shot-notes-always{
+  
+  .idea-shot-extra{
+    padding:0 0 10px 28px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .idea-loc-card .idea-shot-extra{ padding-left:28px; }
+  .idea-shot-extra .idea-shot-notes-always{ margin:0; }
+  .idea-shot-upload-row{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  }
+  .idea-shot-upload-row .pl-upload-btn{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.04em;
+    border:1px dashed var(--line); border-radius:2px; padding:5px 10px;
+    color:rgba(43,42,40,.55); cursor:pointer; background:transparent;
+  }
+  .idea-shot-upload-row .pl-upload-btn:hover{
+    border-color:var(--holyrood); color:var(--holyrood);
+  }
+  .idea-shot-upload-row input[type="text"]{
+    flex:1; min-width:140px; font-family:'Source Serif 4',serif; font-size:12.5px;
+    border:1px dashed var(--line); border-radius:2px; padding:5px 8px; background:transparent;
+    color:var(--ink);
+  }
+  .idea-shot-upload-row input[type="text"]:focus{
+    outline:none; border-style:solid; border-color:var(--holyrood);
+  }
+  .idea-shot-thumbs{
+    display:flex; flex-wrap:wrap; gap:8px;
+  }
+  .idea-shot-thumbs .pl-img-thumb,
+  .idea-shot-thumbs .idea-img-thumb{
+    width:72px; height:72px; border-radius:2px; overflow:hidden;
+    border:1px solid var(--line); position:relative; background:var(--parchment-dim);
+  }
+  .idea-shot-thumbs img{ width:100%; height:100%; object-fit:cover; display:block; }
+.idea-shot-notes-always{
     display:block; width:100%; min-height:40px; margin:0 0 8px 0; padding:7px 10px;
     font-family:'Source Serif 4', serif; font-size:12.5px; line-height:1.4;
     border:1px solid var(--line); border-radius:2px; background:transparent;
@@ -1300,7 +1335,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.2</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.3</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -2003,8 +2038,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v41.2';
+const APP_VERSION = 'v41.3';
 const CHANGELOG = [
+  { version:'v41.3', date:'2026-11-23', notes:[
+    'Each photo idea shows notes and its own example upload under the idea'
+  ]},
   { version:'v41.2', date:'2026-11-23', notes:[
     'Shot list: notes box always visible under every shot'
   ]},
@@ -6531,22 +6569,19 @@ function locationShotSectionHtml(loc){
           <div class="idea-row ${shot.done?'done':''}">
             <input type="checkbox" ${shot.done?'checked':''} data-action="toggle-loc-shot">
             <input type="text" class="idea-text-input" data-f="shot-text" value="${escapeHtml(shot.text)}" placeholder="Describe the shot">
-            <button class="idea-photo-toggle ${imgs.length?'has-photos':''}" data-action="toggle-loc-shot-photos" title="Example photos">\ud83d\udcf7${imgs.length?' '+imgs.length:''}</button>
-            <button class="idea-del" data-action="del-loc-shot" title="Remove">\u00d7</button>
+            <button class="idea-del" data-action="del-loc-shot" title="Remove">×</button>
           </div>
-          <div class="idea-shot-notes-wrap">
+          <div class="idea-shot-extra">
             <textarea class="idea-shot-notes-always" data-f="shot-notes" rows="1" placeholder="Notes for this shot (pose, lens, light…)">${escapeHtml(shot.notes||'')}</textarea>
-          </div>
-          <div class="idea-photos-panel" style="display:${shot._expanded?'block':'none'};">
-            <div class="idea-photos-grid pl-gallery-grid" style="margin-top:4px;">
+            <div class="idea-shot-thumbs">
               ${imgs.map(img => `
-                <div class="pl-img-thumb idea-img-thumb" data-action="open-pl-lightbox" data-src="${escapeHtml(img.src)}">
+                <div class="pl-img-thumb" data-action="open-pl-lightbox" data-src="${escapeHtml(img.src)}">
                   <img src="${escapeHtml(img.src)}" alt="Example" loading="lazy">
-                  <button class="pl-img-del" data-action="del-loc-shot-image" data-img-id="${img.id}" title="Remove">\u00d7</button>
+                  <button class="pl-img-del" data-action="del-loc-shot-image" data-img-id="${img.id}" title="Remove">×</button>
                 </div>`).join('')}
             </div>
-            <div class="idea-photos-add pl-gallery-add" style="margin-top:8px;">
-              <label class="pl-upload-btn">+ Upload<input type="file" accept="image/*" multiple class="loc-shot-image-file" hidden></label>
+            <div class="idea-shot-upload-row">
+              <label class="pl-upload-btn">+ Upload example<input type="file" accept="image/*" multiple class="loc-shot-image-file" hidden></label>
               <input type="text" class="loc-shot-image-url" placeholder="or paste image URL, Enter">
             </div>
           </div>
@@ -6601,23 +6636,20 @@ function renderPhotoIdeas(){
           <div class="idea-row ${idea.done?'done':''}">
             <input type="checkbox" ${idea.done?'checked':''} data-action="toggle-idea">
             <input type="text" class="idea-text-input" value="${escapeHtml(idea.text)}" placeholder="Describe the shot">
-            <button class="idea-photo-toggle ${imgs.length?'has-photos':''}" data-action="toggle-idea-photos" title="Example photos">\ud83d\udcf7${imgs.length?' '+imgs.length:''}</button>
-            <button class="idea-del" data-action="del-idea" title="Remove">\u00d7</button>
+            <button class="idea-del" data-action="del-idea" title="Remove">×</button>
           </div>
-          <div class="idea-shot-notes-wrap">
-            <textarea class="idea-shot-notes-always" data-f="idea-notes" rows="1" placeholder="Notes for this shot…">${escapeHtml(idea.notes||'')}</textarea>
-          </div>
-          <div class="idea-photos-panel" style="display:${idea._expanded?'block':'none'};">
-            <div class="idea-photos-grid">
-              ${imgs.map(img => `
-                <div class="idea-img-thumb" data-action="open-pl-lightbox" data-src="${escapeHtml(img.src)}">
+          <div class="idea-shot-extra">
+            <textarea class="idea-shot-notes-always" data-f="idea-notes" rows="1" placeholder="Notes for this idea…">${escapeHtml(idea.notes||'')}</textarea>
+            <div class="idea-shot-thumbs">
+              ${(idea.images||[]).map(img => `
+                <div class="idea-img-thumb pl-img-thumb" data-action="open-pl-lightbox" data-src="${escapeHtml(img.src)}">
                   <img src="${escapeHtml(img.src)}" alt="Example for ${escapeHtml(idea.text)}" loading="lazy">
-                  <button class="pl-img-del" data-action="del-idea-image" data-img-id="${img.id}" title="Remove">\u00d7</button>
+                  <button class="pl-img-del" data-action="del-idea-image" data-img-id="${img.id}" title="Remove">×</button>
                 </div>`).join('')}
             </div>
-            <div class="idea-photos-add">
-              <label class="pl-upload-btn">+ Upload photo<input type="file" accept="image/*" multiple class="idea-image-file" hidden></label>
-              <input type="text" class="idea-image-url-input" placeholder="or paste an image URL, press Enter">
+            <div class="idea-shot-upload-row">
+              <label class="pl-upload-btn">+ Upload example<input type="file" accept="image/*" multiple class="idea-image-file" hidden></label>
+              <input type="text" class="idea-image-url-input" placeholder="or paste image URL, Enter">
             </div>
           </div>
         </div>`;
