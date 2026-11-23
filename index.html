@@ -699,7 +699,36 @@
   .photos-subtab{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.04em; padding:7px 16px; border-radius:20px; border:1px solid var(--line); background:transparent; color:rgba(43,42,40,.55); cursor:pointer; transition:all .15s ease; }
   .photos-subtab:hover{ border-color:var(--heather); color:var(--heather); }
   .photos-subtab.active{ background:var(--ink); color:var(--parchment); border-color:var(--ink); }
-  .idea-group{ margin-bottom:22px; }
+  
+  .idea-loc-banner{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--holyrood); margin:4px 0 12px; padding-bottom:6px; border-bottom:1px solid rgba(46,99,103,.2);
+  }
+  .idea-group.idea-loc-group{
+    border-left:3px solid var(--holyrood); background:rgba(46,99,103,.04);
+  }
+  .idea-loc-meta{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:rgba(43,42,40,.55);
+    margin:0 0 8px 0; padding:0 4px;
+  }
+  .idea-loc-notes{
+    width:100%; min-height:52px; font-family:'Source Serif 4',serif; font-size:13px;
+    border:1px solid var(--line); border-radius:3px; padding:8px; background:var(--card);
+    color:var(--ink); resize:vertical; margin-bottom:10px; box-sizing:border-box;
+  }
+  .idea-loc-notes:focus{ outline:none; border-color:var(--holyrood); }
+  .idea-shot-notes{
+    width:100%; min-height:36px; font-family:'Source Serif 4',serif; font-size:12.5px; font-style:italic;
+    border:1px solid var(--line); border-radius:2px; padding:6px 8px; background:transparent;
+    color:rgba(43,42,40,.75); resize:none; overflow:hidden; box-sizing:border-box; margin-top:6px;
+  }
+  .idea-shot-notes:focus{ outline:none; border-color:var(--heather); font-style:normal; color:var(--ink); }
+  .idea-loc-group .idea-group-head .idea-group-title-input{ color:var(--holyrood); }
+  .idea-loc-badge{
+    font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.06em; text-transform:uppercase;
+    background:var(--holyrood); color:var(--parchment); padding:2px 6px; border-radius:2px; flex-shrink:0;
+  }
+.idea-group{ margin-bottom:22px; }
   .idea-group-head{ display:flex; align-items:center; gap:8px; margin:0 0 8px; }
   .idea-group-order button{ width:18px; height:16px; font-size:8px; }
   .idea-group-title-input{ font-family:'Fraunces', serif; font-weight:600; font-size:14.5px; border:none; background:transparent; padding:2px 5px; border-radius:2px; flex:1; min-width:0; }
@@ -1190,7 +1219,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v40.1</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v41</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1470,7 +1499,7 @@
     </div>
 
     <div id="photos-view-ideas" style="display:none;">
-      <p class="section-sub">A starter shot list of classic compositions and Edinburgh-specific shots — tick off what you want, add your own, delete anything that's not for you.</p>
+      <p class="section-sub">Confirmed photo locations appear as sections below so you can plan shots, notes and example images for each place. Classic composition lists follow underneath.</p>
       <div id="photo-ideas-container"></div>
     </div>
   </section>
@@ -1893,8 +1922,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v40.1';
+const APP_VERSION = 'v41';
 const CHANGELOG = [
+  { version:'v41', date:'2026-11-23', notes:[
+    'Shot list: sections for each confirmed photo location with notes, example images and detailed shots'
+  ]},
   { version:'v40.1', date:'2026-11-18', notes:[
     'Fix checklist layout after drag handles; safer drag handlers so the board loads and rows display correctly'
   ]},
@@ -6298,7 +6330,7 @@ function renderPhotoLocations(){
 
 function addPhotoLocation(){
   STATE.photoLocations.push({id:uid(), name:'', distance:'', status:'idea', tags:[], notes:'', link:'', images:[], shots:[], rating:0});
-  scheduleSave('photoLocations'); renderPhotoLocations();
+  scheduleSave('photoLocations'); renderPhotoLocations(); if(typeof photosSubTab!=='undefined' && photosSubTab==='ideas') renderPhotoIdeas();
 }
 
 /* ---- Section-level embedded map: one map covering all locations, sits below the cards ---- */
@@ -6358,9 +6390,95 @@ function setResearchSubTab(tab){
 }
 
 /* ============================= SHOT LIST (photo ideas) ============================= */
+
+function normalizeLocShot(shot){
+  if(typeof shot === 'string') return {id:uid(), text:shot, notes:'', images:[], done:false};
+  return {
+    id: shot.id || uid(),
+    text: shot.text || '',
+    notes: shot.notes || '',
+    images: shot.images || [],
+    done: !!shot.done,
+    _expanded: !!shot._expanded
+  };
+}
+function confirmedPhotoLocations(){
+  return (STATE.photoLocations || []).filter(l => (l.status || '') === 'confirmed');
+}
+function locationShotSectionHtml(loc){
+  loc.shots = (loc.shots || []).map(normalizeLocShot);
+  loc.images = loc.images || [];
+  const doneCt = loc.shots.filter(s => s.done).length;
+  const meta = [loc.distance, (loc.tags||[]).join(', '), loc.rating ? ('\u2605'.repeat(Math.min(5, loc.rating))) : ''].filter(Boolean).join(' \u00b7 ');
+  return `<div class="idea-group idea-loc-group" data-loc-id="${loc.id}">
+    <div class="idea-group-head">
+      <span class="idea-loc-badge">Location</span>
+      <input type="text" class="idea-group-title-input" value="${escapeHtml(loc.name || 'Untitled location')}" data-f="loc-name" title="Location name">
+      <span class="idea-group-count">${doneCt}/${loc.shots.length}</span>
+    </div>
+    ${meta ? `<p class="idea-loc-meta">${escapeHtml(meta)}</p>` : ''}
+    <label style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:rgba(43,42,40,.5);display:block;margin:0 0 4px 4px;">Location notes for the photographer</label>
+    <textarea class="idea-loc-notes" data-f="loc-notes" placeholder="Access, light, timing, weather fallback, what you love about this spot\u2026">${escapeHtml(loc.notes||'')}</textarea>
+    <div class="pl-gallery" style="margin-bottom:10px;">
+      <label class="pl-gallery-label">Location inspiration / examples</label>
+      <div class="pl-gallery-grid">
+        ${loc.images.map(img => `
+          <div class="pl-img-thumb" data-action="open-pl-lightbox" data-src="${escapeHtml(img.src)}">
+            <img src="${escapeHtml(img.src)}" alt="Inspiration" loading="lazy">
+            <button class="pl-img-del" data-action="del-loc-section-image" data-img-id="${img.id}" title="Remove">\u00d7</button>
+          </div>`).join('')}
+      </div>
+      <div class="pl-gallery-add">
+        <label class="pl-upload-btn">+ Upload photo<input type="file" accept="image/*" multiple class="loc-section-image-file" hidden></label>
+        <input type="text" class="loc-section-image-url" placeholder="or paste an image URL, press Enter">
+      </div>
+    </div>
+    <label style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:rgba(43,42,40,.5);display:block;margin:8px 0 6px 4px;">Shots at this location</label>
+    ${loc.shots.map(shot => {
+      const imgs = shot.images || [];
+      return `<div class="idea-row-wrap" data-shot-id="${shot.id}" data-loc-id="${loc.id}">
+        <div class="idea-row ${shot.done?'done':''}">
+          <input type="checkbox" ${shot.done?'checked':''} data-action="toggle-loc-shot">
+          <input type="text" class="idea-text-input" data-f="shot-text" value="${escapeHtml(shot.text)}" placeholder="Describe the shot">
+          <button class="idea-photo-toggle ${imgs.length?'has-photos':''}" data-action="toggle-loc-shot-photos" title="Example photos">\ud83d\udcf7${imgs.length?' '+imgs.length:''}</button>
+          <button class="idea-del" data-action="del-loc-shot" title="Remove">\u00d7</button>
+        </div>
+        <div class="idea-photos-panel" style="display:${shot._expanded?'block':'none'};">
+          <textarea class="idea-shot-notes" data-f="shot-notes" placeholder="Notes for this shot (pose, lens, light\u2026)">${escapeHtml(shot.notes||'')}</textarea>
+          <div class="idea-photos-grid">
+            ${imgs.map(img => `
+              <div class="idea-img-thumb" data-action="open-pl-lightbox" data-src="${escapeHtml(img.src)}">
+                <img src="${escapeHtml(img.src)}" alt="Example" loading="lazy">
+                <button class="pl-img-del" data-action="del-loc-shot-image" data-img-id="${img.id}" title="Remove">\u00d7</button>
+              </div>`).join('')}
+          </div>
+          <div class="idea-photos-add">
+            <label class="pl-upload-btn">+ Upload<input type="file" accept="image/*" multiple class="loc-shot-image-file" hidden></label>
+            <input type="text" class="loc-shot-image-url" placeholder="or paste image URL, Enter">
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+    <div class="idea-add-row">
+      <input type="text" class="loc-shot-add-input" placeholder="+ Add a shot for ${escapeHtml(loc.name || 'this location')}, press Enter">
+    </div>
+  </div>`;
+}
 function renderPhotoIdeas(){
   const c = document.getElementById('photo-ideas-container');
   if(!c) return;
+  const confirmed = confirmedPhotoLocations();
+  // Normalize shots on confirmed locations
+  confirmed.forEach(loc => { loc.shots = (loc.shots || []).map(normalizeLocShot); });
+
+  let html = '';
+  if(confirmed.length){
+    html += `<div class="idea-loc-banner">Confirmed locations (${confirmed.length}) \u2014 plan shots, notes and examples for each</div>`;
+    html += confirmed.map(locationShotSectionHtml).join('');
+  } else {
+    html += `<div class="idea-loc-banner" style="color:rgba(43,42,40,.45);">No confirmed locations yet \u2014 mark spots as \u201cConfirmed with photographer\u201d on the Locations tab to build sections here.</div>`;
+  }
+
   const groups = {};
   (STATE.photoIdeas||[]).forEach(idea => { (groups[idea.category] = groups[idea.category]||[]).push(idea); });
   STATE.photoIdeaCategoryOrder = STATE.photoIdeaCategoryOrder || [];
@@ -6368,12 +6486,16 @@ function renderPhotoIdeas(){
   Object.keys(groups).forEach(cat => { if(!STATE.photoIdeaCategoryOrder.includes(cat)){ STATE.photoIdeaCategoryOrder.push(cat); orderChanged = true; } });
   if(orderChanged) scheduleSave('photoIdeaCategoryOrder');
   const order = STATE.photoIdeaCategoryOrder.filter(cat => groups[cat] && groups[cat].length);
-  c.innerHTML = order.map((cat, catIdx) => `
+
+  if(order.length){
+    html += `<div class="idea-loc-banner" style="margin-top:20px;">General compositions</div>`;
+  }
+  html += order.map((cat, catIdx) => `
     <div class="idea-group" data-cat="${escapeHtml(cat)}">
       <div class="idea-group-head">
         <div class="idea-group-order row-order">
-          <button data-action="idea-cat-up" ${catIdx===0?'disabled':''} title="Move section up">▲</button>
-          <button data-action="idea-cat-down" ${catIdx===order.length-1?'disabled':''} title="Move section down">▼</button>
+          <button data-action="idea-cat-up" ${catIdx===0?'disabled':''} title="Move section up">\u25b2</button>
+          <button data-action="idea-cat-down" ${catIdx===order.length-1?'disabled':''} title="Move section down">\u25bc</button>
         </div>
         <input type="text" class="idea-group-title-input" value="${escapeHtml(cat)}" data-orig-cat="${escapeHtml(cat)}">
         <span class="idea-group-count">${groups[cat].filter(i=>i.done).length}/${groups[cat].length}</span>
@@ -6385,20 +6507,21 @@ function renderPhotoIdeas(){
           <div class="idea-row ${idea.done?'done':''}">
             <input type="checkbox" ${idea.done?'checked':''} data-action="toggle-idea">
             <input type="text" class="idea-text-input" value="${escapeHtml(idea.text)}" placeholder="Describe the shot">
-            <button class="idea-photo-toggle ${imgs.length?'has-photos':''}" data-action="toggle-idea-photos" title="Example photos">📷${imgs.length?' '+imgs.length:''}</button>
-            <button class="idea-del" data-action="del-idea" title="Remove">×</button>
+            <button class="idea-photo-toggle ${imgs.length?'has-photos':''}" data-action="toggle-idea-photos" title="Example photos">\ud83d\udcf7${imgs.length?' '+imgs.length:''}</button>
+            <button class="idea-del" data-action="del-idea" title="Remove">\u00d7</button>
           </div>
           <div class="idea-photos-panel" style="display:${idea._expanded?'block':'none'};">
+            <textarea class="idea-shot-notes" data-f="idea-notes" placeholder="Notes for this shot\u2026">${escapeHtml(idea.notes||'')}</textarea>
             <div class="idea-photos-grid">
               ${imgs.map(img => `
                 <div class="idea-img-thumb" data-action="open-pl-lightbox" data-src="${escapeHtml(img.src)}">
                   <img src="${escapeHtml(img.src)}" alt="Example for ${escapeHtml(idea.text)}" loading="lazy">
-                  <button class="pl-img-del" data-action="del-idea-image" data-img-id="${img.id}" title="Remove">×</button>
+                  <button class="pl-img-del" data-action="del-idea-image" data-img-id="${img.id}" title="Remove">\u00d7</button>
                 </div>`).join('')}
             </div>
             <div class="idea-photos-add">
-              <label class="pl-upload-btn">+ Upload example<input type="file" accept="image/*" multiple class="idea-image-file" hidden></label>
-              <input type="text" class="idea-image-url-input pl-image-url-input" placeholder="or paste an image URL, press Enter">
+              <label class="pl-upload-btn">+ Upload photo<input type="file" accept="image/*" multiple class="idea-image-file" hidden></label>
+              <input type="text" class="idea-image-url-input" placeholder="or paste an image URL, press Enter">
             </div>
           </div>
         </div>`;
@@ -6406,13 +6529,19 @@ function renderPhotoIdeas(){
       <div class="idea-add-row">
         <input type="text" class="idea-add-input" placeholder="+ Add your own idea for ${escapeHtml(cat)}, press Enter">
       </div>
-    </div>`).join('') + `
+    </div>`).join('');
+
+  html += `
     <div class="idea-group" data-cat="__new">
-      <div class="idea-group-title">Add a new category</div>
-      <div class="idea-add-row">
-        <input type="text" class="idea-add-input" id="idea-new-cat-input" placeholder="New category name, press Enter">
+      <div class="idea-add-row" style="padding-top:8px;">
+        <input type="text" id="idea-new-cat-input" placeholder="+ New general section name, press Enter">
       </div>
     </div>`;
+  c.innerHTML = html;
+  c.querySelectorAll('.idea-shot-notes').forEach(el => {
+    el.style.height = 'auto';
+    el.style.height = Math.max(36, el.scrollHeight) + 'px';
+  });
 }
 document.getElementById('photo-ideas-container').addEventListener('input', (e) => {
   if(e.target.classList.contains('idea-text-input')){
@@ -6422,6 +6551,141 @@ document.getElementById('photo-ideas-container').addEventListener('input', (e) =
     scheduleSave('photoIdeas');
   }
 });
+
+function findLocShot(locId, shotId){
+  const loc = (STATE.photoLocations||[]).find(l => l.id === locId);
+  if(!loc) return {};
+  loc.shots = (loc.shots||[]).map(normalizeLocShot);
+  const shot = loc.shots.find(s => s.id === shotId);
+  return {loc, shot};
+}
+document.getElementById('photo-ideas-container').addEventListener('click', (e) => {
+  // Location-section actions
+  const locGroup = e.target.closest('.idea-loc-group');
+  if(locGroup){
+    const locId = locGroup.dataset.locId;
+    const loc = (STATE.photoLocations||[]).find(l => l.id === locId);
+    if(!loc) return;
+    if(e.target.closest('[data-action="open-pl-lightbox"]')){
+      const src = e.target.closest('[data-action="open-pl-lightbox"]').dataset.src;
+      if(src && typeof openPlLightbox === 'function') openPlLightbox(src);
+      return;
+    }
+    if(e.target.closest('[data-action="del-loc-section-image"]')){
+      const id = e.target.closest('[data-action="del-loc-section-image"]').dataset.imgId;
+      loc.images = (loc.images||[]).filter(img => img.id !== id);
+      scheduleSave('photoLocations'); renderPhotoIdeas(); return;
+    }
+    if(e.target.closest('[data-action="toggle-loc-shot"]')){
+      const wrap = e.target.closest('.idea-row-wrap');
+      const {shot} = findLocShot(locId, wrap && wrap.dataset.shotId);
+      if(shot){ shot.done = e.target.checked; scheduleSave('photoLocations'); renderPhotoIdeas(); }
+      return;
+    }
+    if(e.target.closest('[data-action="toggle-loc-shot-photos"]')){
+      const wrap = e.target.closest('.idea-row-wrap');
+      const {shot} = findLocShot(locId, wrap && wrap.dataset.shotId);
+      if(shot){ shot._expanded = !shot._expanded; renderPhotoIdeas(); }
+      return;
+    }
+    if(e.target.closest('[data-action="del-loc-shot"]')){
+      const wrap = e.target.closest('.idea-row-wrap');
+      loc.shots = (loc.shots||[]).filter(s => s.id !== (wrap && wrap.dataset.shotId));
+      scheduleSave('photoLocations'); renderPhotoIdeas(); return;
+    }
+    if(e.target.closest('[data-action="del-loc-shot-image"]')){
+      const wrap = e.target.closest('.idea-row-wrap');
+      const imgId = e.target.closest('[data-action="del-loc-shot-image"]').dataset.imgId;
+      const {shot} = findLocShot(locId, wrap && wrap.dataset.shotId);
+      if(shot){ shot.images = (shot.images||[]).filter(img => img.id !== imgId); scheduleSave('photoLocations'); renderPhotoIdeas(); }
+      return;
+    }
+  }
+}, true);
+
+document.getElementById('photo-ideas-container').addEventListener('input', (e) => {
+  const locGroup = e.target.closest('.idea-loc-group');
+  if(!locGroup){
+    // general idea notes
+    if(e.target.dataset.f === 'idea-notes'){
+      const wrap = e.target.closest('.idea-row-wrap');
+      const idea = STATE.photoIdeas.find(i => i.id === wrap.dataset.id);
+      if(idea){ idea.notes = e.target.value; scheduleSave('photoIdeas'); }
+      e.target.style.height = 'auto'; e.target.style.height = Math.max(36, e.target.scrollHeight)+'px';
+    }
+    return;
+  }
+  const locId = locGroup.dataset.locId;
+  const loc = (STATE.photoLocations||[]).find(l => l.id === locId); if(!loc) return;
+  if(e.target.dataset.f === 'loc-name'){ loc.name = e.target.value; scheduleSave('photoLocations'); return; }
+  if(e.target.dataset.f === 'loc-notes'){ loc.notes = e.target.value; scheduleSave('photoLocations'); return; }
+  const wrap = e.target.closest('.idea-row-wrap');
+  if(!wrap) return;
+  const {shot} = findLocShot(locId, wrap.dataset.shotId); if(!shot) return;
+  if(e.target.dataset.f === 'shot-text'){ shot.text = e.target.value; scheduleSave('photoLocations'); }
+  if(e.target.dataset.f === 'shot-notes'){
+    shot.notes = e.target.value; scheduleSave('photoLocations');
+    e.target.style.height = 'auto'; e.target.style.height = Math.max(36, e.target.scrollHeight)+'px';
+  }
+});
+
+document.getElementById('photo-ideas-container').addEventListener('change', async (e) => {
+  if(e.target.classList.contains('loc-section-image-file')){
+    const locGroup = e.target.closest('.idea-loc-group');
+    const loc = (STATE.photoLocations||[]).find(l => l.id === locGroup.dataset.locId); if(!loc) return;
+    loc.images = loc.images || [];
+    const files = Array.from(e.target.files||[]).filter(f => f.type.startsWith('image/'));
+    for(const file of files){
+      try{ loc.images.push({id:uid(), src: await readAndCompressImage(file)}); }
+      catch(err){ showToast(`Couldn't add "${file.name}"`, [], 4000); }
+    }
+    e.target.value = ''; scheduleSave('photoLocations'); renderPhotoIdeas(); return;
+  }
+  if(e.target.classList.contains('loc-shot-image-file')){
+    const wrap = e.target.closest('.idea-row-wrap');
+    const locId = wrap.dataset.locId;
+    const {shot} = findLocShot(locId, wrap.dataset.shotId); if(!shot) return;
+    shot.images = shot.images || [];
+    const files = Array.from(e.target.files||[]).filter(f => f.type.startsWith('image/'));
+    for(const file of files){
+      try{ shot.images.push({id:uid(), src: await readAndCompressImage(file)}); }
+      catch(err){ showToast(`Couldn't add "${file.name}"`, [], 4000); }
+    }
+    e.target.value = ''; shot._expanded = true; scheduleSave('photoLocations'); renderPhotoIdeas();
+  }
+});
+
+document.getElementById('photo-ideas-container').addEventListener('keydown', (e) => {
+  if(e.key !== 'Enter') return;
+  if(e.target.classList.contains('loc-shot-add-input')){
+    e.preventDefault();
+    const locGroup = e.target.closest('.idea-loc-group');
+    const loc = (STATE.photoLocations||[]).find(l => l.id === locGroup.dataset.locId); if(!loc) return;
+    const text = e.target.value.trim(); if(!text) return;
+    loc.shots = (loc.shots||[]).map(normalizeLocShot);
+    loc.shots.push({id:uid(), text, notes:'', images:[], done:false});
+    e.target.value = ''; scheduleSave('photoLocations'); renderPhotoIdeas(); return;
+  }
+  if(e.target.classList.contains('loc-section-image-url')){
+    e.preventDefault();
+    const locGroup = e.target.closest('.idea-loc-group');
+    const loc = (STATE.photoLocations||[]).find(l => l.id === locGroup.dataset.locId); if(!loc) return;
+    const raw = e.target.value.trim(); if(!raw) return;
+    const url = /^https?:\/\//i.test(raw) ? raw : 'https://'+raw;
+    loc.images = loc.images || []; loc.images.push({id:uid(), src:url});
+    e.target.value = ''; scheduleSave('photoLocations'); renderPhotoIdeas(); return;
+  }
+  if(e.target.classList.contains('loc-shot-image-url')){
+    e.preventDefault();
+    const wrap = e.target.closest('.idea-row-wrap');
+    const {shot} = findLocShot(wrap.dataset.locId, wrap.dataset.shotId); if(!shot) return;
+    const raw = e.target.value.trim(); if(!raw) return;
+    const url = /^https?:\/\//i.test(raw) ? raw : 'https://'+raw;
+    shot.images = shot.images || []; shot.images.push({id:uid(), src:url}); shot._expanded = true;
+    e.target.value = ''; scheduleSave('photoLocations'); renderPhotoIdeas();
+  }
+});
+
 document.getElementById('photo-ideas-container').addEventListener('click', (e) => {
   const thumb = e.target.closest('[data-action="open-pl-lightbox"]');
   if(thumb){ openPlLightbox(thumb.dataset.src); return; }
@@ -6675,7 +6939,7 @@ document.getElementById('photo-locations-container').addEventListener('click', (
   if(e.target.dataset.action === 'del-photo-loc'){
     const card = e.target.closest('.photo-location-card');
     STATE.photoLocations = STATE.photoLocations.filter(x => x.id !== card.dataset.id);
-    scheduleSave('photoLocations'); renderPhotoLocations(); return;
+    scheduleSave('photoLocations'); renderPhotoLocations(); if(typeof photosSubTab!=='undefined' && photosSubTab==='ideas') renderPhotoIdeas(); return;
   }
   if(e.target.dataset.action === 'set-pl-rating'){
     const card = e.target.closest('.photo-location-card'); if(!card) return;
@@ -6692,7 +6956,7 @@ document.getElementById('photo-locations-container').addEventListener('click', (
     const swapWith = e.target.dataset.action === 'pl-move-up' ? idx - 1 : idx + 1;
     if(swapWith < 0 || swapWith >= STATE.photoLocations.length) return;
     [STATE.photoLocations[idx], STATE.photoLocations[swapWith]] = [STATE.photoLocations[swapWith], STATE.photoLocations[idx]];
-    scheduleSave('photoLocations'); renderPhotoLocations(); return;
+    scheduleSave('photoLocations'); renderPhotoLocations(); if(typeof photosSubTab!=='undefined' && photosSubTab==='ideas') renderPhotoIdeas(); return;
   }
   if(e.target.dataset.action === 'del-pl-tag-option'){
     const tag = e.target.dataset.tag;
@@ -6706,13 +6970,13 @@ document.getElementById('photo-locations-container').addEventListener('click', (
     const loc = STATE.photoLocations.find(x => x.id === card.dataset.id); if(!loc) return;
     const row = e.target.closest('.pl-shot-row'); if(!row) return;
     loc.shots = (loc.shots||[]).filter(s => s.id !== row.dataset.shotId);
-    scheduleSave('photoLocations'); renderPhotoLocations(); return;
+    scheduleSave('photoLocations'); renderPhotoLocations(); if(typeof photosSubTab!=='undefined' && photosSubTab==='ideas') renderPhotoIdeas(); return;
   }
   if(e.target.dataset.action === 'del-pl-image'){
     const card = e.target.closest('.photo-location-card'); if(!card) return;
     const loc = STATE.photoLocations.find(x => x.id === card.dataset.id); if(!loc) return;
     loc.images = (loc.images||[]).filter(im => im.id !== e.target.dataset.imgId);
-    scheduleSave('photoLocations'); renderPhotoLocations(); return;
+    scheduleSave('photoLocations'); renderPhotoLocations(); if(typeof photosSubTab!=='undefined' && photosSubTab==='ideas') renderPhotoIdeas(); return;
   }
   const thumb = e.target.closest('[data-action="open-pl-lightbox"]');
   if(thumb){ openPlLightbox(thumb.dataset.src); return; }
