@@ -1402,7 +1402,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.7</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.8</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -2105,8 +2105,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v41.7';
+const APP_VERSION = 'v41.8';
 const CHANGELOG = [
+  { version:'v41.8', date:'2026-11-23', notes:[
+    'Shot list: image × deletes the example (no longer opens lightbox instead)'
+  ]},
   { version:'v41.7', date:'2026-11-23', notes:[
     'Delete general composition sections inline with the section × control'
   ]},
@@ -6772,12 +6775,13 @@ document.getElementById('photo-ideas-container').addEventListener('click', (e) =
     const locId = locGroup.dataset.locId;
     const loc = (STATE.photoLocations||[]).find(l => l.id === locId);
     if(!loc) return;
-    if(e.target.closest('[data-action="open-pl-lightbox"]')){
+    if(e.target.closest('[data-action="open-pl-lightbox"]') && !e.target.closest('.pl-img-del, [data-action^="del-"]')){
       const src = e.target.closest('[data-action="open-pl-lightbox"]').dataset.src;
       if(src && typeof openPlLightbox === 'function') openPlLightbox(src);
       return;
     }
     if(e.target.closest('[data-action="del-loc-section-image"]')){
+      e.preventDefault(); e.stopPropagation();
       const id = e.target.closest('[data-action="del-loc-section-image"]').dataset.imgId;
       loc.images = (loc.images||[]).filter(img => img.id !== id);
       scheduleSave('photoLocations'); renderPhotoIdeas(); return;
@@ -6800,6 +6804,7 @@ document.getElementById('photo-ideas-container').addEventListener('click', (e) =
       scheduleSave('photoLocations'); renderPhotoIdeas(); return;
     }
     if(e.target.closest('[data-action="del-loc-shot-image"]')){
+      e.preventDefault(); e.stopPropagation();
       const wrap = e.target.closest('.idea-row-wrap');
       const imgId = e.target.closest('[data-action="del-loc-shot-image"]').dataset.imgId;
       const {shot} = findLocShot(locId, wrap && wrap.dataset.shotId);
@@ -6893,8 +6898,12 @@ document.getElementById('photo-ideas-container').addEventListener('keydown', (e)
 });
 
 document.getElementById('photo-ideas-container').addEventListener('click', (e) => {
-  const thumb = e.target.closest('[data-action="open-pl-lightbox"]');
-  if(thumb){ openPlLightbox(thumb.dataset.src); return; }
+  if(e.target.closest('.pl-img-del, [data-action^="del-"]')){
+    /* handled below — do not open lightbox */
+  } else {
+    const thumb = e.target.closest('[data-action="open-pl-lightbox"]');
+    if(thumb){ openPlLightbox(thumb.dataset.src); return; }
+  }
 
   if(e.target.closest('[data-action="idea-cat-del"]')){
     const group = e.target.closest('.idea-group');
@@ -6947,11 +6956,16 @@ document.getElementById('photo-ideas-container').addEventListener('click', (e) =
     if(panel) panel.style.display = idea._expanded ? 'block' : 'none';
     return;
   }
-  if(e.target.dataset.action === 'del-idea-image'){
-    idea.images = (idea.images||[]).filter(im => im.id !== e.target.dataset.imgId);
-    scheduleSave('photoIdeas');
-    renderPhotoIdeas();
-    return;
+  {
+    const delImgBtn = e.target.closest('[data-action="del-idea-image"]');
+    if(delImgBtn){
+      e.preventDefault(); e.stopPropagation();
+      const id = delImgBtn.dataset.imgId;
+      idea.images = (idea.images||[]).filter(im => im.id !== id);
+      scheduleSave('photoIdeas');
+      renderPhotoIdeas();
+      return;
+    }
   }
 });
 document.getElementById('photo-ideas-container').addEventListener('change', async (e) => {
