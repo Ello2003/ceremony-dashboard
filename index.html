@@ -1391,6 +1391,24 @@
     #more-sheet .more-tools button{ background:none; border:none; font-family:'IBM Plex Mono',monospace; font-size:11px; color:rgba(43,42,40,.6); min-height:44px; cursor:pointer; text-decoration:underline; }
   }
   @media (prefers-reduced-motion:reduce){ #more-sheet{ transition:none; } }
+
+  .idea-shot-upload-row.attach-drop-target,
+  .pl-gallery-add.attach-drop-target{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+    min-height:40px; border:1px dashed var(--line); border-radius:3px;
+    padding:8px 10px; transition:background .12s, border-color .12s;
+  }
+  .idea-shot-upload-row.attach-drop-target.drag-over,
+  .pl-gallery-add.attach-drop-target.drag-over{
+    background:rgba(46,99,103,0.07); border-color:var(--holyrood); border-style:solid;
+  }
+  .idea-shot-upload-row .drop-label,
+  .pl-gallery-add .drop-label{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--heather);
+    pointer-events:none; flex:1; min-width:120px;
+  }
+  .idea-shot-upload-row.attach-drop-target.drag-over .drop-label,
+  .pl-gallery-add.attach-drop-target.drag-over .drop-label{ color:var(--holyrood); }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1402,7 +1420,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.8</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.9</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -2105,8 +2123,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v41.8';
+const APP_VERSION = 'v41.9';
 const CHANGELOG = [
+  { version:'v41.9', date:'2026-11-23', notes:[
+    'Drag and drop photos onto shot-list and location upload zones'
+  ]},
   { version:'v41.8', date:'2026-11-23', notes:[
     'Shot list: image × deletes the example (no longer opens lightbox instead)'
   ]},
@@ -6523,7 +6544,8 @@ function renderPhotoLocations(){
               <button class="pl-img-del" data-action="del-pl-image" data-img-id="${img.id}" title="Remove image">×</button>
             </div>`).join('')}
         </div>
-        <div class="pl-gallery-add">
+        <div class="pl-gallery-add attach-drop-target" data-drop="pl-location" title="Drop photos here or tap to upload">
+          <span class="drop-label">Drop photos here or</span>
           <label class="pl-upload-btn">+ Upload photo<input type="file" accept="image/*" multiple class="pl-image-file" hidden></label>
           <input type="text" class="pl-image-url-input" placeholder="or paste an image URL, press Enter">
         </div>
@@ -6635,9 +6657,10 @@ function locationShotSectionHtml(loc){
             <button class="pl-img-del" data-action="del-loc-section-image" data-img-id="${img.id}" title="Remove image">\u00d7</button>
           </div>`).join('')}
       </div>
-      <div class="pl-gallery-add">
+      <div class="pl-gallery-add attach-drop-target" data-drop="loc-section" title="Drop photos here or tap to upload">
+        <span class="drop-label">Drop photos here or</span>
         <label class="pl-upload-btn">+ Upload photo<input type="file" accept="image/*" multiple class="loc-section-image-file" hidden></label>
-        <input type="text" class="loc-section-image-url" placeholder="or paste an image URL, press Enter">
+        <input type="text" class="loc-section-image-url" placeholder="paste image URL, Enter">
       </div>
     </div>
     <div class="pl-shots-block">
@@ -6659,9 +6682,10 @@ function locationShotSectionHtml(loc){
                   <button class="pl-img-del" data-action="del-loc-shot-image" data-img-id="${img.id}" title="Remove">×</button>
                 </div>`).join('')}
             </div>
-            <div class="idea-shot-upload-row">
-              <label class="pl-upload-btn">+ Upload example<input type="file" accept="image/*" multiple class="loc-shot-image-file" hidden></label>
-              <input type="text" class="loc-shot-image-url" placeholder="or paste image URL, Enter">
+            <div class="idea-shot-upload-row attach-drop-target" data-drop="loc-shot" title="Drop photos here or tap to upload">
+              <span class="drop-label">Drop photos here or</span>
+              <label class="pl-upload-btn">+ Upload<input type="file" accept="image/*" multiple class="loc-shot-image-file" hidden></label>
+              <input type="text" class="loc-shot-image-url" placeholder="paste image URL, Enter">
             </div>
           </div>
         </div>`;
@@ -6728,9 +6752,10 @@ function renderPhotoIdeas(){
                   <button class="pl-img-del" data-action="del-idea-image" data-img-id="${img.id}" title="Remove">×</button>
                 </div>`).join('')}
             </div>
-            <div class="idea-shot-upload-row">
-              <label class="pl-upload-btn">+ Upload example<input type="file" accept="image/*" multiple class="idea-image-file" hidden></label>
-              <input type="text" class="idea-image-url-input" placeholder="or paste image URL, Enter">
+            <div class="idea-shot-upload-row attach-drop-target" data-drop="idea" title="Drop photos here or tap to upload">
+              <span class="drop-label">Drop photos here or</span>
+              <label class="pl-upload-btn">+ Upload<input type="file" accept="image/*" multiple class="idea-image-file" hidden></label>
+              <input type="text" class="idea-image-url-input" placeholder="paste image URL, Enter">
             </div>
           </div>
         </div>`;
@@ -6839,6 +6864,94 @@ document.getElementById('photo-ideas-container').addEventListener('input', (e) =
     e.target.style.height = 'auto'; e.target.style.height = Math.max(36, e.target.scrollHeight)+'px';
   }
 });
+
+
+/* ---- Shot list / photo ideas: drag-and-drop image upload ---- */
+(function bindPhotoIdeasDrop(){
+  const root = document.getElementById('photo-ideas-container');
+  if(!root || root._photoDropBound) return;
+  root._photoDropBound = true;
+  const zoneOf = (t) => t && t.closest && t.closest('.attach-drop-target[data-drop]');
+  root.addEventListener('dragenter', (e) => {
+    const z = zoneOf(e.target); if(z){ e.preventDefault(); z.classList.add('drag-over'); }
+  }, false);
+  root.addEventListener('dragover', (e) => {
+    const z = zoneOf(e.target); if(z){ e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; z.classList.add('drag-over'); }
+  }, false);
+  root.addEventListener('dragleave', (e) => {
+    const z = zoneOf(e.target); if(z && !z.contains(e.relatedTarget)) z.classList.remove('drag-over');
+  }, false);
+  root.addEventListener('drop', async (e) => {
+    const z = zoneOf(e.target); if(!z) return;
+    e.preventDefault(); e.stopPropagation();
+    z.classList.remove('drag-over');
+    const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
+    if(!files.length){ showToast('Drop image files only', [], 3000); return; }
+    const kind = z.dataset.drop;
+    try{
+      if(kind === 'idea'){
+        const wrap = z.closest('.idea-row-wrap');
+        const idea = STATE.photoIdeas.find(i => i.id === (wrap && wrap.dataset.id));
+        if(!idea) return;
+        idea.images = idea.images || [];
+        for(const file of files){
+          try{ idea.images.push({id:uid(), src: await readAndCompressImage(file)}); }
+          catch(err){ showToast('Could not add "'+file.name+'"', [], 4000); }
+        }
+        scheduleSave('photoIdeas'); renderPhotoIdeas();
+      } else if(kind === 'loc-shot'){
+        const wrap = z.closest('.idea-row-wrap');
+        const locId = wrap && wrap.dataset.locId;
+        const shotId = wrap && wrap.dataset.shotId;
+        const found = typeof findLocShot === 'function' ? findLocShot(locId, shotId) : {};
+        const shot = found.shot;
+        if(!shot) return;
+        shot.images = shot.images || [];
+        for(const file of files){
+          try{ shot.images.push({id:uid(), src: await readAndCompressImage(file)}); }
+          catch(err){ showToast('Could not add "'+file.name+'"', [], 4000); }
+        }
+        scheduleSave('photoLocations'); renderPhotoIdeas();
+      } else if(kind === 'loc-section'){
+        const group = z.closest('.idea-loc-group');
+        const loc = (STATE.photoLocations||[]).find(l => l.id === (group && group.dataset.locId));
+        if(!loc) return;
+        loc.images = loc.images || [];
+        for(const file of files){
+          try{ loc.images.push({id:uid(), src: await readAndCompressImage(file)}); }
+          catch(err){ showToast('Could not add "'+file.name+'"', [], 4000); }
+        }
+        scheduleSave('photoLocations'); renderPhotoIdeas();
+      }
+    }catch(err){ console.error(err); showToast('Upload failed', [], 4000); }
+  }, false);
+})();
+
+(function bindPhotoLocationsDrop(){
+  const root = document.getElementById('photo-locations-container');
+  if(!root || root._photoDropBound) return;
+  root._photoDropBound = true;
+  const zoneOf = (t) => t && t.closest && t.closest('.attach-drop-target[data-drop="pl-location"]');
+  root.addEventListener('dragenter', (e) => { const z = zoneOf(e.target); if(z){ e.preventDefault(); z.classList.add('drag-over'); } }, false);
+  root.addEventListener('dragover', (e) => { const z = zoneOf(e.target); if(z){ e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } }, false);
+  root.addEventListener('dragleave', (e) => { const z = zoneOf(e.target); if(z && !z.contains(e.relatedTarget)) z.classList.remove('drag-over'); }, false);
+  root.addEventListener('drop', async (e) => {
+    const z = zoneOf(e.target); if(!z) return;
+    e.preventDefault(); e.stopPropagation(); z.classList.remove('drag-over');
+    const card = z.closest('.photo-location-card');
+    const loc = (STATE.photoLocations||[]).find(l => l.id === (card && card.dataset.id));
+    if(!loc) return;
+    const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
+    if(!files.length){ showToast('Drop image files only', [], 3000); return; }
+    loc.images = loc.images || [];
+    for(const file of files){
+      try{ loc.images.push({id:uid(), src: await readAndCompressImage(file)}); }
+      catch(err){ showToast('Could not add "'+file.name+'"', [], 4000); }
+    }
+    scheduleSave('photoLocations'); renderPhotoLocations();
+  }, false);
+})();
+
 
 document.getElementById('photo-ideas-container').addEventListener('change', async (e) => {
   if(e.target.classList.contains('loc-section-image-file')){
