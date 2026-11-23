@@ -704,7 +704,73 @@
     font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
     color:rgba(43,42,40,.45); margin:4px 0 14px; padding-bottom:8px; border-bottom:1px solid var(--line);
   }
-  .idea-group.idea-loc-group,
+  
+  .idea-group.idea-comp-group{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-left:3px solid var(--heather);
+    border-radius:3px;
+    padding:16px;
+    margin-bottom:12px;
+  }
+  .idea-comp-group .idea-group-head{
+    display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:0;
+  }
+  .idea-comp-badge{
+    font-family:'IBM Plex Mono', monospace; font-size:11px;
+    border:1px solid var(--heather); border-radius:2px; padding:5px 8px;
+    color:var(--heather); background:rgba(135,120,158,.07); font-weight:600; flex-shrink:0;
+  }
+  .idea-comp-group .idea-group-title-input{
+    font-family:'Fraunces', serif; font-weight:600; font-size:15px;
+    border:none; background:transparent; width:100%; padding:0; color:var(--ink); flex:1; min-width:0;
+  }
+  .idea-comp-group .idea-group-title-input:focus{
+    outline:none; background:transparent;
+  }
+  .idea-comp-group .idea-group-count{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:rgba(43,42,40,.55); flex-shrink:0;
+  }
+  .idea-comp-group .idea-group-order button{
+    background:none; border:1px solid var(--line); color:rgba(43,42,40,0.5);
+    font-size:9px; width:20px; height:19px; cursor:pointer; border-radius:2px; padding:0; line-height:1;
+  }
+  .idea-comp-group .idea-group-order button:hover{
+    border-color:var(--heather); color:var(--heather);
+  }
+  .idea-comp-group .idea-group-order button:disabled{
+    opacity:0.3; cursor:default;
+  }
+  .idea-comp-group .idea-row-wrap{
+    border-bottom:1px solid var(--line); padding:4px 0;
+  }
+  .idea-comp-group .idea-row-wrap:last-of-type{ border-bottom:none; }
+  .idea-comp-group .idea-text-input{
+    flex:1; font-family:'Source Serif 4', serif; font-size:13.5px;
+    border:1px solid transparent; background:transparent; padding:4px 6px; border-radius:2px; color:var(--ink);
+  }
+  .idea-comp-group .idea-text-input:focus{
+    outline:none; border-color:var(--line); background:var(--parchment-dim);
+  }
+  .idea-comp-group .idea-add-row{
+    margin-top:8px;
+  }
+  .idea-comp-group .idea-add-input{
+    width:100%; font-family:'Source Serif 4',serif; font-size:13px;
+    border:1px dashed var(--line); border-radius:2px; padding:8px 10px; background:transparent;
+    color:var(--ink); box-sizing:border-box;
+  }
+  .idea-comp-group .idea-add-input:focus{
+    outline:none; border-style:solid; border-color:var(--heather);
+  }
+  .idea-comp-group .idea-shot-extra{
+    padding-left:28px;
+  }
+  .idea-loc-banner{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:rgba(43,42,40,.45); margin:4px 0 14px; padding-bottom:8px; border-bottom:1px solid var(--line);
+  }
+.idea-group.idea-loc-group,
   .photo-location-card.idea-loc-card{
     background:var(--card);
     border:1px solid var(--line);
@@ -1335,7 +1401,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.3</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.4</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -2038,8 +2104,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v41.3';
+const APP_VERSION = 'v41.4';
 const CHANGELOG = [
+  { version:'v41.4', date:'2026-11-23', notes:[
+    'General composition sections styled to match confirmed location cards'
+  ]},
   { version:'v41.3', date:'2026-11-23', notes:[
     'Each photo idea shows notes and its own example upload under the idea'
   ]},
@@ -6660,7 +6729,7 @@ function renderPhotoIdeas(){
     </div>`).join('');
 
   html += `
-    <div class="idea-group" data-cat="__new">
+    <div class="idea-group idea-comp-group" data-cat="__new" style="border-left-color:var(--line);padding:12px 16px;">
       <div class="idea-add-row" style="padding-top:8px;">
         <input type="text" id="idea-new-cat-input" placeholder="+ New general section name, press Enter">
       </div>
