@@ -702,31 +702,99 @@
   
   .idea-loc-banner{
     font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
-    color:var(--holyrood); margin:4px 0 12px; padding-bottom:6px; border-bottom:1px solid rgba(46,99,103,.2);
+    color:rgba(43,42,40,.45); margin:4px 0 14px; padding-bottom:8px; border-bottom:1px solid var(--line);
   }
-  .idea-group.idea-loc-group{
-    border-left:3px solid var(--holyrood); background:rgba(46,99,103,.04);
+  .idea-group.idea-loc-group,
+  .photo-location-card.idea-loc-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-left:3px solid var(--holyrood);
+    border-radius:3px;
+    padding:16px;
+    margin-bottom:12px;
+  }
+  .idea-loc-card .pl-head{
+    display:flex; align-items:center; gap:10px; margin-bottom:10px;
+  }
+  .idea-loc-card input.pl-name{
+    font-family:'Fraunces', serif; font-weight:600; font-size:15px;
+    border:none; background:transparent; width:100%; padding:0; color:var(--ink); flex:1; min-width:0;
+  }
+  .idea-loc-card input.pl-name:focus{ outline:none; }
+  .idea-loc-status{
+    font-family:'IBM Plex Mono', monospace; font-size:11px;
+    border:1px solid var(--holyrood); border-radius:2px; padding:5px 8px;
+    color:var(--holyrood); background:rgba(46,99,103,.1); font-weight:600; flex-shrink:0;
+  }
+  .idea-loc-count{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:rgba(43,42,40,.55); flex-shrink:0;
   }
   .idea-loc-meta{
-    font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:rgba(43,42,40,.55);
-    margin:0 0 8px 0; padding:0 4px;
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:rgba(43,42,40,.55);
+    margin:0 0 10px; padding:0;
   }
-  .idea-loc-notes{
-    width:100%; min-height:52px; font-family:'Source Serif 4',serif; font-size:13px;
-    border:1px solid var(--line); border-radius:3px; padding:8px; background:var(--card);
-    color:var(--ink); resize:vertical; margin-bottom:10px; box-sizing:border-box;
+  .idea-loc-card .pl-field-label{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase;
+    letter-spacing:.06em; color:rgba(43,42,40,.5); display:block; margin-bottom:4px;
   }
-  .idea-loc-notes:focus{ outline:none; border-color:var(--holyrood); }
-  .idea-shot-notes{
-    width:100%; min-height:36px; font-family:'Source Serif 4',serif; font-size:12.5px; font-style:italic;
-    border:1px solid var(--line); border-radius:2px; padding:6px 8px; background:transparent;
-    color:rgba(43,42,40,.75); resize:none; overflow:hidden; box-sizing:border-box; margin-top:6px;
+  .idea-loc-card textarea.idea-loc-notes,
+  .idea-loc-card textarea.pl-notes{
+    width:100%; min-height:64px; font-family:'Source Serif 4',serif; font-size:13.5px;
+    border:1px solid var(--line); border-radius:2px; padding:8px 10px; background:transparent;
+    color:var(--ink); resize:vertical; margin-bottom:12px; box-sizing:border-box; line-height:1.45;
   }
-  .idea-shot-notes:focus{ outline:none; border-color:var(--heather); font-style:normal; color:var(--ink); }
-  .idea-loc-group .idea-group-head .idea-group-title-input{ color:var(--holyrood); }
-  .idea-loc-badge{
-    font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.06em; text-transform:uppercase;
-    background:var(--holyrood); color:var(--parchment); padding:2px 6px; border-radius:2px; flex-shrink:0;
+  .idea-loc-card textarea.idea-loc-notes:focus,
+  .idea-loc-card textarea.pl-notes:focus{ outline:none; border-color:var(--holyrood); }
+  .idea-loc-card .pl-gallery{ margin-top:4px; padding-top:12px; border-top:1px solid var(--line); }
+  .idea-loc-card .pl-shots-block{ margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+  .idea-loc-card .idea-row-wrap{
+    border-bottom:1px solid var(--line); padding:4px 0;
+  }
+  .idea-loc-card .idea-row-wrap:last-of-type{ border-bottom:none; }
+  .idea-loc-card .idea-row{
+    display:flex; align-items:center; gap:8px; padding:6px 0;
+  }
+  .idea-loc-card .idea-text-input{
+    flex:1; font-family:'Source Serif 4', serif; font-size:13.5px;
+    border:1px solid transparent; background:transparent; padding:4px 6px; border-radius:2px; color:var(--ink);
+  }
+  .idea-loc-card .idea-text-input:focus{
+    outline:none; border-color:var(--line); background:var(--parchment-dim);
+  }
+  .idea-loc-card .idea-shot-notes{
+    width:100%; min-height:40px; font-family:'Source Serif 4',serif; font-size:12.5px;
+    border:1px solid var(--line); border-radius:2px; padding:7px 9px; background:transparent;
+    color:rgba(43,42,40,.7); resize:none; overflow:hidden; box-sizing:border-box; margin-top:4px;
+  }
+  .idea-loc-card .idea-shot-notes:focus{
+    outline:none; border-color:var(--heather); color:var(--ink);
+  }
+  .idea-loc-card .idea-add-row{
+    margin-top:8px;
+  }
+  .idea-loc-card .loc-shot-add-input,
+  .idea-loc-card .loc-section-image-url{
+    width:100%; font-family:'Source Serif 4',serif; font-size:13px;
+    border:1px dashed var(--line); border-radius:2px; padding:8px 10px; background:transparent;
+    color:var(--ink); box-sizing:border-box;
+  }
+  .idea-loc-card .loc-shot-add-input:focus,
+  .idea-loc-card .loc-section-image-url:focus{
+    outline:none; border-style:solid; border-color:var(--holyrood);
+  }
+  .idea-loc-card .idea-photo-toggle{
+    font-size:12px; background:none; border:none; padding:2px 4px; cursor:pointer;
+    color:rgba(43,42,40,.28); flex:none;
+  }
+  .idea-loc-card .idea-photo-toggle.has-photos{ color:var(--holyrood); }
+  .idea-loc-card .idea-del{
+    background:none; border:none; color:rgba(43,42,40,.35); cursor:pointer; font-size:15px;
+    width:24px; height:24px; flex:none; opacity:0; transition:opacity .12s ease;
+  }
+  .idea-loc-card .idea-row-wrap:hover .idea-del{ opacity:1; }
+  .idea-loc-card .idea-del:hover{ color:var(--rose); }
+  .idea-loc-card .idea-photos-panel{
+    padding:4px 0 10px 28px;
   }
 .idea-group{ margin-bottom:22px; }
   .idea-group-head{ display:flex; align-items:center; gap:8px; margin:0 0 8px; }
@@ -1219,7 +1287,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v41</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.1</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -1922,8 +1990,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v41';
+const APP_VERSION = 'v41.1';
 const CHANGELOG = [
+  { version:'v41.1', date:'2026-11-23', notes:[
+    'Shot list location sections restyled to match Photo Locations cards (tones, borders, type)'
+  ]},
   { version:'v41', date:'2026-11-23', notes:[
     'Shot list: sections for each confirmed photo location with notes, example images and detailed shots'
   ]},
@@ -6409,23 +6480,26 @@ function locationShotSectionHtml(loc){
   loc.shots = (loc.shots || []).map(normalizeLocShot);
   loc.images = loc.images || [];
   const doneCt = loc.shots.filter(s => s.done).length;
-  const meta = [loc.distance, (loc.tags||[]).join(', '), loc.rating ? ('\u2605'.repeat(Math.min(5, loc.rating))) : ''].filter(Boolean).join(' \u00b7 ');
-  return `<div class="idea-group idea-loc-group" data-loc-id="${loc.id}">
-    <div class="idea-group-head">
-      <span class="idea-loc-badge">Location</span>
-      <input type="text" class="idea-group-title-input" value="${escapeHtml(loc.name || 'Untitled location')}" data-f="loc-name" title="Location name">
-      <span class="idea-group-count">${doneCt}/${loc.shots.length}</span>
+  const meta = [loc.distance, (loc.tags||[]).join(', ')].filter(Boolean).join(' \u00b7 ');
+  const stars = loc.rating ? `<span class="pl-rating" style="display:inline;margin:0 0 0 6px;">${'\u2605'.repeat(Math.min(5,loc.rating||0))}</span>` : '';
+  return `<div class="photo-location-card idea-loc-card status-confirmed idea-group idea-loc-group" data-loc-id="${loc.id}">
+    <div class="pl-head">
+      <input type="text" class="pl-name" value="${escapeHtml(loc.name || 'Untitled location')}" data-f="loc-name" placeholder="Location name">
+      <span class="idea-loc-status">Confirmed</span>
+      <span class="idea-loc-count">${doneCt}/${loc.shots.length} shots</span>
     </div>
-    ${meta ? `<p class="idea-loc-meta">${escapeHtml(meta)}</p>` : ''}
-    <label style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:rgba(43,42,40,.5);display:block;margin:0 0 4px 4px;">Location notes for the photographer</label>
-    <textarea class="idea-loc-notes" data-f="loc-notes" placeholder="Access, light, timing, weather fallback, what you love about this spot\u2026">${escapeHtml(loc.notes||'')}</textarea>
-    <div class="pl-gallery" style="margin-bottom:10px;">
-      <label class="pl-gallery-label">Location inspiration / examples</label>
+    ${meta || loc.rating ? `<p class="idea-loc-meta">${escapeHtml(meta)}${stars}</p>` : ''}
+    <div>
+      <label class="pl-field-label">Notes / description</label>
+      <textarea class="idea-loc-notes pl-notes" data-f="loc-notes" placeholder="What makes this spot special, what to look out for in December\u2026">${escapeHtml(loc.notes||'')}</textarea>
+    </div>
+    <div class="pl-gallery">
+      <label class="pl-gallery-label">Inspiration images</label>
       <div class="pl-gallery-grid">
         ${loc.images.map(img => `
           <div class="pl-img-thumb" data-action="open-pl-lightbox" data-src="${escapeHtml(img.src)}">
-            <img src="${escapeHtml(img.src)}" alt="Inspiration" loading="lazy">
-            <button class="pl-img-del" data-action="del-loc-section-image" data-img-id="${img.id}" title="Remove">\u00d7</button>
+            <img src="${escapeHtml(img.src)}" alt="Inspiration for ${escapeHtml(loc.name||'this location')}" loading="lazy">
+            <button class="pl-img-del" data-action="del-loc-section-image" data-img-id="${img.id}" title="Remove image">\u00d7</button>
           </div>`).join('')}
       </div>
       <div class="pl-gallery-add">
@@ -6433,34 +6507,36 @@ function locationShotSectionHtml(loc){
         <input type="text" class="loc-section-image-url" placeholder="or paste an image URL, press Enter">
       </div>
     </div>
-    <label style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:rgba(43,42,40,.5);display:block;margin:8px 0 6px 4px;">Shots at this location</label>
-    ${loc.shots.map(shot => {
-      const imgs = shot.images || [];
-      return `<div class="idea-row-wrap" data-shot-id="${shot.id}" data-loc-id="${loc.id}">
-        <div class="idea-row ${shot.done?'done':''}">
-          <input type="checkbox" ${shot.done?'checked':''} data-action="toggle-loc-shot">
-          <input type="text" class="idea-text-input" data-f="shot-text" value="${escapeHtml(shot.text)}" placeholder="Describe the shot">
-          <button class="idea-photo-toggle ${imgs.length?'has-photos':''}" data-action="toggle-loc-shot-photos" title="Example photos">\ud83d\udcf7${imgs.length?' '+imgs.length:''}</button>
-          <button class="idea-del" data-action="del-loc-shot" title="Remove">\u00d7</button>
-        </div>
-        <div class="idea-photos-panel" style="display:${shot._expanded?'block':'none'};">
-          <textarea class="idea-shot-notes" data-f="shot-notes" placeholder="Notes for this shot (pose, lens, light\u2026)">${escapeHtml(shot.notes||'')}</textarea>
-          <div class="idea-photos-grid">
-            ${imgs.map(img => `
-              <div class="idea-img-thumb" data-action="open-pl-lightbox" data-src="${escapeHtml(img.src)}">
-                <img src="${escapeHtml(img.src)}" alt="Example" loading="lazy">
-                <button class="pl-img-del" data-action="del-loc-shot-image" data-img-id="${img.id}" title="Remove">\u00d7</button>
-              </div>`).join('')}
+    <div class="pl-shots-block">
+      <label class="pl-field-label">Shots for this location</label>
+      ${loc.shots.map(shot => {
+        const imgs = shot.images || [];
+        return `<div class="idea-row-wrap" data-shot-id="${shot.id}" data-loc-id="${loc.id}">
+          <div class="idea-row ${shot.done?'done':''}">
+            <input type="checkbox" ${shot.done?'checked':''} data-action="toggle-loc-shot">
+            <input type="text" class="idea-text-input" data-f="shot-text" value="${escapeHtml(shot.text)}" placeholder="Describe the shot">
+            <button class="idea-photo-toggle ${imgs.length?'has-photos':''}" data-action="toggle-loc-shot-photos" title="Example photos">\ud83d\udcf7${imgs.length?' '+imgs.length:''}</button>
+            <button class="idea-del" data-action="del-loc-shot" title="Remove">\u00d7</button>
           </div>
-          <div class="idea-photos-add">
-            <label class="pl-upload-btn">+ Upload<input type="file" accept="image/*" multiple class="loc-shot-image-file" hidden></label>
-            <input type="text" class="loc-shot-image-url" placeholder="or paste image URL, Enter">
+          <div class="idea-photos-panel" style="display:${shot._expanded?'block':'none'};">
+            <textarea class="idea-shot-notes" data-f="shot-notes" placeholder="Notes for this shot (pose, lens, light\u2026)">${escapeHtml(shot.notes||'')}</textarea>
+            <div class="idea-photos-grid pl-gallery-grid" style="margin-top:8px;">
+              ${imgs.map(img => `
+                <div class="pl-img-thumb idea-img-thumb" data-action="open-pl-lightbox" data-src="${escapeHtml(img.src)}">
+                  <img src="${escapeHtml(img.src)}" alt="Example" loading="lazy">
+                  <button class="pl-img-del" data-action="del-loc-shot-image" data-img-id="${img.id}" title="Remove">\u00d7</button>
+                </div>`).join('')}
+            </div>
+            <div class="idea-photos-add pl-gallery-add" style="margin-top:8px;">
+              <label class="pl-upload-btn">+ Upload<input type="file" accept="image/*" multiple class="loc-shot-image-file" hidden></label>
+              <input type="text" class="loc-shot-image-url" placeholder="or paste image URL, Enter">
+            </div>
           </div>
-        </div>
-      </div>`;
-    }).join('')}
-    <div class="idea-add-row">
-      <input type="text" class="loc-shot-add-input" placeholder="+ Add a shot for ${escapeHtml(loc.name || 'this location')}, press Enter">
+        </div>`;
+      }).join('')}
+      <div class="idea-add-row">
+        <input type="text" class="loc-shot-add-input" placeholder="+ Add a shot for this location, press Enter">
+      </div>
     </div>
   </div>`;
 }
@@ -6476,7 +6552,7 @@ function renderPhotoIdeas(){
     html += `<div class="idea-loc-banner">Confirmed locations (${confirmed.length}) \u2014 plan shots, notes and examples for each</div>`;
     html += confirmed.map(locationShotSectionHtml).join('');
   } else {
-    html += `<div class="idea-loc-banner" style="color:rgba(43,42,40,.45);">No confirmed locations yet \u2014 mark spots as \u201cConfirmed with photographer\u201d on the Locations tab to build sections here.</div>`;
+    html += `<div class="idea-loc-banner" style="color:rgba(43,42,40,.4);">No confirmed locations yet \u2014 mark spots as \u201cConfirmed with photographer\u201d on the Locations tab to build sections here.</div>`;
   }
 
   const groups = {};
