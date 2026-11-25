@@ -1443,7 +1443,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.11</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.12</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -2146,8 +2146,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v41.11';
+const APP_VERSION = 'v41.12';
 const CHANGELOG = [
+  { version:'v41.12', date:'2026-11-25', notes:[
+    'PDF: star ratings show as Rating: n/5 (Helvetica cannot draw star symbols)'
+  ]},
   { version:'v41.11', date:'2026-11-23', notes:[
     'Larger photo thumbnails in shot list and location galleries'
   ]},
@@ -5241,7 +5244,7 @@ async function exportPhotographerPDF(){
     if(loc.status) meta.push(String(loc.status).replace(/_/g, ' '));
     if(loc.distance) meta.push(loc.distance);
     if((loc.tags || []).length) meta.push((loc.tags || []).join(', '));
-    if(loc.rating) meta.push('\u2605'.repeat(Math.min(5, loc.rating || 0)));
+    if(loc.rating) meta.push('Rating: ' + Math.min(5, loc.rating || 0) + '/5');
     if(meta.length){
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
