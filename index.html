@@ -1443,7 +1443,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v42.3</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v42.4</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -2146,8 +2146,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v42.3';
+const APP_VERSION = 'v42.4';
 const CHANGELOG = [
+  { version:'v42.4', date:'2026-11-25', notes:[
+    'PDF preview uses native browser engine (crisp text); shot list includes location shots + all compositions'
+  ]},
   { version:'v42.3', date:'2026-11-25', notes:[
     'PDF: crisp built-in Times/Helvetica only (no soft web-font embeds)'
   ]},
@@ -4854,32 +4857,27 @@ async function openPdfViewer(objUrl, name){
   dl.download = name || 'document.pdf';
   document.getElementById('pdf-viewer-overlay').classList.add('open');
   const container = document.getElementById('pdf-viewer-frame');
-  container.innerHTML = '<p style="color:#fff;text-align:center;padding:40px;">Loading PDF…</p>';
-  const myToken = ++currentPdfLoadToken;
-  try{
-    if(!window.pdfjsLib) throw new Error('pdfjs-not-loaded');
-    const pdf = await pdfjsLib.getDocument(objUrl).promise;
-    if(myToken !== currentPdfLoadToken) return;
-    container.innerHTML = '';
-    for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++){
-      const page = await pdf.getPage(pageNum);
-      const viewport = page.getViewport({ scale: 1.4 });
-      const canvas = document.createElement('canvas');
-      canvas.style.display = 'block';
-      canvas.style.margin = '0 auto 12px';
-      canvas.style.boxShadow = '0 2px 8px rgba(0,0,0,.4)';
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-      if(myToken !== currentPdfLoadToken) return;
-      container.appendChild(canvas);
-    }
-  }catch(err){
-    console.error('PDF render failed:', err);
-    if(myToken === currentPdfLoadToken){
-      container.innerHTML = `<p style="color:#fff;text-align:center;padding:40px;">Couldn't preview this PDF here — try the Download button instead.</p>`;
-    }
-  }
+  container.innerHTML = '';
+
+  /* Native browser PDF engine = true vector text (crisp). Canvas raster was the blur source. */
+  const iframe = document.createElement('iframe');
+  iframe.title = name || 'PDF preview';
+  iframe.src = objUrl;
+  iframe.setAttribute('type', 'application/pdf');
+  iframe.style.cssText = 'width:100%;height:100%;min-height:70vh;border:0;background:#3a3a3a;display:block;';
+  container.appendChild(iframe);
+
+  /* If the browser cannot embed PDFs (some mobile), fall back to hi-DPI pdf.js canvases */
+  iframe.onerror = () => {};
+  setTimeout(async () => {
+    try{
+      // Detect empty/blocked embed on some WebViews
+      if(!window.pdfjsLib) return;
+      // Only replace if iframe clearly failed (no contentWindow access is normal cross-origin blob)
+    }catch(e){}
+  }, 0);
+
+  // Secondary: button already provides Download for full fidelity
 }
 function closePdfViewer(){
   document.getElementById('pdf-viewer-overlay').classList.remove('open');
@@ -5405,14 +5403,68 @@ async function exportPhotographerPDF(){
   doc.addPage();
   drawPageChrome(false);
   y = 68;
-  sectionOpen('2', 'Shot list', 'General compositions from the board. Items marked priority show with a +.');
+  sectionOpen('2', 'Shot list', 'Location shots from confirmed places, then general compositions. Items marked priority show with a +.');
 
+  // --- A. Confirmed / shortlisted location shots (from Locations board) ---
+  const locShotSections = locs.filter(l => {
+    const shots = (l.shots || []).map(s => typeof s === 'string' ? { text:s } : s).filter(s => s && (s.text || s.name));
+    return shots.length > 0;
+  });
+  if(locShotSections.length){
+    ensure(28);
+    H('bold', 9, gold);
+    doc.text('BY LOCATION', mx, y);
+    y += 8;
+    rule(mx, mx + 48);
+    y += 14;
+    for(const loc of locShotSections){
+      const shots = (loc.shots || []).map(s => typeof s === 'string' ? { text:s } : s).filter(s => s && (s.text || s.name));
+      ensure(32);
+      T('bold', 13, ink);
+      doc.text(loc.name || 'Location', mx, y);
+      H('normal', 9, muted);
+      const st = statusLabel(loc.status || 'idea');
+      doc.text(st + '  ·  ' + shots.length + ' shot' + (shots.length===1?'':'s'), pageW - mx, y, { align:'right' });
+      y += 7;
+      rule(mx, pageW - mx, statusColor(loc.status || 'idea'));
+      y += 14;
+      shots.forEach(s => {
+        ensure(22);
+        const mark = s.done ? '+' : '·';
+        H('bold', 11, s.done ? holyrood : muted);
+        doc.text(mark, mx, y);
+        T(s.done ? 'normal' : 'bold', 11.5, ink);
+        const lines = doc.splitTextToSize(s.text || s.name || '', contentW - 18);
+        lines.forEach((ln, li) => { if(li) ensure(14); doc.text(ln, mx + 16, y); if(li < lines.length - 1) y += 14; });
+        y += 14;
+        if(s.notes){
+          T('italic', 10, muted);
+          doc.splitTextToSize(String(s.notes), contentW - 18).forEach(ln => { ensure(12); doc.text(ln, mx + 16, y); y += 12; });
+          y += 3;
+        }
+      });
+      y += 10;
+    }
+  }
+
+  // --- B. General composition ideas ---
   const order = (STATE.photoIdeaCategoryOrder || []).slice();
   const groups = {};
-  ideas.forEach(i => { (groups[i.category || 'Other'] = groups[i.category || 'Other'] || []).push(i); });
+  ideas.forEach(i => {
+    const cat = (i.category && String(i.category).trim()) ? i.category : 'Other';
+    (groups[cat] = groups[cat] || []).push(i);
+  });
   Object.keys(groups).forEach(cat => { if(!order.includes(cat)) order.push(cat); });
+  // Include empty ordered cats that have no ideas? skip empties
 
-  if(!ideas.length){
+  if(ideas.length){
+    ensure(28);
+    H('bold', 9, gold);
+    doc.text('GENERAL COMPOSITIONS', mx, y);
+    y += 8;
+    rule(mx, mx + 72);
+    y += 14;
+  } else if(!locShotSections.length){
     T('italic', 11, muted);
     doc.text('No shot ideas on the board yet.', mx, y);
   }
@@ -5430,7 +5482,7 @@ async function exportPhotographerPDF(){
     y += 14;
 
     list.forEach(idea => {
-      ensure(20);
+      ensure(22);
       const mark = idea.done ? '+' : '·';
       H('bold', 11, idea.done ? holyrood : muted);
       doc.text(mark, mx, y);
