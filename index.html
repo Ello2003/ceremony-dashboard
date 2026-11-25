@@ -1443,7 +1443,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v41.12</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v42</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -2146,8 +2146,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v41.12';
+const APP_VERSION = 'v42';
 const CHANGELOG = [
+  { version:'v42', date:'2026-11-25', notes:[
+    'Redesigned photographer PDF: cover summary chips, status pills, location cards, clearer shot list'
+  ]},
   { version:'v41.12', date:'2026-11-25', notes:[
     'PDF: star ratings show as Rating: n/5 (Helvetica cannot draw star symbols)'
   ]},
@@ -5097,284 +5100,189 @@ function exportTimelinePDF(){
 
 async function exportPhotographerPDF(){
   if(typeof window.jspdf === 'undefined'){
-    alert("PDF library did not load — check your connection and try again.");
+    alert('PDF library did not load - check your connection and try again.');
     return;
   }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'pt', format:'a4' });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const mx = 48;
+  const mx = 44;
   const contentW = pageW - mx * 2;
-  // Brand colours matching the dashboard
-  const ink = [43, 42, 40];
-  const holyrood = [46, 99, 103];
-  const gold = [198, 151, 90];
-  const heather = [110, 90, 140];
-  const muted = [110, 108, 105];
-  const parchment = [246, 241, 233];
-  const card = [252, 249, 244];
-
-  let y = 0;
-  const ensure = (need) => {
-    if(y + need > pageH - 52){
-      doc.addPage();
-      drawPageChrome();
-      y = 64;
-    }
-  };
+  const ink = [43, 42, 40], holyrood = [46, 99, 103], gold = [198, 151, 90], heather = [135, 120, 158];
+  const muted = [120, 116, 110], parchment = [246, 241, 233], cardBg = [255, 253, 249], line = [220, 214, 204];
+  let y = 0, pageNum = 0;
   const drawPageChrome = () => {
-    doc.setFillColor(...parchment);
-    doc.rect(0, 0, pageW, pageH, 'F');
-    doc.setFillColor(...holyrood);
-    doc.rect(0, 0, pageW, 6, 'F');
-    doc.setFillColor(...gold);
-    doc.rect(0, 6, pageW, 2, 'F');
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(...muted);
-    doc.text('Graeme & Rebecca  \u00b7  Edinburgh  \u00b7  5 December 2026  \u00b7  Photographer reference', mx, pageH - 28);
-    doc.setDrawColor(...gold);
-    doc.setLineWidth(0.6);
-    doc.line(mx, pageH - 38, pageW - mx, pageH - 38);
+    pageNum += 1;
+    doc.setFillColor(...parchment); doc.rect(0, 0, pageW, pageH, 'F');
+    doc.setFillColor(...ink); doc.rect(0, 0, pageW, 28, 'F');
+    doc.setFillColor(...gold); doc.rect(0, 28, pageW, 3, 'F');
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...parchment);
+    doc.text('GRAEME & REBECCA', mx, 17);
+    doc.text('EDINBURGH  |  5 DEC 2026', pageW - mx, 17, { align:'right' });
+    doc.setDrawColor(...line); doc.setLineWidth(0.6); doc.line(mx, pageH - 36, pageW - mx, pageH - 36);
+    doc.setTextColor(...muted); doc.text('Photographer reference pack', mx, pageH - 22);
+    doc.text(String(pageNum), pageW - mx, pageH - 22, { align:'right' });
   };
-  const h1 = (t) => {
-    ensure(36);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(...holyrood);
-    doc.text(t, mx, y);
-    y += 8;
-    doc.setDrawColor(...gold);
-    doc.setLineWidth(1.2);
-    doc.line(mx, y, mx + Math.min(160, contentW * 0.4), y);
-    y += 18;
+  const ensure = (need) => { if(y + need > pageH - 56){ doc.addPage(); drawPageChrome(); y = 56; } };
+  const sectionTitle = (t, sub) => {
+    ensure(48);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(...ink); doc.text(t, mx, y);
+    y += 10; doc.setDrawColor(...gold); doc.setLineWidth(1.5); doc.line(mx, y, mx + 72, y); y += 14;
+    if(sub){ doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(...muted);
+      doc.splitTextToSize(sub, contentW).forEach(ln => { ensure(12); doc.text(ln, mx, y); y += 12; }); y += 8; }
+    else y += 6;
   };
-  const body = (t, size=10, color=ink, style='normal') => {
-    doc.setFont('helvetica', style);
-    doc.setFontSize(size);
-    doc.setTextColor(...color);
-    const lines = doc.splitTextToSize(String(t || ''), contentW);
-    lines.forEach(line => { ensure(14); doc.text(line, mx, y); y += 13; });
-  };
-  const mutedLine = (t) => body(t, 9, muted, 'italic');
-
-  // Load image to JPEG data URL for jsPDF (handles data: and http(s))
   const loadImg = (src) => new Promise((resolve) => {
     if(!src){ resolve(null); return; }
-    const img = new Image();
-    try{ img.crossOrigin = 'anonymous'; }catch(e){}
+    const img = new Image(); try{ img.crossOrigin = 'anonymous'; }catch(e){}
     const timer = setTimeout(() => resolve(null), 8000);
     img.onload = () => {
       clearTimeout(timer);
       try{
-        const maxW = 900;
-        let w = img.naturalWidth || img.width;
-        let h = img.naturalHeight || img.height;
+        const maxW = 1000; let w = img.naturalWidth || img.width; let h = img.naturalHeight || img.height;
         if(!w || !h){ resolve(null); return; }
         if(w > maxW){ h = Math.round(h * maxW / w); w = maxW; }
-        const c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        c.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve({ data: c.toDataURL('image/jpeg', 0.7), w, h });
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        const ctx = c.getContext('2d'); ctx.fillStyle = '#F6F1E9'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
+        resolve({ data: c.toDataURL('image/jpeg', 0.72), w, h });
       }catch(err){ resolve(null); }
     };
     img.onerror = () => { clearTimeout(timer); resolve(null); };
     img.src = src;
   });
+  const statusLabel = (s) => { const v = String(s || 'idea').replace(/_/g, ' '); return v.charAt(0).toUpperCase() + v.slice(1); };
+  const statusColor = (s) => s === 'confirmed' ? holyrood : s === 'shortlisted' ? heather : s === 'rejected' ? muted : gold;
 
-  showToast('Building photographer pack\u2026', [], 4000);
-
-  // ===== COVER =====
-  drawPageChrome();
-  y = 120;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-  doc.setTextColor(...gold);
-  doc.text('PHOTOGRAPHER REFERENCE PACK', mx, y); y += 28;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(28);
-  doc.setTextColor(...ink);
-  doc.text('Graeme & Rebecca', mx, y); y += 34;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(13);
-  doc.setTextColor(...holyrood);
-  doc.text('Edinburgh  \u00b7  Ceremony 5 December 2026', mx, y); y += 22;
-  doc.setDrawColor(...gold);
-  doc.setLineWidth(1.5);
-  doc.line(mx, y, mx + 120, y); y += 28;
-  doc.setFontSize(11);
-  doc.setTextColor(...muted);
-  const intro = 'This pack gathers preferred photo locations and a shot list so you have one clear brief. Places may flex with December light and weather — treat this as the shared plan, not a rigid call sheet.';
-  doc.splitTextToSize(intro, contentW).forEach(line => { doc.text(line, mx, y); y += 15; });
-  y += 24;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(...holyrood);
-  doc.text('Contents', mx, y); y += 16;
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...ink);
-  ['1. Photo locations', '2. Shot list'].forEach(item => {
-    doc.text(item, mx + 8, y); y += 14;
-  });
-
-  // ===== 1. LOCATIONS =====
-  doc.addPage(); drawPageChrome(); y = 64;
-  h1('1. Photo locations');
-  mutedLine('Preferred spots, practical notes, and inspiration images from the board.');
-  y += 10;
+  showToast('Building photographer pack...', [], 4000);
   const locs = (STATE.photoLocations || []).filter(l => (l.status || '') !== 'rejected');
-  if(!locs.length){
-    mutedLine('No active locations yet (rejected locations are omitted).');
-  }
+  const confirmed = locs.filter(l => (l.status || '') === 'confirmed');
+  const ideas = STATE.photoIdeas || [];
+  const ideaDone = ideas.filter(i => i.done).length;
+
+  drawPageChrome(); y = 100;
+  doc.setDrawColor(...gold); doc.setLineWidth(1.2); doc.rect(mx - 8, y - 24, contentW + 16, 210, 'S');
+  doc.setDrawColor(...holyrood); doc.setLineWidth(0.6); doc.rect(mx - 4, y - 20, contentW + 8, 202, 'S');
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...gold);
+  doc.text('PHOTOGRAPHER REFERENCE PACK', pageW / 2, y, { align:'center' }); y += 28;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(32); doc.setTextColor(...ink);
+  doc.text('Graeme & Rebecca', pageW / 2, y, { align:'center' }); y += 28;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(12); doc.setTextColor(...holyrood);
+  doc.text('Edinburgh ceremony  |  5 December 2026', pageW / 2, y, { align:'center' }); y += 22;
+  doc.setDrawColor(...gold); doc.setLineWidth(1); doc.line(pageW / 2 - 40, y, pageW / 2 + 40, y); y += 22;
+  doc.setFont('helvetica', 'italic'); doc.setFontSize(10); doc.setTextColor(...muted);
+  doc.splitTextToSize('Preferred locations, practical notes, inspiration images, and the shot list - one shared brief for the day.', contentW - 40)
+    .forEach(ln => { doc.text(ln, pageW / 2, y, { align:'center' }); y += 14; });
+  y += 36;
+  const chips = [
+    { label: 'Locations', value: String(locs.length) },
+    { label: 'Confirmed', value: String(confirmed.length) },
+    { label: 'Shot ideas', value: String(ideas.length) },
+    { label: 'Priority', value: String(ideaDone) }
+  ];
+  const chipW = (contentW - 24) / 4;
+  chips.forEach((c, i) => {
+    const x = mx + i * (chipW + 8);
+    doc.setFillColor(...cardBg); doc.setDrawColor(...line); doc.setLineWidth(0.8);
+    doc.roundedRect(x, y, chipW, 48, 3, 3, 'FD');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(...holyrood);
+    doc.text(c.value, x + chipW / 2, y + 22, { align:'center' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...muted);
+    doc.text(c.label.toUpperCase(), x + chipW / 2, y + 38, { align:'center' });
+  });
+  y += 72;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...muted); doc.text('Contents', mx, y); y += 14;
+  doc.setTextColor(...ink); doc.setFontSize(11);
+  ['1  Photo locations', '2  Shot list'].forEach(item => { doc.text(item, mx + 6, y); y += 16; });
+
+  doc.addPage(); drawPageChrome(); y = 56;
+  sectionTitle('1. Photo locations', 'Active locations from the board (rejected places omitted).');
+  if(!locs.length){ doc.setFont('helvetica', 'italic'); doc.setFontSize(10); doc.setTextColor(...muted); doc.text('No active locations yet.', mx, y); }
+
   for(const loc of locs){
-    ensure(70);
-    // Card background
-    const cardTop = y - 14;
-    doc.setFillColor(...card);
-    doc.setDrawColor(220, 214, 204);
-    doc.setLineWidth(0.8);
-    // height estimated later \u2014 draw title band first
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(...ink);
-    doc.text(loc.name || 'Untitled location', mx, y);
-    y += 16;
+    const st = loc.status || 'idea'; const accent = statusColor(st);
+    ensure(90); const blockStart = y;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...ink);
+    doc.text((loc.name || 'Untitled location').toUpperCase(), mx + 6, y);
+    const pill = statusLabel(st); doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
+    const pillW = doc.getTextWidth(pill) + 12;
+    doc.setFillColor(...accent); doc.roundedRect(pageW - mx - pillW, y - 10, pillW, 14, 2, 2, 'F');
+    doc.setTextColor(255,255,255); doc.text(pill, pageW - mx - pillW / 2, y, { align:'center' }); y += 16;
     const meta = [];
-    if(loc.status) meta.push(String(loc.status).replace(/_/g, ' '));
-    if(loc.distance) meta.push(loc.distance);
+    if(loc.distance) meta.push(String(loc.distance));
     if((loc.tags || []).length) meta.push((loc.tags || []).join(', '));
-    if(loc.rating) meta.push('Rating: ' + Math.min(5, loc.rating || 0) + '/5');
-    if(meta.length){
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...holyrood);
-      doc.text(meta.join('  \u00b7  '), mx, y);
-      y += 14;
-    }
-    if(loc.link){
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.5);
-      doc.setTextColor(...heather);
-      const linkLines = doc.splitTextToSize(loc.link, contentW);
-      linkLines.forEach(line => { ensure(11); doc.text(line, mx, y); y += 11; });
-      y += 4;
-    }
-    if(loc.notes){
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(...ink);
-      doc.splitTextToSize(loc.notes, contentW).forEach(line => { ensure(13); doc.text(line, mx, y); y += 13; });
-      y += 6;
-    }
-    if((loc.shots || []).length){
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(...holyrood);
-      ensure(14); doc.text('Specific shots here', mx, y); y += 12;
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...ink);
-      (loc.shots || []).forEach(s => {
-        const label = typeof s === 'string' ? s : (s.text || s.name || '');
-        if(!label) return;
-        ensure(12);
-        doc.text('\u2022  ' + label, mx + 4, y);
-        y += 12;
+    if(loc.rating) meta.push('Rating ' + Math.min(5, Number(loc.rating) || 0) + '/5');
+    if(meta.length){ doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...holyrood); doc.text(meta.join('  |  '), mx + 6, y); y += 13; }
+    if(loc.link){ doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...heather);
+      doc.splitTextToSize(String(loc.link), contentW - 12).forEach(ln => { ensure(11); doc.text(ln, mx + 6, y); y += 11; }); y += 2; }
+    if(loc.notes){ ensure(20); doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...muted); doc.text('NOTES', mx + 6, y); y += 11;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...ink);
+      doc.splitTextToSize(String(loc.notes), contentW - 12).forEach(ln => { ensure(13); doc.text(ln, mx + 6, y); y += 13; }); y += 4; }
+    const shots = (loc.shots || []).map(s => typeof s === 'string' ? { text:s } : s).filter(s => s && (s.text || s.name));
+    if(shots.length){ ensure(18); doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...muted); doc.text('SHOTS AT THIS LOCATION', mx + 6, y); y += 12;
+      shots.forEach(s => {
+        ensure(14); const mark = s.done ? '[x]' : '[ ]';
+        doc.setFont('courier', 'normal'); doc.setFontSize(10); doc.setTextColor(...holyrood); doc.text(mark, mx + 6, y);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(...ink);
+        const lines = doc.splitTextToSize(s.text || s.name || '', contentW - 40);
+        lines.forEach((ln, idx) => { if(idx) ensure(12); doc.text(ln, mx + 30, y); if(idx < lines.length - 1) y += 12; });
+        y += 14;
+        if(s.notes){ doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(...muted);
+          doc.splitTextToSize(String(s.notes), contentW - 40).forEach(ln => { ensure(11); doc.text(ln, mx + 30, y); y += 11; }); y += 2; }
       });
-      y += 4;
     }
-    // Images row (up to 3)
-    const imgs = (loc.images || []).slice(0, 3);
-    if(imgs.length){
-      ensure(120);
-      const gap = 10;
-      const thumbW = Math.min(150, (contentW - gap * (imgs.length - 1)) / imgs.length);
-      let x = mx;
-      let rowH = 0;
+    const imgs = (loc.images || []).slice(0, 4);
+    if(imgs.length){ ensure(100); const gap = 8; const thumbW = Math.min(130, (contentW - gap * (imgs.length - 1)) / imgs.length);
+      let x = mx + 6, rowH = 0;
       for(const im of imgs){
-        const loaded = await loadImg(im.src);
-        if(!loaded) continue;
-        const scale = thumbW / loaded.w;
-        const th = loaded.h * scale;
-        rowH = Math.max(rowH, th);
-        ensure(th + 8);
-        try{
-          doc.addImage(loaded.data, 'JPEG', x, y, thumbW, th);
-        }catch(e){}
+        const loaded = await loadImg(im.src); if(!loaded) continue;
+        const th = loaded.h * (thumbW / loaded.w); rowH = Math.max(rowH, th); ensure(th + 10);
+        try{ doc.setDrawColor(...line); doc.setLineWidth(0.5); doc.rect(x - 1, y - 1, thumbW + 2, th + 2); doc.addImage(loaded.data, 'JPEG', x, y, thumbW, th); }catch(e){}
         x += thumbW + gap;
       }
-      y += rowH + 12;
+      y += rowH + 10;
     }
-    // separator
-    doc.setDrawColor(...gold);
-    doc.setLineWidth(0.5);
-    ensure(16);
-    doc.line(mx, y, pageW - mx, y);
-    y += 18;
+    const blockH = Math.max(24, y - blockStart + 6);
+    doc.setFillColor(...accent); doc.rect(mx - 6, blockStart - 12, 3, blockH, 'F');
+    y += 4; doc.setDrawColor(...line); doc.setLineWidth(0.7); ensure(12); doc.line(mx, y, pageW - mx, y); y += 16;
   }
 
-  // ===== 3. SHOT LIST =====
-  doc.addPage(); drawPageChrome(); y = 64;
-  h1('2. Shot list');
-  mutedLine('Compositions and moments to aim for. Ticked items are priorities marked on the board.');
-  y += 10;
-  const ideas = STATE.photoIdeas || [];
+  doc.addPage(); drawPageChrome(); y = 56;
+  sectionTitle('2. Shot list', 'General compositions from the board. Priority items are checked.');
   const order = (STATE.photoIdeaCategoryOrder || []).slice();
-  const groups = {};
-  ideas.forEach(i => { (groups[i.category || 'Other'] = groups[i.category || 'Other'] || []).push(i); });
+  const groups = {}; ideas.forEach(i => { (groups[i.category || 'Other'] = groups[i.category || 'Other'] || []).push(i); });
   Object.keys(groups).forEach(cat => { if(!order.includes(cat)) order.push(cat); });
+  if(!ideas.length){ doc.setFont('helvetica', 'italic'); doc.setFontSize(10); doc.setTextColor(...muted); doc.text('No shot ideas on the board yet.', mx, y); }
   order.forEach(cat => {
-    const list = groups[cat];
-    if(!list || !list.length) return;
-    ensure(28);
-    doc.setFillColor(...holyrood);
-    doc.roundedRect(mx - 4, y - 11, contentW + 8, 18, 2, 2, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(255, 255, 255);
-    doc.text(String(cat).toUpperCase(), mx + 6, y + 1);
-    y += 22;
+    const list = groups[cat]; if(!list || !list.length) return;
+    ensure(30);
+    doc.setFillColor(...ink); doc.roundedRect(mx, y - 11, contentW, 20, 2, 2, 'F');
+    doc.setFillColor(...gold); doc.rect(mx, y - 11, 3, 20, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255,255,255);
+    doc.text(String(cat).toUpperCase(), mx + 12, y + 2);
+    const count = list.filter(i => i.done).length + '/' + list.length;
+    doc.setFont('helvetica', 'normal'); doc.text(count, pageW - mx - 8, y + 2, { align:'right' }); y += 24;
     list.forEach(idea => {
-      ensure(18);
+      ensure(20);
       const mark = idea.done ? '[x]' : '[ ]';
-      doc.setFont('courier', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(...holyrood);
-      doc.text(mark, mx, y);
-      doc.setFont('helvetica', idea.done ? 'normal' : 'bold');
-      doc.setFontSize(10.5);
-      doc.setTextColor(...ink);
-      const lines = doc.splitTextToSize(idea.text || '', contentW - 28);
-      lines.forEach((line, i) => {
-        if(i) ensure(13);
-        doc.text(line, mx + 28, y);
-        if(i < lines.length - 1) y += 13;
-      });
-      y += 15;
-      // optional first example image small
-      if((idea.images || []).length){
-        // skip embedding every idea image to keep file light \u2014 note count only
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(8);
-        doc.setTextColor(...muted);
-        ensure(11);
-        doc.text(`(${idea.images.length} reference image${idea.images.length===1?'':'s'} on the board)`, mx + 28, y);
-        y += 12;
-      }
+      doc.setFont('courier', 'bold'); doc.setFontSize(10); doc.setTextColor(...(idea.done ? holyrood : muted)); doc.text(mark, mx + 4, y);
+      doc.setFont('helvetica', idea.done ? 'normal' : 'bold'); doc.setFontSize(10.5); doc.setTextColor(...ink);
+      const lines = doc.splitTextToSize(idea.text || '', contentW - 32);
+      lines.forEach((ln, idx) => { if(idx) ensure(12); doc.text(ln, mx + 28, y); if(idx < lines.length - 1) y += 12; });
+      y += 14;
+      if(idea.notes){ doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(...muted);
+        doc.splitTextToSize(String(idea.notes), contentW - 32).forEach(ln => { ensure(11); doc.text(ln, mx + 28, y); y += 11; }); y += 2; }
+      if((idea.images || []).length){ doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...heather); ensure(11);
+        doc.text(idea.images.length + ' reference image' + (idea.images.length === 1 ? '' : 's') + ' on the board', mx + 28, y); y += 12; }
     });
-    y += 8;
+    y += 10;
   });
 
-  // Footer note on last content
-  ensure(40);
-  y += 10;
-  doc.setFont('helvetica', 'italic');
-  doc.setFontSize(9);
-  doc.setTextColor(...muted);
-  doc.splitTextToSize('Generated from the ceremony dashboard. Please check the latest version with Graeme & Rebecca before the day if anything changes.', contentW).forEach(line => {
-    ensure(12); doc.text(line, mx, y); y += 12;
-  });
-
+  ensure(50); y += 8;
+  doc.setDrawColor(...gold); doc.setLineWidth(1); doc.line(mx, y, mx + 48, y); y += 16;
+  doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(...muted);
+  doc.splitTextToSize('Generated from the ceremony dashboard. Please confirm the latest version with Graeme & Rebecca if plans change before the day.', contentW)
+    .forEach(ln => { ensure(12); doc.text(ln, mx, y); y += 12; });
   openPdfViewer(doc.output('bloburl'), 'Photographer-Reference-Graeme-Rebecca.pdf');
   showToast('Photographer pack ready', [], 3500);
 }
