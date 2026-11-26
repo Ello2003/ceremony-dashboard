@@ -1443,7 +1443,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v42.6</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v42.7</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -2146,8 +2146,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v42.6';
+const APP_VERSION = 'v42.7';
 const CHANGELOG = [
+  { version:'v42.7', date:'2026-11-26', notes:[
+    'PDF export hardened: try/catch, safe text, resilient image load so generation always finishes'
+  ]},
   { version:'v42.6', date:'2026-11-26', notes:[
     'PDF shot list embeds reference photos for each idea and location shot'
   ]},
@@ -4855,35 +4858,44 @@ let currentPdfViewerUrl = null;
 let currentPdfLoadToken = 0;
 if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 async function openPdfViewer(objUrl, name){
-  if(currentPdfViewerUrl && currentPdfViewerUrl.startsWith('blob:')) URL.revokeObjectURL(currentPdfViewerUrl);
-  currentPdfViewerUrl = objUrl;
-  document.getElementById('pdf-viewer-title').textContent = name || 'PDF';
-  const dl = document.getElementById('pdf-viewer-download');
-  dl.href = objUrl;
-  dl.download = name || 'document.pdf';
-  document.getElementById('pdf-viewer-overlay').classList.add('open');
-  const container = document.getElementById('pdf-viewer-frame');
-  container.innerHTML = '';
+  try{
+    if(currentPdfViewerUrl && currentPdfViewerUrl.startsWith('blob:')){
+      try{ URL.revokeObjectURL(currentPdfViewerUrl); }catch(e){}
+    }
+    currentPdfViewerUrl = objUrl;
+    const titleEl = document.getElementById('pdf-viewer-title');
+    if(titleEl) titleEl.textContent = name || 'PDF';
+    const dl = document.getElementById('pdf-viewer-download');
+    if(dl){
+      dl.href = objUrl;
+      dl.download = name || 'document.pdf';
+    }
+    const overlay = document.getElementById('pdf-viewer-overlay');
+    if(overlay) overlay.classList.add('open');
+    const container = document.getElementById('pdf-viewer-frame');
+    if(!container){
+      // No overlay UI: open in new tab
+      window.open(objUrl, '_blank');
+      return;
+    }
+    container.innerHTML = '';
 
-  /* Native browser PDF engine = true vector text (crisp). Canvas raster was the blur source. */
-  const iframe = document.createElement('iframe');
-  iframe.title = name || 'PDF preview';
-  iframe.src = objUrl;
-  iframe.setAttribute('type', 'application/pdf');
-  iframe.style.cssText = 'width:100%;height:100%;min-height:70vh;border:0;background:#3a3a3a;display:block;';
-  container.appendChild(iframe);
+    // Prefer native PDF embed (sharp vectors)
+    const iframe = document.createElement('iframe');
+    iframe.title = name || 'PDF preview';
+    iframe.src = objUrl;
+    iframe.style.cssText = 'width:100%;height:100%;min-height:70vh;border:0;background:#3a3a3a;display:block;';
+    container.appendChild(iframe);
 
-  /* If the browser cannot embed PDFs (some mobile), fall back to hi-DPI pdf.js canvases */
-  iframe.onerror = () => {};
-  setTimeout(async () => {
-    try{
-      // Detect empty/blocked embed on some WebViews
-      if(!window.pdfjsLib) return;
-      // Only replace if iframe clearly failed (no contentWindow access is normal cross-origin blob)
-    }catch(e){}
-  }, 0);
-
-  // Secondary: button already provides Download for full fidelity
+    // Also offer a clear open-in-tab link inside the frame area for mobile
+    const tip = document.createElement('p');
+    tip.style.cssText = 'color:#ccc;text-align:center;font:12px sans-serif;padding:8px;margin:0;';
+    tip.innerHTML = 'If the preview is blank, use <b>Download</b> above \u2014 the PDF file is ready.';
+    container.appendChild(tip);
+  }catch(err){
+    console.error('openPdfViewer', err);
+    try{ window.open(objUrl, '_blank'); }catch(e){}
+  }
 }
 function closePdfViewer(){
   document.getElementById('pdf-viewer-overlay').classList.remove('open');
@@ -5112,8 +5124,9 @@ function exportTimelinePDF(){
 }
 
 async function exportPhotographerPDF(){
-  if(typeof window.jspdf === 'undefined'){
-    alert('PDF library did not load - check your connection and try again.');
+  try{
+  if(typeof window.jspdf === 'undefined' || !window.jspdf || !window.jspdf.jsPDF){
+    alert('PDF library did not load \u2014 check your connection and try again.');
     return;
   }
   const { jsPDF } = window.jspdf;
@@ -5124,23 +5137,32 @@ async function exportPhotographerPDF(){
   const contentW = pageW - mx * 2;
 
   /* Full website palette */
-  const parchment    = [246, 241, 233]; // --parchment
-  const parchmentDim = [237, 230, 216]; // --parchment-dim
-  const card         = [255, 253, 249]; // --card
-  const ink          = [43, 42, 40];    // --ink
+  const parchment    = [246, 241, 233];
+  const parchmentDim = [237, 230, 216];
+  const card         = [255, 253, 249];
+  const ink          = [43, 42, 40];
   const inkSoft      = [90, 86, 80];
   const muted        = [120, 114, 106];
-  const line         = [210, 202, 190]; // soft grey-beige rule
-  const gold         = [198, 151, 90];  // --gold
+  const line         = [210, 202, 190];
+  const gold         = [198, 151, 90];
   const goldDeep     = [168, 122, 62];
-  const holyrood     = [46, 99, 103];   // --holyrood
-  const heather      = [135, 120, 158]; // --heather
-  const rose         = [176, 107, 69];  // --rose
-  const sage         = [124, 133, 100]; // --sage
-  const inkDark      = [32, 30, 28];    // hero-like dark band
+  const holyrood     = [46, 99, 103];
+  const heather      = [135, 120, 158];
+  const rose         = [176, 107, 69];
+  const sage         = [124, 133, 100];
+  const inkDark      = [32, 30, 28];
 
   let y = 0;
   let pageNum = 0;
+
+  // Helvetica/Times only support WinAnsi - strip unsupported glyphs
+  const safe = (t) => String(t == null ? '' : t)
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/\u00b7/g, '|')
+    .replace(/\u2022/g, '-')
+    .replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g, '');
 
   const T = (style, size, color) => {
     doc.setFont('times', style);
@@ -5152,27 +5174,29 @@ async function exportPhotographerPDF(){
     doc.setFontSize(size);
     if(color) doc.setTextColor(...color);
   };
+  const text = (str, x, yy, opts) => {
+    try{ doc.text(safe(str), x, yy, opts || {}); }catch(e){ try{ doc.text(String(str||'').replace(/[^\x20-\x7E]/g,''), x, yy, opts || {}); }catch(e2){} }
+  };
+  const linesOf = (str, w) => {
+    try{ return doc.splitTextToSize(safe(str), w); }
+    catch(e){ return [safe(str).slice(0, 80)]; }
+  };
 
   const drawPageChrome = (isCover) => {
     pageNum += 1;
-    // Parchment ground
     doc.setFillColor(...parchment);
     doc.rect(0, 0, pageW, pageH, 'F');
-    // Subtle top wash like hero warmth
     doc.setFillColor(...parchmentDim);
     doc.rect(0, 0, pageW, isCover ? 0 : 52, 'F');
-
     if(!isCover){
-      // Dark ink header bar (echo of site hero)
       doc.setFillColor(...inkDark);
       doc.rect(0, 0, pageW, 36, 'F');
       doc.setFillColor(...gold);
       doc.rect(0, 36, pageW, 3, 'F');
       H('normal', 8, parchment);
-      doc.text('GRAEME & REBECCA', mx, 22);
-      doc.text('EDINBURGH  ·  5 DECEMBER 2026', pageW - mx, 22, { align:'right' });
+      text('GRAEME & REBECCA', mx, 22);
+      text('EDINBURGH  |  5 DECEMBER 2026', pageW - mx, 22, { align:'right' });
     } else {
-      // Cover: gold + holyrood accent strips at top
       doc.setFillColor(...inkDark);
       doc.rect(0, 0, pageW, 8, 'F');
       doc.setFillColor(...gold);
@@ -5180,16 +5204,14 @@ async function exportPhotographerPDF(){
       doc.setFillColor(...holyrood);
       doc.rect(0, 11, pageW, 2, 'F');
     }
-
-    // Footer band
     doc.setFillColor(...parchmentDim);
     doc.rect(0, pageH - 44, pageW, 44, 'F');
     doc.setDrawColor(...gold);
     doc.setLineWidth(0.8);
     doc.line(mx, pageH - 44, pageW - mx, pageH - 44);
     H('normal', 8, muted);
-    doc.text('Photographer reference', mx, pageH - 24);
-    doc.text(String(pageNum), pageW - mx, pageH - 24, { align:'right' });
+    text('Photographer reference', mx, pageH - 24);
+    text(String(pageNum), pageW - mx, pageH - 24, { align:'right' });
   };
 
   const ensure = (need) => {
@@ -5210,41 +5232,43 @@ async function exportPhotographerPDF(){
     doc.setFillColor(...card);
     doc.setDrawColor(...line);
     doc.setLineWidth(0.6);
-    doc.roundedRect(x, top, w, h, 3, 3, 'FD');
+    try{ doc.roundedRect(x, top, w, h, 3, 3, 'FD'); }
+    catch(e){ doc.rect(x, top, w, h, 'FD'); }
   };
 
   const sectionOpen = (num, title, deck) => {
     ensure(78);
     H('bold', 9, goldDeep);
-    doc.text(String(num).padStart(2, '0'), mx, y);
+    text(String(num).padStart(2, '0'), mx, y);
     y += 18;
     T('bold', 22, ink);
-    doc.text(title, mx, y);
+    text(title, mx, y);
     y += 10;
     rule(mx, mx + 56, gold);
     y += 16;
     if(deck){
       T('normal', 11, muted);
-      doc.splitTextToSize(deck, contentW).forEach(ln => { ensure(14); doc.text(ln, mx, y); y += 14; });
+      linesOf(deck, contentW).forEach(ln => { ensure(14); text(ln, mx, y); y += 14; });
       y += 12;
     }
   };
 
   const loadImg = (src, targetPtW) => new Promise((resolve) => {
-    if(!src){ resolve(null); return; }
+    if(!src || typeof src !== 'string'){ resolve(null); return; }
     const img = new Image();
     try{ img.crossOrigin = 'anonymous'; }catch(e){}
-    const timer = setTimeout(() => resolve(null), 10000);
+    let done = false;
+    const finish = (v) => { if(done) return; done = true; resolve(v); };
+    const timer = setTimeout(() => finish(null), 6000);
     img.onload = () => {
-      clearTimeout(timer);
       try{
         let w = img.naturalWidth || img.width;
         let h = img.naturalHeight || img.height;
-        if(!w || !h){ resolve(null); return; }
-        const dpi = 3;
-        const maxSrc = 2400;
+        if(!w || !h){ clearTimeout(timer); finish(null); return; }
+        const dpi = 2.5;
+        const maxSrc = 1800;
         if(w > maxSrc){ h = Math.round(h * maxSrc / w); w = maxSrc; }
-        const outW = targetPtW ? Math.round(targetPtW * dpi) : Math.min(w, 1800);
+        const outW = targetPtW ? Math.round(targetPtW * dpi) : Math.min(w, 1400);
         const outH = Math.round(h * (outW / w));
         const c = document.createElement('canvas');
         c.width = outW; c.height = outH;
@@ -5254,28 +5278,30 @@ async function exportPhotographerPDF(){
         ctx.fillStyle = '#F6F1E9';
         ctx.fillRect(0, 0, outW, outH);
         ctx.drawImage(img, 0, 0, outW, outH);
-        resolve({ data: c.toDataURL('image/jpeg', 0.93), aspect: outH / outW });
-      }catch(err){ resolve(null); }
+        clearTimeout(timer);
+        finish({ data: c.toDataURL('image/jpeg', 0.88), aspect: outH / outW });
+      }catch(err){ clearTimeout(timer); finish(null); }
     };
-    img.onerror = () => { clearTimeout(timer); resolve(null); };
-    img.src = src;
+    img.onerror = () => { clearTimeout(timer); finish(null); };
+    try{ img.src = src; }catch(e){ clearTimeout(timer); finish(null); }
   });
 
-  
   const embedThumbs = async (images, indentX, maxCount) => {
     const list = (images || []).slice(0, maxCount || 4);
     if(!list.length) return;
     ensure(110);
     const gap = 10;
-    const avail = pageW - mx - indentX;
-    const thumbW = Math.min(130, (avail - gap * (list.length - 1)) / list.length);
+    const avail = Math.max(80, pageW - mx - indentX);
+    const n = Math.max(1, list.length);
+    const thumbW = Math.min(120, (avail - gap * (n - 1)) / n);
     let x = indentX;
     let rowH = 0;
     let drawn = 0;
     for(const im of list){
-      const src = im && (im.src || im.url || im);
-      if(!src || typeof src !== 'string') continue;
-      const loaded = await loadImg(src, thumbW);
+      const src = im && (im.src || im.url || (typeof im === 'string' ? im : null));
+      if(!src) continue;
+      let loaded = null;
+      try{ loaded = await loadImg(src, thumbW); }catch(e){ loaded = null; }
       if(!loaded) continue;
       const th = thumbW * loaded.aspect;
       rowH = Math.max(rowH, th);
@@ -5301,7 +5327,7 @@ async function exportPhotographerPDF(){
     if(s === 'confirmed') return holyrood;
     if(s === 'shortlisted') return heather;
     if(s === 'rejected') return muted;
-    return gold; // idea
+    return gold;
   };
 
   const locs = (STATE.photoLocations || []).filter(l => (l.status || '') !== 'rejected');
@@ -5309,39 +5335,29 @@ async function exportPhotographerPDF(){
   const ideas = STATE.photoIdeas || [];
   const ideaDone = ideas.filter(i => i.done).length;
 
-  showToast('Building photographer pack...', [], 4000);
+  showToast('Building photographer pack...', [], 8000);
 
-  // ========== COVER ==========
+  // COVER
   drawPageChrome(true);
   y = 100;
-
-  // Card panel on parchment
   softCard(mx - 8, y - 20, contentW + 16, 248);
   y += 8;
-
   H('bold', 9, goldDeep);
-  doc.text('PHOTOGRAPHER REFERENCE', pageW / 2, y, { align:'center' });
+  text('PHOTOGRAPHER REFERENCE', pageW / 2, y, { align:'center' });
   y += 28;
-
   T('bold', 34, ink);
-  doc.text('Graeme & Rebecca', pageW / 2, y, { align:'center' });
+  text('Graeme & Rebecca', pageW / 2, y, { align:'center' });
   y += 22;
-
   T('normal', 12, holyrood);
-  doc.text('Edinburgh  ·  Ceremony 5 December 2026', pageW / 2, y, { align:'center' });
+  text('Edinburgh  |  Ceremony 5 December 2026', pageW / 2, y, { align:'center' });
   y += 16;
   rule(pageW / 2 - 30, pageW / 2 + 30, gold);
   y += 20;
-
   T('normal', 11, inkSoft);
-  const intro = 'Preferred places, practical notes, and the compositions we care about most — a clear shared brief for the day.';
-  doc.splitTextToSize(intro, contentW * 0.78).forEach(ln => {
-    doc.text(ln, pageW / 2, y, { align:'center' });
-    y += 15;
-  });
+  linesOf('Preferred places, practical notes, and the compositions we care about most - a clear shared brief for the day.', contentW * 0.78)
+    .forEach(ln => { text(ln, pageW / 2, y, { align:'center' }); y += 15; });
 
   y = 360;
-  // Stat chips in site tones
   const stats = [
     { n: String(locs.length), l: 'LOCATIONS', c: holyrood },
     { n: String(confirmed.length), l: 'CONFIRMED', c: sage },
@@ -5355,32 +5371,30 @@ async function exportPhotographerPDF(){
     doc.setFillColor(...card);
     doc.setDrawColor(...line);
     doc.setLineWidth(0.7);
-    doc.roundedRect(x, y, chipW, 52, 3, 3, 'FD');
-    // top accent
+    try{ doc.roundedRect(x, y, chipW, 52, 3, 3, 'FD'); }catch(e){ doc.rect(x, y, chipW, 52, 'FD'); }
     doc.setFillColor(...s.c);
     doc.rect(x, y, chipW, 3, 'F');
     T('bold', 18, s.c);
-    doc.text(s.n, x + chipW / 2, y + 26, { align:'center' });
+    text(s.n, x + chipW / 2, y + 26, { align:'center' });
     H('normal', 7.5, muted);
-    doc.text(s.l, x + chipW / 2, y + 42, { align:'center' });
+    text(s.l, x + chipW / 2, y + 42, { align:'center' });
   });
   y += 72;
-
   H('normal', 9, muted);
-  doc.text('CONTENTS', mx, y); y += 16;
+  text('CONTENTS', mx, y); y += 16;
   T('bold', 13, ink);
-  doc.text('01    Photo locations', mx, y); y += 18;
-  doc.text('02    Shot list', mx, y);
+  text('01    Photo locations', mx, y); y += 18;
+  text('02    Shot list', mx, y);
 
-  // ========== LOCATIONS ==========
+  // LOCATIONS
   doc.addPage();
   drawPageChrome(false);
   y = 62;
-  sectionOpen('1', 'Photo locations', 'Active places from the board. Rejected options are omitted. Notes are guidance — December light and weather may need flexibility.');
+  sectionOpen('1', 'Photo locations', 'Active places from the board. Rejected options are omitted.');
 
   if(!locs.length){
     T('italic', 11, muted);
-    doc.text('No active locations yet.', mx, y);
+    text('No active locations yet.', mx, y);
   }
 
   for(let idx = 0; idx < locs.length; idx++){
@@ -5388,19 +5402,15 @@ async function exportPhotographerPDF(){
     const st = loc.status || 'idea';
     const accent = statusColor(st);
     ensure(100);
-
-    // Left colour rail + light card background block estimate drawn after measure is hard;
-    // draw rail + title row
     const blockTop = y - 4;
     doc.setFillColor(...accent);
     doc.rect(mx - 10, blockTop, 3, 18, 'F');
-
     H('bold', 9, goldDeep);
-    doc.text(String(idx + 1).padStart(2, '0'), mx, y);
+    text(String(idx + 1).padStart(2, '0'), mx, y);
     T('bold', 15, ink);
-    doc.text(loc.name || 'Untitled location', mx + 28, y);
+    text(loc.name || 'Untitled location', mx + 28, y);
     H('bold', 8, accent);
-    doc.text(statusLabel(st).toUpperCase(), pageW - mx, y, { align:'right' });
+    text(statusLabel(st).toUpperCase(), pageW - mx, y, { align:'right' });
     y += 8;
     doc.setDrawColor(...accent);
     doc.setLineWidth(1.1);
@@ -5413,20 +5423,20 @@ async function exportPhotographerPDF(){
     if(loc.rating) meta.push('Rating ' + Math.min(5, Number(loc.rating) || 0) + ' of 5');
     if(meta.length){
       T('normal', 10, holyrood);
-      doc.text(meta.join('     '), mx + 28, y);
+      text(meta.join('     '), mx + 28, y);
       y += 13;
     }
     if(loc.link){
       H('normal', 9, heather);
-      doc.splitTextToSize(String(loc.link), contentW - 28).forEach(ln => { ensure(12); doc.text(ln, mx + 28, y); y += 12; });
+      linesOf(loc.link, contentW - 28).forEach(ln => { ensure(12); text(ln, mx + 28, y); y += 12; });
       y += 2;
     }
     if(loc.notes){
       ensure(24);
       H('bold', 8, rose);
-      doc.text('NOTES', mx + 28, y); y += 12;
+      text('NOTES', mx + 28, y); y += 12;
       T('normal', 11, inkSoft);
-      doc.splitTextToSize(String(loc.notes), contentW - 28).forEach(ln => { ensure(14); doc.text(ln, mx + 28, y); y += 14; });
+      linesOf(loc.notes, contentW - 28).forEach(ln => { ensure(14); text(ln, mx + 28, y); y += 14; });
       y += 6;
     }
 
@@ -5434,19 +5444,19 @@ async function exportPhotographerPDF(){
     if(shots.length){
       ensure(20);
       H('bold', 8, sage);
-      doc.text('SHOTS AT THIS PLACE', mx + 28, y); y += 13;
+      text('SHOTS AT THIS PLACE', mx + 28, y); y += 13;
       for(const s of shots){
         ensure(16);
-        const mark = s.done ? '+' : '·';
+        const mark = s.done ? '+' : '-';
         H('bold', 11, s.done ? holyrood : muted);
-        doc.text(mark, mx + 28, y);
+        text(mark, mx + 28, y);
         T('normal', 11, ink);
-        const lines = doc.splitTextToSize(s.text || s.name || '', contentW - 52);
-        lines.forEach((ln, li) => { if(li) ensure(13); doc.text(ln, mx + 44, y); if(li < lines.length - 1) y += 13; });
+        const ls = linesOf(s.text || s.name || '', contentW - 52);
+        ls.forEach((ln, li) => { if(li) ensure(13); text(ln, mx + 44, y); if(li < ls.length - 1) y += 13; });
         y += 14;
         if(s.notes){
           T('italic', 10, muted);
-          doc.splitTextToSize(String(s.notes), contentW - 52).forEach(ln => { ensure(12); doc.text(ln, mx + 44, y); y += 12; });
+          linesOf(s.notes, contentW - 52).forEach(ln => { ensure(12); text(ln, mx + 44, y); y += 12; });
           y += 2;
         }
         if((s.images || []).length){
@@ -5457,27 +5467,7 @@ async function exportPhotographerPDF(){
 
     const imgs = (loc.images || []).slice(0, 3);
     if(imgs.length){
-      ensure(130);
-      const gap = 12;
-      const thumbW = Math.min(160, (contentW - 28 - gap * (imgs.length - 1)) / imgs.length);
-      let x = mx + 28;
-      let rowH = 0;
-      for(const im of imgs){
-        const loaded = await loadImg(im.src, thumbW);
-        if(!loaded) continue;
-        const th = thumbW * loaded.aspect;
-        rowH = Math.max(rowH, th);
-        ensure(th + 14);
-        try{
-          doc.setDrawColor(...line);
-          doc.setLineWidth(0.6);
-          doc.setFillColor(...card);
-          doc.rect(x - 2, y - 2, thumbW + 4, th + 4, 'FD');
-          doc.addImage(loaded.data, 'JPEG', x, y, thumbW, th, undefined, 'FAST');
-        }catch(e){}
-        x += thumbW + gap;
-      }
-      y += rowH + 16;
+      await embedThumbs(imgs, mx + 28, 3);
     }
 
     ensure(18);
@@ -5487,47 +5477,47 @@ async function exportPhotographerPDF(){
     y += 18;
   }
 
-  // ========== SHOT LIST ==========
+  // SHOT LIST
   doc.addPage();
   drawPageChrome(false);
   y = 62;
-  sectionOpen('2', 'Shot list', 'Location shots from confirmed places, then general compositions. Items marked priority show with a +.');
+  sectionOpen('2', 'Shot list', 'Location shots, then general compositions. Priority items marked with +.');
 
   const locShotSections = locs.filter(l => {
     const shots = (l.shots || []).map(s => typeof s === 'string' ? { text:s } : s).filter(s => s && (s.text || s.name));
     return shots.length > 0;
   });
+
   if(locShotSections.length){
     ensure(28);
     H('bold', 9, goldDeep);
-    doc.text('BY LOCATION', mx, y);
+    text('BY LOCATION', mx, y);
     y += 8;
     rule(mx, mx + 52, gold);
     y += 14;
     for(const loc of locShotSections){
       const shots = (loc.shots || []).map(s => typeof s === 'string' ? { text:s } : s).filter(s => s && (s.text || s.name));
       ensure(34);
-      // Section band in holyrood/heather
       const bandC = statusColor(loc.status || 'idea');
       doc.setFillColor(...bandC);
-      doc.roundedRect(mx, y - 12, contentW, 20, 2, 2, 'F');
+      try{ doc.roundedRect(mx, y - 12, contentW, 20, 2, 2, 'F'); }catch(e){ doc.rect(mx, y - 12, contentW, 20, 'F'); }
       H('bold', 10, parchment);
-      doc.text((loc.name || 'Location').toUpperCase(), mx + 10, y + 1);
+      text((loc.name || 'Location').toUpperCase(), mx + 10, y + 1);
       H('normal', 8, parchment);
-      doc.text(shots.length + ' shot' + (shots.length===1?'':'s'), pageW - mx - 10, y + 1, { align:'right' });
+      text(shots.length + ' shot' + (shots.length===1?'':'s'), pageW - mx - 10, y + 1, { align:'right' });
       y += 22;
       for(const s of shots){
         ensure(22);
-        const mark = s.done ? '+' : '·';
+        const mark = s.done ? '+' : '-';
         H('bold', 11, s.done ? holyrood : muted);
-        doc.text(mark, mx, y);
+        text(mark, mx, y);
         T(s.done ? 'normal' : 'bold', 11.5, ink);
-        const lines = doc.splitTextToSize(s.text || s.name || '', contentW - 18);
-        lines.forEach((ln, li) => { if(li) ensure(14); doc.text(ln, mx + 16, y); if(li < lines.length - 1) y += 14; });
+        const ls = linesOf(s.text || s.name || '', contentW - 18);
+        ls.forEach((ln, li) => { if(li) ensure(14); text(ln, mx + 16, y); if(li < ls.length - 1) y += 14; });
         y += 14;
         if(s.notes){
           T('italic', 10, muted);
-          doc.splitTextToSize(String(s.notes), contentW - 18).forEach(ln => { ensure(12); doc.text(ln, mx + 16, y); y += 12; });
+          linesOf(s.notes, contentW - 18).forEach(ln => { ensure(12); text(ln, mx + 16, y); y += 12; });
           y += 3;
         }
         if((s.images || []).length){
@@ -5549,43 +5539,42 @@ async function exportPhotographerPDF(){
   if(ideas.length){
     ensure(28);
     H('bold', 9, goldDeep);
-    doc.text('GENERAL COMPOSITIONS', mx, y);
+    text('GENERAL COMPOSITIONS', mx, y);
     y += 8;
     rule(mx, mx + 78, gold);
     y += 14;
   } else if(!locShotSections.length){
     T('italic', 11, muted);
-    doc.text('No shot ideas on the board yet.', mx, y);
+    text('No shot ideas on the board yet.', mx, y);
   }
 
   for(let ci = 0; ci < order.length; ci++){
     const cat = order[ci];
     const list = groups[cat];
-    if(!list || !list.length) return;
+    if(!list || !list.length) continue;
     ensure(36);
-    // Alternate soft band colours across categories
     const bandCols = [holyrood, heather, sage, rose];
     const bc = bandCols[ci % bandCols.length];
     doc.setFillColor(...bc);
-    doc.roundedRect(mx, y - 12, contentW, 20, 2, 2, 'F');
+    try{ doc.roundedRect(mx, y - 12, contentW, 20, 2, 2, 'F'); }catch(e){ doc.rect(mx, y - 12, contentW, 20, 'F'); }
     H('bold', 10, parchment);
-    doc.text(String(cat).toUpperCase(), mx + 10, y + 1);
+    text(String(cat).toUpperCase(), mx + 10, y + 1);
     H('normal', 8, parchment);
-    doc.text(list.filter(i => i.done).length + ' / ' + list.length, pageW - mx - 10, y + 1, { align:'right' });
+    text(list.filter(i => i.done).length + ' / ' + list.length, pageW - mx - 10, y + 1, { align:'right' });
     y += 22;
 
     for(const idea of list){
       ensure(22);
-      const mark = idea.done ? '+' : '·';
+      const mark = idea.done ? '+' : '-';
       H('bold', 11, idea.done ? holyrood : muted);
-      doc.text(mark, mx, y);
+      text(mark, mx, y);
       T(idea.done ? 'normal' : 'bold', 11.5, ink);
-      const lines = doc.splitTextToSize(idea.text || '', contentW - 18);
-      lines.forEach((ln, li) => { if(li) ensure(14); doc.text(ln, mx + 16, y); if(li < lines.length - 1) y += 14; });
+      const ls = linesOf(idea.text || '', contentW - 18);
+      ls.forEach((ln, li) => { if(li) ensure(14); text(ln, mx + 16, y); if(li < ls.length - 1) y += 14; });
       y += 14;
       if(idea.notes){
         T('italic', 10, muted);
-        doc.splitTextToSize(String(idea.notes), contentW - 18).forEach(ln => { ensure(12); doc.text(ln, mx + 16, y); y += 12; });
+        linesOf(idea.notes, contentW - 18).forEach(ln => { ensure(12); text(ln, mx + 16, y); y += 12; });
         y += 3;
       }
       if((idea.images || []).length){
@@ -5600,11 +5589,17 @@ async function exportPhotographerPDF(){
   rule(mx, mx + 40, gold);
   y += 16;
   T('normal', 10, muted);
-  doc.splitTextToSize('Prepared from the ceremony dashboard. Confirm the latest version with Graeme & Rebecca if plans change before the day.', contentW)
-    .forEach(ln => { ensure(13); doc.text(ln, mx, y); y += 13; });
+  linesOf('Prepared from the ceremony dashboard. Confirm the latest version with Graeme & Rebecca if plans change before the day.', contentW)
+    .forEach(ln => { ensure(13); text(ln, mx, y); y += 13; });
 
-  openPdfViewer(doc.output('bloburl'), 'Photographer-Reference-Graeme-Rebecca.pdf');
+  const blobUrl = doc.output('bloburl');
+  await openPdfViewer(blobUrl, 'Photographer-Reference-Graeme-Rebecca.pdf');
   showToast('Photographer pack ready', [], 3500);
+  }catch(err){
+    console.error('exportPhotographerPDF failed', err);
+    alert('PDF export failed: ' + (err && err.message ? err.message : String(err)));
+    try{ showToast('PDF export failed', [], 4000); }catch(e){}
+  }
 }
 
 let tlOrganise = false;
