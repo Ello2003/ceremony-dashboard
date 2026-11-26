@@ -1443,7 +1443,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v42.4</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v42.5</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -2146,8 +2146,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v42.4';
+const APP_VERSION = 'v42.5';
 const CHANGELOG = [
+  { version:'v42.5', date:'2026-11-26', notes:[
+    'PDF uses full site colour scheme: parchment, gold, holyrood, heather, rose, sage'
+  ]},
   { version:'v42.4', date:'2026-11-25', notes:[
     'PDF preview uses native browser engine (crisp text); shot list includes location shots + all compositions'
   ]},
@@ -5111,21 +5114,27 @@ async function exportPhotographerPDF(){
     return;
   }
   const { jsPDF } = window.jspdf;
-  /* Built-in PDF fonts only (Times + Helvetica): true vectors, always crisp in every viewer.
-     Custom web fonts often look soft in jsPDF at body sizes. */
   const doc = new jsPDF({ unit:'pt', format:'a4', compress:false });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const mx = 52;
+  const mx = 48;
   const contentW = pageW - mx * 2;
 
-  const ink = [28, 26, 24];
-  const inkSoft = [48, 46, 42];
-  const holyrood = [36, 82, 86];
-  const gold = [140, 104, 52];
-  const muted = [96, 92, 86];
-  const parchment = [250, 247, 241];
-  const line = [188, 180, 168];
+  /* Full website palette */
+  const parchment    = [246, 241, 233]; // --parchment
+  const parchmentDim = [237, 230, 216]; // --parchment-dim
+  const card         = [255, 253, 249]; // --card
+  const ink          = [43, 42, 40];    // --ink
+  const inkSoft      = [90, 86, 80];
+  const muted        = [120, 114, 106];
+  const line         = [210, 202, 190]; // soft grey-beige rule
+  const gold         = [198, 151, 90];  // --gold
+  const goldDeep     = [168, 122, 62];
+  const holyrood     = [46, 99, 103];   // --holyrood
+  const heather      = [135, 120, 158]; // --heather
+  const rose         = [176, 107, 69];  // --rose
+  const sage         = [124, 133, 100]; // --sage
+  const inkDark      = [32, 30, 28];    // hero-like dark band
 
   let y = 0;
   let pageNum = 0;
@@ -5143,50 +5152,73 @@ async function exportPhotographerPDF(){
 
   const drawPageChrome = (isCover) => {
     pageNum += 1;
+    // Parchment ground
     doc.setFillColor(...parchment);
     doc.rect(0, 0, pageW, pageH, 'F');
-    doc.setDrawColor(...line);
-    doc.setLineWidth(0.6);
-    doc.rect(24, 24, pageW - 48, pageH - 48);
+    // Subtle top wash like hero warmth
+    doc.setFillColor(...parchmentDim);
+    doc.rect(0, 0, pageW, isCover ? 0 : 52, 'F');
+
     if(!isCover){
-      doc.setDrawColor(...gold);
-      doc.setLineWidth(0.9);
-      doc.line(mx, 48, pageW - mx, 48);
-      H('normal', 8, muted);
-      doc.text('GRAEME & REBECCA', mx, 40);
-      doc.text('EDINBURGH  ·  5 DECEMBER 2026', pageW - mx, 40, { align:'right' });
+      // Dark ink header bar (echo of site hero)
+      doc.setFillColor(...inkDark);
+      doc.rect(0, 0, pageW, 36, 'F');
+      doc.setFillColor(...gold);
+      doc.rect(0, 36, pageW, 3, 'F');
+      H('normal', 8, parchment);
+      doc.text('GRAEME & REBECCA', mx, 22);
+      doc.text('EDINBURGH  ·  5 DECEMBER 2026', pageW - mx, 22, { align:'right' });
+    } else {
+      // Cover: gold + holyrood accent strips at top
+      doc.setFillColor(...inkDark);
+      doc.rect(0, 0, pageW, 8, 'F');
+      doc.setFillColor(...gold);
+      doc.rect(0, 8, pageW, 3, 'F');
+      doc.setFillColor(...holyrood);
+      doc.rect(0, 11, pageW, 2, 'F');
     }
-    doc.setDrawColor(...line);
-    doc.setLineWidth(0.5);
-    doc.line(mx, pageH - 40, pageW - mx, pageH - 40);
+
+    // Footer band
+    doc.setFillColor(...parchmentDim);
+    doc.rect(0, pageH - 44, pageW, 44, 'F');
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.8);
+    doc.line(mx, pageH - 44, pageW - mx, pageH - 44);
     H('normal', 8, muted);
-    doc.text('Photographer reference', mx, pageH - 26);
-    doc.text(String(pageNum), pageW - mx, pageH - 26, { align:'right' });
+    doc.text('Photographer reference', mx, pageH - 24);
+    doc.text(String(pageNum), pageW - mx, pageH - 24, { align:'right' });
   };
 
   const ensure = (need) => {
     if(y + need > pageH - 58){
       doc.addPage();
       drawPageChrome(false);
-      y = 68;
+      y = 62;
     }
   };
 
   const rule = (x1, x2, color) => {
     doc.setDrawColor(...(color || gold));
-    doc.setLineWidth(0.8);
+    doc.setLineWidth(0.9);
     doc.line(x1, y, x2, y);
   };
 
+  const softCard = (x, top, w, h) => {
+    doc.setFillColor(...card);
+    doc.setDrawColor(...line);
+    doc.setLineWidth(0.6);
+    doc.roundedRect(x, top, w, h, 3, 3, 'FD');
+  };
+
   const sectionOpen = (num, title, deck) => {
-    ensure(72);
-    H('bold', 9, gold);
+    ensure(78);
+    H('bold', 9, goldDeep);
     doc.text(String(num).padStart(2, '0'), mx, y);
     y += 18;
     T('bold', 22, ink);
     doc.text(title, mx, y);
     y += 10;
-    rule(mx, mx + 56);
+    rule(mx, mx + 56, gold);
     y += 16;
     if(deck){
       T('normal', 11, muted);
@@ -5216,7 +5248,7 @@ async function exportPhotographerPDF(){
         const ctx = c.getContext('2d');
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.fillStyle = '#FAF7F1';
+        ctx.fillStyle = '#F6F1E9';
         ctx.fillRect(0, 0, outW, outH);
         ctx.drawImage(img, 0, 0, outW, outH);
         resolve({ data: c.toDataURL('image/jpeg', 0.93), aspect: outH / outW });
@@ -5232,8 +5264,9 @@ async function exportPhotographerPDF(){
   };
   const statusColor = (s) => {
     if(s === 'confirmed') return holyrood;
-    if(s === 'shortlisted') return [90, 80, 110];
-    return gold;
+    if(s === 'shortlisted') return heather;
+    if(s === 'rejected') return muted;
+    return gold; // idea
   };
 
   const locs = (STATE.photoLocations || []).filter(l => (l.status || '') !== 'rejected');
@@ -5243,11 +5276,15 @@ async function exportPhotographerPDF(){
 
   showToast('Building photographer pack...', [], 4000);
 
-  // COVER
+  // ========== COVER ==========
   drawPageChrome(true);
-  y = pageH * 0.28;
+  y = 100;
 
-  H('bold', 9, gold);
+  // Card panel on parchment
+  softCard(mx - 8, y - 20, contentW + 16, 248);
+  y += 8;
+
+  H('bold', 9, goldDeep);
   doc.text('PHOTOGRAPHER REFERENCE', pageW / 2, y, { align:'center' });
   y += 28;
 
@@ -5258,7 +5295,7 @@ async function exportPhotographerPDF(){
   T('normal', 12, holyrood);
   doc.text('Edinburgh  ·  Ceremony 5 December 2026', pageW / 2, y, { align:'center' });
   y += 16;
-  rule(pageW / 2 - 28, pageW / 2 + 28);
+  rule(pageW / 2 - 30, pageW / 2 + 30, gold);
   y += 20;
 
   T('normal', 11, inkSoft);
@@ -5268,36 +5305,42 @@ async function exportPhotographerPDF(){
     y += 15;
   });
 
-  y = pageH * 0.60;
-  rule(mx, pageW - mx);
-  y += 28;
+  y = 360;
+  // Stat chips in site tones
   const stats = [
-    { n: String(locs.length), l: 'LOCATIONS' },
-    { n: String(confirmed.length), l: 'CONFIRMED' },
-    { n: String(ideas.length), l: 'SHOT IDEAS' },
-    { n: String(ideaDone), l: 'PRIORITIES' }
+    { n: String(locs.length), l: 'LOCATIONS', c: holyrood },
+    { n: String(confirmed.length), l: 'CONFIRMED', c: sage },
+    { n: String(ideas.length), l: 'SHOT IDEAS', c: heather },
+    { n: String(ideaDone), l: 'PRIORITIES', c: rose }
   ];
-  const colW = contentW / 4;
+  const gap = 10;
+  const chipW = (contentW - gap * 3) / 4;
   stats.forEach((s, i) => {
-    const cx = mx + colW * i + colW / 2;
-    T('bold', 20, holyrood);
-    doc.text(s.n, cx, y, { align:'center' });
-    H('normal', 8, muted);
-    doc.text(s.l, cx, y + 14, { align:'center' });
+    const x = mx + i * (chipW + gap);
+    doc.setFillColor(...card);
+    doc.setDrawColor(...line);
+    doc.setLineWidth(0.7);
+    doc.roundedRect(x, y, chipW, 52, 3, 3, 'FD');
+    // top accent
+    doc.setFillColor(...s.c);
+    doc.rect(x, y, chipW, 3, 'F');
+    T('bold', 18, s.c);
+    doc.text(s.n, x + chipW / 2, y + 26, { align:'center' });
+    H('normal', 7.5, muted);
+    doc.text(s.l, x + chipW / 2, y + 42, { align:'center' });
   });
-  y += 40;
-  rule(mx, pageW - mx);
-  y += 26;
+  y += 72;
+
   H('normal', 9, muted);
   doc.text('CONTENTS', mx, y); y += 16;
   T('bold', 13, ink);
   doc.text('01    Photo locations', mx, y); y += 18;
   doc.text('02    Shot list', mx, y);
 
-  // LOCATIONS
+  // ========== LOCATIONS ==========
   doc.addPage();
   drawPageChrome(false);
-  y = 68;
+  y = 62;
   sectionOpen('1', 'Photo locations', 'Active places from the board. Rejected options are omitted. Notes are guidance — December light and weather may need flexibility.');
 
   if(!locs.length){
@@ -5309,9 +5352,15 @@ async function exportPhotographerPDF(){
     const loc = locs[idx];
     const st = loc.status || 'idea';
     const accent = statusColor(st);
-    ensure(96);
+    ensure(100);
 
-    H('bold', 9, gold);
+    // Left colour rail + light card background block estimate drawn after measure is hard;
+    // draw rail + title row
+    const blockTop = y - 4;
+    doc.setFillColor(...accent);
+    doc.rect(mx - 10, blockTop, 3, 18, 'F');
+
+    H('bold', 9, goldDeep);
     doc.text(String(idx + 1).padStart(2, '0'), mx, y);
     T('bold', 15, ink);
     doc.text(loc.name || 'Untitled location', mx + 28, y);
@@ -5333,13 +5382,13 @@ async function exportPhotographerPDF(){
       y += 13;
     }
     if(loc.link){
-      H('normal', 9, [80, 70, 100]);
+      H('normal', 9, heather);
       doc.splitTextToSize(String(loc.link), contentW - 28).forEach(ln => { ensure(12); doc.text(ln, mx + 28, y); y += 12; });
       y += 2;
     }
     if(loc.notes){
       ensure(24);
-      H('bold', 8, muted);
+      H('bold', 8, rose);
       doc.text('NOTES', mx + 28, y); y += 12;
       T('normal', 11, inkSoft);
       doc.splitTextToSize(String(loc.notes), contentW - 28).forEach(ln => { ensure(14); doc.text(ln, mx + 28, y); y += 14; });
@@ -5349,7 +5398,7 @@ async function exportPhotographerPDF(){
     const shots = (loc.shots || []).map(s => typeof s === 'string' ? { text:s } : s).filter(s => s && (s.text || s.name));
     if(shots.length){
       ensure(20);
-      H('bold', 8, muted);
+      H('bold', 8, sage);
       doc.text('SHOTS AT THIS PLACE', mx + 28, y); y += 13;
       shots.forEach(s => {
         ensure(16);
@@ -5383,8 +5432,9 @@ async function exportPhotographerPDF(){
         ensure(th + 14);
         try{
           doc.setDrawColor(...line);
-          doc.setLineWidth(0.5);
-          doc.rect(x - 0.5, y - 0.5, thumbW + 1, th + 1);
+          doc.setLineWidth(0.6);
+          doc.setFillColor(...card);
+          doc.rect(x - 2, y - 2, thumbW + 4, th + 4, 'FD');
           doc.addImage(loaded.data, 'JPEG', x, y, thumbW, th, undefined, 'FAST');
         }catch(e){}
         x += thumbW + gap;
@@ -5392,42 +5442,42 @@ async function exportPhotographerPDF(){
       y += rowH + 16;
     }
 
-    ensure(20);
+    ensure(18);
     doc.setDrawColor(...line);
-    doc.setLineWidth(0.5);
+    doc.setLineWidth(0.55);
     doc.line(mx, y, pageW - mx, y);
-    y += 20;
+    y += 18;
   }
 
-  // SHOT LIST
+  // ========== SHOT LIST ==========
   doc.addPage();
   drawPageChrome(false);
-  y = 68;
+  y = 62;
   sectionOpen('2', 'Shot list', 'Location shots from confirmed places, then general compositions. Items marked priority show with a +.');
 
-  // --- A. Confirmed / shortlisted location shots (from Locations board) ---
   const locShotSections = locs.filter(l => {
     const shots = (l.shots || []).map(s => typeof s === 'string' ? { text:s } : s).filter(s => s && (s.text || s.name));
     return shots.length > 0;
   });
   if(locShotSections.length){
     ensure(28);
-    H('bold', 9, gold);
+    H('bold', 9, goldDeep);
     doc.text('BY LOCATION', mx, y);
     y += 8;
-    rule(mx, mx + 48);
+    rule(mx, mx + 52, gold);
     y += 14;
     for(const loc of locShotSections){
       const shots = (loc.shots || []).map(s => typeof s === 'string' ? { text:s } : s).filter(s => s && (s.text || s.name));
-      ensure(32);
-      T('bold', 13, ink);
-      doc.text(loc.name || 'Location', mx, y);
-      H('normal', 9, muted);
-      const st = statusLabel(loc.status || 'idea');
-      doc.text(st + '  ·  ' + shots.length + ' shot' + (shots.length===1?'':'s'), pageW - mx, y, { align:'right' });
-      y += 7;
-      rule(mx, pageW - mx, statusColor(loc.status || 'idea'));
-      y += 14;
+      ensure(34);
+      // Section band in holyrood/heather
+      const bandC = statusColor(loc.status || 'idea');
+      doc.setFillColor(...bandC);
+      doc.roundedRect(mx, y - 12, contentW, 20, 2, 2, 'F');
+      H('bold', 10, parchment);
+      doc.text((loc.name || 'Location').toUpperCase(), mx + 10, y + 1);
+      H('normal', 8, parchment);
+      doc.text(shots.length + ' shot' + (shots.length===1?'':'s'), pageW - mx - 10, y + 1, { align:'right' });
+      y += 22;
       shots.forEach(s => {
         ensure(22);
         const mark = s.done ? '+' : '·';
@@ -5447,7 +5497,6 @@ async function exportPhotographerPDF(){
     }
   }
 
-  // --- B. General composition ideas ---
   const order = (STATE.photoIdeaCategoryOrder || []).slice();
   const groups = {};
   ideas.forEach(i => {
@@ -5455,31 +5504,33 @@ async function exportPhotographerPDF(){
     (groups[cat] = groups[cat] || []).push(i);
   });
   Object.keys(groups).forEach(cat => { if(!order.includes(cat)) order.push(cat); });
-  // Include empty ordered cats that have no ideas? skip empties
 
   if(ideas.length){
     ensure(28);
-    H('bold', 9, gold);
+    H('bold', 9, goldDeep);
     doc.text('GENERAL COMPOSITIONS', mx, y);
     y += 8;
-    rule(mx, mx + 72);
+    rule(mx, mx + 78, gold);
     y += 14;
   } else if(!locShotSections.length){
     T('italic', 11, muted);
     doc.text('No shot ideas on the board yet.', mx, y);
   }
 
-  order.forEach(cat => {
+  order.forEach((cat, ci) => {
     const list = groups[cat];
     if(!list || !list.length) return;
     ensure(36);
-    T('bold', 13, ink);
-    doc.text(String(cat), mx, y);
-    H('normal', 9, muted);
-    doc.text(list.filter(i => i.done).length + ' / ' + list.length, pageW - mx, y, { align:'right' });
-    y += 7;
-    rule(mx, pageW - mx);
-    y += 14;
+    // Alternate soft band colours across categories
+    const bandCols = [holyrood, heather, sage, rose];
+    const bc = bandCols[ci % bandCols.length];
+    doc.setFillColor(...bc);
+    doc.roundedRect(mx, y - 12, contentW, 20, 2, 2, 'F');
+    H('bold', 10, parchment);
+    doc.text(String(cat).toUpperCase(), mx + 10, y + 1);
+    H('normal', 8, parchment);
+    doc.text(list.filter(i => i.done).length + ' / ' + list.length, pageW - mx - 10, y + 1, { align:'right' });
+    y += 22;
 
     list.forEach(idea => {
       ensure(22);
@@ -5496,7 +5547,7 @@ async function exportPhotographerPDF(){
         y += 3;
       }
       if((idea.images || []).length){
-        H('normal', 9, [80, 70, 100]);
+        H('normal', 9, heather);
         ensure(11);
         doc.text(idea.images.length + ' reference image' + (idea.images.length === 1 ? '' : 's') + ' on the board', mx + 16, y);
         y += 12;
@@ -5507,7 +5558,7 @@ async function exportPhotographerPDF(){
 
   ensure(48);
   y += 8;
-  rule(mx, mx + 40);
+  rule(mx, mx + 40, gold);
   y += 16;
   T('normal', 10, muted);
   doc.splitTextToSize('Prepared from the ceremony dashboard. Confirm the latest version with Graeme & Rebecca if plans change before the day.', contentW)
