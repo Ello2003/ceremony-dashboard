@@ -1443,7 +1443,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v42.5</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v42.6</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -2146,8 +2146,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v42.5';
+const APP_VERSION = 'v42.6';
 const CHANGELOG = [
+  { version:'v42.6', date:'2026-11-26', notes:[
+    'PDF shot list embeds reference photos for each idea and location shot'
+  ]},
   { version:'v42.5', date:'2026-11-26', notes:[
     'PDF uses full site colour scheme: parchment, gold, holyrood, heather, rose, sage'
   ]},
@@ -5258,6 +5261,38 @@ async function exportPhotographerPDF(){
     img.src = src;
   });
 
+  
+  const embedThumbs = async (images, indentX, maxCount) => {
+    const list = (images || []).slice(0, maxCount || 4);
+    if(!list.length) return;
+    ensure(110);
+    const gap = 10;
+    const avail = pageW - mx - indentX;
+    const thumbW = Math.min(130, (avail - gap * (list.length - 1)) / list.length);
+    let x = indentX;
+    let rowH = 0;
+    let drawn = 0;
+    for(const im of list){
+      const src = im && (im.src || im.url || im);
+      if(!src || typeof src !== 'string') continue;
+      const loaded = await loadImg(src, thumbW);
+      if(!loaded) continue;
+      const th = thumbW * loaded.aspect;
+      rowH = Math.max(rowH, th);
+      ensure(th + 16);
+      try{
+        doc.setDrawColor(...line);
+        doc.setLineWidth(0.6);
+        doc.setFillColor(...card);
+        doc.rect(x - 2, y - 2, thumbW + 4, th + 4, 'FD');
+        doc.addImage(loaded.data, 'JPEG', x, y, thumbW, th, undefined, 'FAST');
+        drawn++;
+      }catch(e){}
+      x += thumbW + gap;
+    }
+    if(drawn) y += rowH + 14;
+  };
+
   const statusLabel = (s) => {
     const v = String(s || 'idea').replace(/_/g, ' ');
     return v.charAt(0).toUpperCase() + v.slice(1);
@@ -5400,7 +5435,7 @@ async function exportPhotographerPDF(){
       ensure(20);
       H('bold', 8, sage);
       doc.text('SHOTS AT THIS PLACE', mx + 28, y); y += 13;
-      shots.forEach(s => {
+      for(const s of shots){
         ensure(16);
         const mark = s.done ? '+' : '·';
         H('bold', 11, s.done ? holyrood : muted);
@@ -5414,7 +5449,10 @@ async function exportPhotographerPDF(){
           doc.splitTextToSize(String(s.notes), contentW - 52).forEach(ln => { ensure(12); doc.text(ln, mx + 44, y); y += 12; });
           y += 2;
         }
-      });
+        if((s.images || []).length){
+          await embedThumbs(s.images, mx + 44, 3);
+        }
+      }
     }
 
     const imgs = (loc.images || []).slice(0, 3);
@@ -5478,7 +5516,7 @@ async function exportPhotographerPDF(){
       H('normal', 8, parchment);
       doc.text(shots.length + ' shot' + (shots.length===1?'':'s'), pageW - mx - 10, y + 1, { align:'right' });
       y += 22;
-      shots.forEach(s => {
+      for(const s of shots){
         ensure(22);
         const mark = s.done ? '+' : '·';
         H('bold', 11, s.done ? holyrood : muted);
@@ -5492,7 +5530,10 @@ async function exportPhotographerPDF(){
           doc.splitTextToSize(String(s.notes), contentW - 18).forEach(ln => { ensure(12); doc.text(ln, mx + 16, y); y += 12; });
           y += 3;
         }
-      });
+        if((s.images || []).length){
+          await embedThumbs(s.images, mx + 16, 4);
+        }
+      }
       y += 10;
     }
   }
@@ -5517,7 +5558,8 @@ async function exportPhotographerPDF(){
     doc.text('No shot ideas on the board yet.', mx, y);
   }
 
-  order.forEach((cat, ci) => {
+  for(let ci = 0; ci < order.length; ci++){
+    const cat = order[ci];
     const list = groups[cat];
     if(!list || !list.length) return;
     ensure(36);
@@ -5532,7 +5574,7 @@ async function exportPhotographerPDF(){
     doc.text(list.filter(i => i.done).length + ' / ' + list.length, pageW - mx - 10, y + 1, { align:'right' });
     y += 22;
 
-    list.forEach(idea => {
+    for(const idea of list){
       ensure(22);
       const mark = idea.done ? '+' : '·';
       H('bold', 11, idea.done ? holyrood : muted);
@@ -5547,14 +5589,11 @@ async function exportPhotographerPDF(){
         y += 3;
       }
       if((idea.images || []).length){
-        H('normal', 9, heather);
-        ensure(11);
-        doc.text(idea.images.length + ' reference image' + (idea.images.length === 1 ? '' : 's') + ' on the board', mx + 16, y);
-        y += 12;
+        await embedThumbs(idea.images, mx + 16, 4);
       }
-    });
+    }
     y += 12;
-  });
+  }
 
   ensure(48);
   y += 8;
