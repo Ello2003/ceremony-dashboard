@@ -1443,7 +1443,7 @@
   <div class="hero-inner">
     <div class="hero-top-row">
       <p class="eyebrow">Edinburgh, Scotland <span class="rule"></span> Six people <span class="rule"></span> One name</p>
-      <button class="version-badge" onclick="openChangelog()" title="Version history">v42.7</button>
+      <button class="version-badge" onclick="openChangelog()" title="Version history">v42.8</button>
     </div>
     <h1 class="hero-title">Graeme &amp; Rebecca</h1>
     <p class="hero-dates"><span>Travel 4 December</span><span>Ceremony <b>5 December</b></span></p>
@@ -2146,8 +2146,11 @@ function seedPhotoIdeas(){
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
 /* ============================= VERSION HISTORY ============================= */
-const APP_VERSION = 'v42.7';
+const APP_VERSION = 'v42.8';
 const CHANGELOG = [
+  { version:'v42.8', date:'2026-11-26', notes:[
+    'PDF shot list includes every confirmed location (e.g. Front Entrance) with notes, images and shots'
+  ]},
   { version:'v42.7', date:'2026-11-26', notes:[
     'PDF export hardened: try/catch, safe text, resilient image load so generation always finishes'
   ]},
@@ -5481,71 +5484,117 @@ async function exportPhotographerPDF(){
   doc.addPage();
   drawPageChrome(false);
   y = 62;
-  sectionOpen('2', 'Shot list', 'Location shots, then general compositions. Priority items marked with +.');
+  sectionOpen('2', 'Shot list', 'Mirrors the Shot list tab: every confirmed location, then general compositions.');
 
-  const locShotSections = locs.filter(l => {
-    const shots = (l.shots || []).map(s => typeof s === 'string' ? { text:s } : s).filter(s => s && (s.text || s.name));
-    return shots.length > 0;
-  });
+  // Match UI: confirmedPhotoLocations() - ALL confirmed places, even with 0 shot rows
+  const confirmedLocs = (STATE.photoLocations || []).filter(l => (l.status || '') === 'confirmed');
 
-  if(locShotSections.length){
+  if(confirmedLocs.length){
     ensure(28);
     H('bold', 9, goldDeep);
-    text('BY LOCATION', mx, y);
+    text('CONFIRMED LOCATIONS', mx, y);
     y += 8;
-    rule(mx, mx + 52, gold);
+    rule(mx, mx + 72, gold);
     y += 14;
-    for(const loc of locShotSections){
-      const shots = (loc.shots || []).map(s => typeof s === 'string' ? { text:s } : s).filter(s => s && (s.text || s.name));
-      ensure(34);
-      const bandC = statusColor(loc.status || 'idea');
+
+    for(const loc of confirmedLocs){
+      const shots = (loc.shots || []).map(s => {
+        if(typeof s === 'string') return { text:s, notes:'', images:[], done:false };
+        return {
+          text: s.text || s.name || '',
+          notes: s.notes || '',
+          images: s.images || [],
+          done: !!s.done
+        };
+      });
+      ensure(40);
+      const bandC = holyrood;
       doc.setFillColor(...bandC);
       try{ doc.roundedRect(mx, y - 12, contentW, 20, 2, 2, 'F'); }catch(e){ doc.rect(mx, y - 12, contentW, 20, 'F'); }
       H('bold', 10, parchment);
-      text((loc.name || 'Location').toUpperCase(), mx + 10, y + 1);
+      text((loc.name || 'Untitled location').toUpperCase(), mx + 10, y + 1);
       H('normal', 8, parchment);
       text(shots.length + ' shot' + (shots.length===1?'':'s'), pageW - mx - 10, y + 1, { align:'right' });
       y += 22;
-      for(const s of shots){
-        ensure(22);
-        const mark = s.done ? '+' : '-';
-        H('bold', 11, s.done ? holyrood : muted);
-        text(mark, mx, y);
-        T(s.done ? 'normal' : 'bold', 11.5, ink);
-        const ls = linesOf(s.text || s.name || '', contentW - 18);
-        ls.forEach((ln, li) => { if(li) ensure(14); text(ln, mx + 16, y); if(li < ls.length - 1) y += 14; });
-        y += 14;
-        if(s.notes){
-          T('italic', 10, muted);
-          linesOf(s.notes, contentW - 18).forEach(ln => { ensure(12); text(ln, mx + 16, y); y += 12; });
-          y += 3;
-        }
-        if((s.images || []).length){
-          await embedThumbs(s.images, mx + 16, 4);
-        }
+
+      // Location meta
+      const meta = [];
+      if(loc.distance) meta.push(String(loc.distance));
+      if((loc.tags || []).length) meta.push((loc.tags || []).join(', '));
+      if(loc.rating) meta.push('Rating ' + Math.min(5, Number(loc.rating) || 0) + ' of 5');
+      if(meta.length){
+        T('normal', 10, holyrood);
+        text(meta.join('     '), mx, y);
+        y += 13;
       }
-      y += 10;
+
+      // Location notes
+      if(loc.notes){
+        ensure(20);
+        H('bold', 8, rose);
+        text('NOTES', mx, y); y += 12;
+        T('normal', 11, inkSoft);
+        linesOf(loc.notes, contentW).forEach(ln => { ensure(14); text(ln, mx, y); y += 14; });
+        y += 4;
+      }
+
+      // Location inspiration images (gallery on the location card)
+      if((loc.images || []).length){
+        await embedThumbs(loc.images, mx, 4);
+      }
+
+      // Individual shots
+      if(shots.length){
+        for(const s of shots){
+          ensure(22);
+          const mark = s.done ? '+' : '-';
+          H('bold', 11, s.done ? holyrood : muted);
+          text(mark, mx, y);
+          T(s.done ? 'normal' : 'bold', 11.5, ink);
+          const label = s.text || '(untitled shot)';
+          const ls = linesOf(label, contentW - 18);
+          ls.forEach((ln, li) => { if(li) ensure(14); text(ln, mx + 16, y); if(li < ls.length - 1) y += 14; });
+          y += 14;
+          if(s.notes){
+            T('italic', 10, muted);
+            linesOf(s.notes, contentW - 18).forEach(ln => { ensure(12); text(ln, mx + 16, y); y += 12; });
+            y += 3;
+          }
+          if((s.images || []).length){
+            await embedThumbs(s.images, mx + 16, 4);
+          }
+        }
+      } else {
+        T('italic', 10, muted);
+        text('No individual shots listed yet for this location.', mx, y);
+        y += 14;
+      }
+      y += 12;
     }
+  } else {
+    T('italic', 11, muted);
+    text('No confirmed locations yet.', mx, y);
+    y += 16;
   }
 
+  // General compositions - every category and idea from the board
   const order = (STATE.photoIdeaCategoryOrder || []).slice();
   const groups = {};
-  ideas.forEach(i => {
-    const cat = (i.category && String(i.category).trim()) ? i.category : 'Other';
-    (groups[cat] = groups[cat] || []).push(i);
+  (STATE.photoIdeas || []).forEach(idea => {
+    const cat = (idea.category && String(idea.category).trim()) ? idea.category : 'Other';
+    (groups[cat] = groups[cat] || []).push(idea);
   });
   Object.keys(groups).forEach(cat => { if(!order.includes(cat)) order.push(cat); });
+  // Also include any category keys that somehow only exist on ideas
+  Object.keys(groups).forEach(cat => { if(!order.includes(cat)) order.push(cat); });
 
-  if(ideas.length){
+  if((STATE.photoIdeas || []).length){
     ensure(28);
     H('bold', 9, goldDeep);
     text('GENERAL COMPOSITIONS', mx, y);
     y += 8;
     rule(mx, mx + 78, gold);
     y += 14;
-  } else if(!locShotSections.length){
-    T('italic', 11, muted);
-    text('No shot ideas on the board yet.', mx, y);
   }
 
   for(let ci = 0; ci < order.length; ci++){
@@ -5569,7 +5618,7 @@ async function exportPhotographerPDF(){
       H('bold', 11, idea.done ? holyrood : muted);
       text(mark, mx, y);
       T(idea.done ? 'normal' : 'bold', 11.5, ink);
-      const ls = linesOf(idea.text || '', contentW - 18);
+      const ls = linesOf(idea.text || '(untitled idea)', contentW - 18);
       ls.forEach((ln, li) => { if(li) ensure(14); text(ln, mx + 16, y); if(li < ls.length - 1) y += 14; });
       y += 14;
       if(idea.notes){
@@ -5582,6 +5631,12 @@ async function exportPhotographerPDF(){
       }
     }
     y += 12;
+  }
+
+  if(!confirmedLocs.length && !(STATE.photoIdeas || []).length){
+    T('italic', 11, muted);
+    text('No shot list content on the board yet.', mx, y);
+    y += 14;
   }
 
   ensure(48);
